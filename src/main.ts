@@ -207,7 +207,7 @@ export default class SmartTaskPlugin extends Plugin {
 		}
 	}
 
-	async createQuickTask(description: string, dueDate?: string, priority?: string, parentTask?: Task): Promise<void> {
+	async createQuickTask(description: string, dueDate?: string, priority?: TaskPriority, parentTask?: Task): Promise<void> {
 		try {
 			const targetFile = await this.getTargetFile();
 			if (!targetFile) {
@@ -219,7 +219,7 @@ export default class SmartTaskPlugin extends Plugin {
 			const baseIndent = parentTask ? '  ' : '';
 			taskLine = `${baseIndent}- [ ] ${description}`;
 
-			const effectivePriority = priority || (this.settings.defaultPriority !== TaskPriority.None ? this.settings.defaultPriority : undefined);
+			const effectivePriority: TaskPriority | undefined = priority || (this.settings.defaultPriority !== TaskPriority.None ? this.settings.defaultPriority : undefined);
 			if (effectivePriority) {
 				switch (effectivePriority) {
 					case TaskPriority.Highest:
@@ -488,7 +488,7 @@ class QuickCreateModal extends Modal {
 		targetSelect.createEl('option', { value: 'dailyNote', text: 'Daily Note' });
 		targetSelect.value = this.plugin.settings.saveTarget;
 		targetSelect.onchange = async () => {
-			this.plugin.settings.saveTarget = targetSelect.value as any;
+			this.plugin.settings.saveTarget = targetSelect.value as 'inbox' | 'currentFile' | 'dailyNote';
 			await this.plugin.saveSettings();
 		};
 
@@ -501,10 +501,11 @@ class QuickCreateModal extends Modal {
 		createBtn.onclick = async () => {
 			const desc = descInput.value.trim();
 			if (desc) {
+				const priValue = prioritySelect.value;
 				await this.plugin.createQuickTask(
 					desc,
 					dateInput.value || undefined,
-					prioritySelect.value || undefined
+					priValue ? (priValue as TaskPriority) : undefined
 				);
 				this.close();
 			}

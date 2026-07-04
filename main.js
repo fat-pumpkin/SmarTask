@@ -476,7 +476,7 @@ var SmartTaskSettingTab = class extends import_obsidian2.PluginSettingTab {
   display() {
     const { containerEl } = this;
     containerEl.empty();
-    new import_obsidian2.Setting(containerEl).setName("Task Settings").setHeading();
+    new import_obsidian2.Setting(containerEl).setName("Task Configuration").setHeading();
     new import_obsidian2.Setting(containerEl).setName("\u{1F4E5} Task Saving").setHeading();
     new import_obsidian2.Setting(containerEl).setName("Default Save Location").setDesc("Where newly created tasks should be saved").addDropdown((dropdown) => dropdown.addOption("inbox", "Inbox (specified file)").addOption("currentFile", "Current file").addOption("dailyNote", "Daily note").setValue(this.plugin.settings.saveTarget).onChange(async (value) => {
       this.plugin.settings.saveTarget = value;
@@ -1022,7 +1022,7 @@ var SmartTaskViewController = class {
         e.preventDefault();
         const desc = input.value.trim();
         if (desc) {
-          void this.plugin.createQuickTask(desc, dueDate || void 0, priority || void 0);
+          void this.plugin.createQuickTask(desc, dueDate || void 0, priority ? priority : void 0);
           input.value = "";
           dueDate = "";
           priority = "";
@@ -1037,7 +1037,7 @@ var SmartTaskViewController = class {
         submitBtn.addEventListener("click", () => {
           const desc = input.value.trim();
           if (desc) {
-            void this.plugin.createQuickTask(desc, dueDate || void 0, priority || void 0);
+            void this.plugin.createQuickTask(desc, dueDate || void 0, priority ? priority : void 0);
             input.value = "";
             dueDate = "";
             priority = "";
@@ -3223,10 +3223,11 @@ var QuickCreateModal = class extends import_obsidian5.Modal {
     createBtn.onclick = async () => {
       const desc = descInput.value.trim();
       if (desc) {
+        const priValue = prioritySelect.value;
         await this.plugin.createQuickTask(
           desc,
           dateInput.value || void 0,
-          prioritySelect.value || void 0
+          priValue ? priValue : void 0
         );
         this.close();
       }

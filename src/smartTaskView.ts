@@ -282,7 +282,7 @@ export class SmartTaskViewController {
 				e.preventDefault();
 				const desc = input.value.trim();
 				if (desc) {
-					void this.plugin.createQuickTask(desc, dueDate || undefined, priority || undefined);
+					void this.plugin.createQuickTask(desc, dueDate || undefined, priority ? (priority as TaskPriority) : undefined);
 					input.value = '';
 					dueDate = '';
 					priority = '';
@@ -298,7 +298,7 @@ export class SmartTaskViewController {
 				submitBtn.addEventListener('click', () => {
 					const desc = input.value.trim();
 					if (desc) {
-						void this.plugin.createQuickTask(desc, dueDate || undefined, priority || undefined);
+						void this.plugin.createQuickTask(desc, dueDate || undefined, priority ? (priority as TaskPriority) : undefined);
 						input.value = '';
 						dueDate = '';
 						priority = '';
