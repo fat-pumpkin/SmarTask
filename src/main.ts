@@ -221,7 +221,7 @@ export default class SmartTaskPlugin extends Plugin {
 
 			const effectivePriority = priority ?? (this.settings.defaultPriority !== TaskPriority.None ? this.settings.defaultPriority : undefined);
 			if (effectivePriority) {
-				switch (effectivePriority as TaskPriority) {
+				switch (effectivePriority) {
 					case TaskPriority.Highest:
 						taskLine += ' 🔝';
 						break;

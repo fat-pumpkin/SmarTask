@@ -2,7 +2,7 @@
   "id": "smarttask",
   "name": "SmartTask",
   "version": "1.0.1",
-  "minAppVersion": "1.2.0",
+  "minAppVersion": "1.5.0",
   "description": "A high-performance, easy-to-use intelligent task management plugin that supports multiple views, quick creation, and smart queries.",
   "author": "SmartTask Team",
   "authorUrl": "https://github.com",
