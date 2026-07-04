@@ -282,7 +282,7 @@ export class SmartTaskViewController {
 				e.preventDefault();
 				const desc = input.value.trim();
 				if (desc) {
-					this.plugin.createQuickTask(desc, dueDate || undefined, priority || undefined);
+					void this.plugin.createQuickTask(desc, dueDate || undefined, priority || undefined);
 					input.value = '';
 					dueDate = '';
 					priority = '';
@@ -298,7 +298,7 @@ export class SmartTaskViewController {
 				submitBtn.addEventListener('click', () => {
 					const desc = input.value.trim();
 					if (desc) {
-						this.plugin.createQuickTask(desc, dueDate || undefined, priority || undefined);
+						void this.plugin.createQuickTask(desc, dueDate || undefined, priority || undefined);
 						input.value = '';
 						dueDate = '';
 						priority = '';
@@ -715,7 +715,7 @@ export class SmartTaskViewController {
 		checkbox.checked = task.completed;
 		checkbox.addEventListener('change', (e) => {
 			e.stopPropagation();
-			this.plugin.toggleTaskStatus(task, checkbox.checked);
+			void this.plugin.toggleTaskStatus(task, checkbox.checked);
 		});
 
 		const content = item.createDiv({ cls: 'task-content' });
@@ -801,7 +801,7 @@ export class SmartTaskViewController {
 				const doAdd = () => {
 					const desc = input.value.trim();
 					if (desc) {
-						this.plugin.addSubtask(task, desc);
+						void this.plugin.addSubtask(task, desc);
 						showAddSubtask = false;
 						if (addSubtaskEl) {
 							addSubtaskEl.remove();
@@ -915,7 +915,7 @@ export class SmartTaskViewController {
 			stCheckbox.checked = subtask.completed;
 			stCheckbox.addEventListener('change', (e) => {
 				e.stopPropagation();
-				this.plugin.toggleSubtaskStatus(task, subtask.id, stCheckbox.checked);
+				void this.plugin.toggleSubtaskStatus(task, subtask.id, stCheckbox.checked);
 			});
 			stItem.createSpan({ cls: 'subtask-text', text: subtask.description });
 			if (subtask.dueDate) {
@@ -938,7 +938,7 @@ export class SmartTaskViewController {
 		const doAdd = () => {
 			const desc = input.value.trim();
 			if (desc) {
-				this.plugin.addSubtask(task, desc);
+				void this.plugin.addSubtask(task, desc);
 			}
 		};
 		
@@ -1009,13 +1009,13 @@ export class SmartTaskViewController {
 	private openWikiLink(target: string): void {
 		const file = this.plugin.app.vault.getAbstractFileByPath(target);
 		if (file) {
-			this.plugin.app.workspace.openLinkText(target, '', true);
+			void this.plugin.app.workspace.openLinkText(target, '', true);
 		} else {
 			const files = this.plugin.app.vault.getFiles();
 			const targetName = target.split('/').pop()?.toLowerCase();
 			const found = files.find(f => f.basename.toLowerCase() === targetName);
 			if (found) {
-				this.plugin.app.workspace.openLinkText(found.path, '', true);
+				void this.plugin.app.workspace.openLinkText(found.path, '', true);
 			} else {
 				new Notice(`未找到笔记: ${target}`);
 			}
@@ -1081,7 +1081,7 @@ export class SmartTaskViewController {
 			btn.addEventListener('click', () => {
 				this.timelineStyle = opt.value as any;
 				this.plugin.settings.timelineStyle = opt.value as any;
-				this.plugin.saveSettings();
+				void this.plugin.saveSettings();
 				this.renderContent();
 			});
 		}
@@ -1134,7 +1134,7 @@ export class SmartTaskViewController {
 			if (todayGroup) {
 				todayGroup.el.scrollIntoView({ behavior: 'smooth', block: 'start' });
 				todayGroup.el.addClass('highlight');
-				setTimeout(() => todayGroup.el.removeClass('highlight'), 2000);
+				window.setTimeout(() => todayGroup.el.removeClass('highlight'), 2000);
 			} else {
 				const today = QueryEngine.getToday();
 				let closestGroup = groupEls[0];
@@ -1358,12 +1358,12 @@ export class SmartTaskViewController {
 				checkbox.checked = task.completed;
 				checkbox.addEventListener('change', (e) => {
 					e.stopPropagation();
-					this.plugin.toggleTaskStatus(task, checkbox.checked);
+					void this.plugin.toggleTaskStatus(task, checkbox.checked);
 				});
 
 				const desc = taskMain.createSpan({ cls: 'zigzag-task-desc', text: task.description });
 				desc.addEventListener('click', () => {
-					this.plugin.openTaskFile(task.filePath, task.lineNumber);
+					void this.plugin.openTaskFile(task.filePath, task.lineNumber);
 				});
 
 				const taskContent = item.createDiv({ cls: 'zigzag-task-content' });
@@ -1455,7 +1455,7 @@ export class SmartTaskViewController {
 				checkbox.checked = task.completed;
 				checkbox.addEventListener('change', (e) => {
 					e.stopPropagation();
-					this.plugin.toggleTaskStatus(task, checkbox.checked);
+					void this.plugin.toggleTaskStatus(task, checkbox.checked);
 				});
 				
 				const actions = cardFooter.createDiv({ cls: 'task-card-actions' });
@@ -1498,12 +1498,12 @@ export class SmartTaskViewController {
 			checkbox.checked = task.completed;
 			checkbox.addEventListener('change', (e) => {
 				e.stopPropagation();
-				this.plugin.toggleTaskStatus(task, checkbox.checked);
+				void this.plugin.toggleTaskStatus(task, checkbox.checked);
 			});
 
 			const content = item.createDiv({ cls: 'timeline-task-content' });
 			content.addEventListener('click', () => {
-				this.plugin.openTaskFile(task.filePath, task.lineNumber);
+				void this.plugin.openTaskFile(task.filePath, task.lineNumber);
 			});
 
 			const main = content.createDiv({ cls: 'task-main' });
@@ -1688,66 +1688,66 @@ export class SmartTaskViewController {
 	private openTaskEditor(task: Task): void {
 		const modal = document.createElement('div');
 		modal.className = 'task-editor-modal-overlay';
-		modal.innerHTML = `
-			<div class="task-editor-modal">
-				<div class="task-editor-header">
-					<h3>编辑任务</h3>
-					<button class="task-editor-close" title="关闭">✕</button>
-				</div>
-				<div class="task-editor-body">
-					<div class="task-editor-field">
-						<label>任务描述</label>
-						<input type="text" class="task-editor-input" value="${this.escapeHtml(task.description)}">
-					</div>
-					<div class="task-editor-field">
-						<label>截止日期</label>
-						<input type="date" class="task-editor-date" value="${task.dueDate || ''}">
-					</div>
-					<div class="task-editor-field">
-						<label>优先级</label>
-						<select class="task-editor-priority">
-							<option value="none">无</option>
-							<option value="highest">🔝 最高</option>
-							<option value="high">🔺 高</option>
-							<option value="medium">🔼 中</option>
-							<option value="low">🔽 低</option>
-							<option value="lowest">⏬ 最低</option>
-						</select>
-					</div>
-					<div class="task-editor-field">
-						<label>标签（逗号分隔）</label>
-						<input type="text" class="task-editor-tags" value="${task.tags.join(', ')}">
-					</div>
-				</div>
-				<div class="task-editor-footer">
-					<button class="task-editor-btn delete-btn">删除任务</button>
-					<div class="task-editor-actions">
-						<button class="task-editor-btn cancel-btn">取消</button>
-						<button class="task-editor-btn save-btn">保存</button>
-					</div>
-				</div>
-			</div>
-		`;
-		document.body.appendChild(modal);
 
-		const prioritySelect = modal.querySelector('.task-editor-priority') as HTMLSelectElement;
+		const modalInner = modal.createDiv({ cls: 'task-editor-modal' });
+
+		const header = modalInner.createDiv({ cls: 'task-editor-header' });
+		header.createEl('h3', { text: 'Edit Task' });
+		const closeBtn = header.createEl('button', { cls: 'task-editor-close', title: 'Close', text: '✕' });
+
+		const body = modalInner.createDiv({ cls: 'task-editor-body' });
+
+		const descField = body.createDiv({ cls: 'task-editor-field' });
+		descField.createEl('label', { text: 'Description' });
+		const descInput = descField.createEl('input', { type: 'text', cls: 'task-editor-input' }) as HTMLInputElement;
+		descInput.value = task.description;
+
+		const dateField = body.createDiv({ cls: 'task-editor-field' });
+		dateField.createEl('label', { text: 'Due Date' });
+		const dateInput = dateField.createEl('input', { type: 'date', cls: 'task-editor-date' }) as HTMLInputElement;
+		if (task.dueDate) dateInput.value = task.dueDate;
+
+		const priorityField = body.createDiv({ cls: 'task-editor-field' });
+		priorityField.createEl('label', { text: 'Priority' });
+		const prioritySelect = priorityField.createEl('select', { cls: 'task-editor-priority' }) as HTMLSelectElement;
+		const priorityOptions = [
+			{ value: 'none', text: 'None' },
+			{ value: 'highest', text: '🔝 Highest' },
+			{ value: 'high', text: '🔺 High' },
+			{ value: 'medium', text: '🔼 Medium' },
+			{ value: 'low', text: '🔽 Low' },
+			{ value: 'lowest', text: '⏬ Lowest' },
+		];
+		for (const opt of priorityOptions) {
+			prioritySelect.createEl('option', { value: opt.value, text: opt.text });
+		}
 		prioritySelect.value = task.priority;
+
+		const tagsField = body.createDiv({ cls: 'task-editor-field' });
+		tagsField.createEl('label', { text: 'Tags (comma-separated)' });
+		const tagsInput = tagsField.createEl('input', { type: 'text', cls: 'task-editor-tags' }) as HTMLInputElement;
+		tagsInput.value = task.tags.join(', ');
+
+		const footer = modalInner.createDiv({ cls: 'task-editor-footer' });
+		const deleteBtn = footer.createEl('button', { cls: 'task-editor-btn delete-btn', text: 'Delete Task' });
+
+		const actions = footer.createDiv({ cls: 'task-editor-actions' });
+		const cancelBtn = actions.createEl('button', { cls: 'task-editor-btn cancel-btn', text: 'Cancel' });
+		const saveBtn = actions.createEl('button', { cls: 'task-editor-btn save-btn', text: 'Save' });
+
+		document.body.appendChild(modal);
 
 		const closeModal = () => {
 			modal.remove();
 		};
 
-		modal.querySelector('.task-editor-close')?.addEventListener('click', closeModal);
-		modal.querySelector('.cancel-btn')?.addEventListener('click', closeModal);
+		closeBtn.addEventListener('click', closeModal);
+		cancelBtn.addEventListener('click', closeModal);
 		modal.addEventListener('click', (e) => {
 			if (e.target === modal) closeModal();
 		});
 
-		modal.querySelector('.save-btn')?.addEventListener('click', async () => {
-			const descInput = modal.querySelector('.task-editor-input') as HTMLInputElement;
-			const dateInput = modal.querySelector('.task-editor-date') as HTMLInputElement;
-			const tagsInput = modal.querySelector('.task-editor-tags') as HTMLInputElement;
-
+		saveBtn.addEventListener('click', async () => {
 			const newDesc = descInput.value.trim();
 			const newDate = dateInput.value || undefined;
 			const newPriority = prioritySelect.value;
@@ -1757,7 +1757,7 @@ export class SmartTaskViewController {
 				.filter(t => t.length > 0);
 
 			if (!newDesc) {
-				new Notice('任务描述不能为空');
+				new Notice('Description cannot be empty');
 				return;
 			}
 
@@ -1769,28 +1769,28 @@ export class SmartTaskViewController {
 					tags: newTags
 				});
 				closeModal();
-				new Notice('任务已更新 ✅');
+				new Notice('Task updated ✅');
 			} catch (e) {
 				console.error('Failed to update task:', e);
-				new Notice('更新任务失败');
+				new Notice('Failed to update task');
 			}
 		});
 
-		modal.querySelector('.delete-btn')?.addEventListener('click', async () => {
-			if (confirm('确定要删除这个任务吗？')) {
+		deleteBtn.addEventListener('click', async () => {
+			if (confirm('Are you sure you want to delete this task?')) {
 				try {
 					await this.plugin.deleteTask(task);
 					closeModal();
-					new Notice('任务已删除');
+					new Notice('Task deleted');
 				} catch (e) {
 					console.error('Failed to delete task:', e);
-					new Notice('删除任务失败');
+					new Notice('Failed to delete task');
 				}
 			}
 		});
 
-		(modal.querySelector('.task-editor-input') as HTMLInputElement).focus();
-		(modal.querySelector('.task-editor-input') as HTMLInputElement).select();
+		descInput.focus();
+		descInput.select();
 	}
 
 	private escapeHtml(text: string): string {
@@ -1948,19 +1948,15 @@ export class SmartTaskViewController {
 	private showDayTasks(dateStr: string, tasks: Task[]): void {
 		const modal = document.createElement('div');
 		modal.className = 'task-editor-modal-overlay';
-		modal.innerHTML = `
-			<div class="task-editor-modal">
-				<div class="task-editor-header">
-					<h3>${dateStr} 的任务</h3>
-					<button class="task-editor-close" title="关闭">✕</button>
-				</div>
-				<div class="task-editor-body day-tasks-list">
-				</div>
-			</div>
-		`;
-		document.body.appendChild(modal);
 
-		const listEl = modal.querySelector('.day-tasks-list') as HTMLElement;
+		const modalInner = modal.createDiv({ cls: 'task-editor-modal' });
+
+		const header = modalInner.createDiv({ cls: 'task-editor-header' });
+		header.createEl('h3', { text: `${dateStr} Tasks` });
+		const closeBtn = header.createEl('button', { cls: 'task-editor-close', title: 'Close', text: '✕' });
+
+		const listEl = modalInner.createDiv({ cls: 'task-editor-body day-tasks-list' });
+
 		for (const task of tasks) {
 			const item = listEl.createDiv({ cls: 'day-task-item' });
 			if (task.completed) item.addClass('completed');
@@ -1986,8 +1982,10 @@ export class SmartTaskViewController {
 			});
 		}
 
+		document.body.appendChild(modal);
+
 		const closeModal = () => modal.remove();
-		modal.querySelector('.task-editor-close')?.addEventListener('click', closeModal);
+		closeBtn.addEventListener('click', closeModal);
 		modal.addEventListener('click', (e) => {
 			if (e.target === modal) closeModal();
 		});
@@ -2011,29 +2009,27 @@ export class SmartTaskViewController {
 			}
 		}
 
-		modal.innerHTML = `
-			<div class="wheel-picker-modal">
-				<div class="wheel-picker-header">
-					<button class="wheel-picker-cancel">取消</button>
-					<span class="wheel-picker-title">选择日期</span>
-					<button class="wheel-picker-confirm">确定</button>
-				</div>
-				<div class="wheel-picker-body">
-					<div class="wheel-column" data-col="year">
-						<div class="wheel-wrapper"></div>
-						<div class="wheel-highlight"></div>
-					</div>
-					<div class="wheel-column" data-col="month">
-						<div class="wheel-wrapper"></div>
-						<div class="wheel-highlight"></div>
-					</div>
-					<div class="wheel-column" data-col="day">
-						<div class="wheel-wrapper"></div>
-						<div class="wheel-highlight"></div>
-					</div>
-				</div>
-			</div>
-		`;
+		const modalInner = modal.createDiv({ cls: 'wheel-picker-modal' });
+
+		const header = modalInner.createDiv({ cls: 'wheel-picker-header' });
+		const cancelBtn = header.createEl('button', { cls: 'wheel-picker-cancel', text: 'Cancel' });
+		header.createSpan({ cls: 'wheel-picker-title', text: 'Select Date' });
+		const confirmBtn = header.createEl('button', { cls: 'wheel-picker-confirm', text: 'OK' });
+
+		const body = modalInner.createDiv({ cls: 'wheel-picker-body' });
+
+		const yearCol = body.createDiv({ cls: 'wheel-column', attr: { 'data-col': 'year' } });
+		const yearWrapper = yearCol.createDiv({ cls: 'wheel-wrapper' });
+		yearCol.createDiv({ cls: 'wheel-highlight' });
+
+		const monthCol = body.createDiv({ cls: 'wheel-column', attr: { 'data-col': 'month' } });
+		const monthWrapper = monthCol.createDiv({ cls: 'wheel-wrapper' });
+		monthCol.createDiv({ cls: 'wheel-highlight' });
+
+		const dayCol = body.createDiv({ cls: 'wheel-column', attr: { 'data-col': 'day' } });
+		const dayWrapper = dayCol.createDiv({ cls: 'wheel-wrapper' });
+		dayCol.createDiv({ cls: 'wheel-highlight' });
+
 		document.body.appendChild(modal);
 
 		const years: number[] = [];
@@ -2149,10 +2145,6 @@ export class SmartTaskViewController {
 			};
 		};
 
-		const yearCol = modal.querySelector('[data-col="year"]') as HTMLElement;
-		const monthCol = modal.querySelector('[data-col="month"]') as HTMLElement;
-		const dayCol = modal.querySelector('[data-col="day"]') as HTMLElement;
-
 		let yearCtrl: any = null;
 		let monthCtrl: any = null;
 		let dayCtrl: any = null;
@@ -2188,11 +2180,11 @@ export class SmartTaskViewController {
 			dayCtrl?.destroy?.();
 			modal.remove();
 		};
-		modal.querySelector('.wheel-picker-cancel')?.addEventListener('click', closeModal);
+		cancelBtn.addEventListener('click', closeModal);
 		modal.addEventListener('click', (e) => {
 			if (e.target === modal) closeModal();
 		});
-		modal.querySelector('.wheel-picker-confirm')?.addEventListener('click', () => {
+		confirmBtn.addEventListener('click', () => {
 			const y = yearCtrl?.getValue() || year;
 			const m = monthCtrl?.getValue() || month;
 			const d = dayCtrl?.getValue() || day;

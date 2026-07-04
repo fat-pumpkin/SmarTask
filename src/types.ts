@@ -56,8 +56,21 @@ export interface TaskQuery {
 	groupBy?: GroupField;
 }
 
-export type SortField = 'dueDate' | 'priority' | 'description' | 'createdDate' | 'completedDate';
-export type GroupField = 'file' | 'priority' | 'dueDate' | 'tag' | 'none';
+export enum SortField {
+	DueDate = 'dueDate',
+	Priority = 'priority',
+	Description = 'description',
+	CreatedDate = 'createdDate',
+	CompletedDate = 'completedDate',
+}
+
+export enum GroupField {
+	File = 'file',
+	Priority = 'priority',
+	DueDate = 'dueDate',
+	Tag = 'tag',
+	None = 'none',
+}
 
 export interface TaskGroup {
 	name: string;
@@ -94,8 +107,8 @@ export const DEFAULT_SETTINGS: SmartTaskSettings = {
 	indexingEnabled: true,
 	indexInterval: 5000,
 	showSubtasks: true,
-	groupBy: 'file',
-	sortBy: 'dueDate',
+	groupBy: GroupField.File,
+	sortBy: SortField.DueDate,
 	sortOrder: 'asc',
 	inboxFilePath: 'SmartTask-Inbox.md',
 	saveTarget: 'inbox',

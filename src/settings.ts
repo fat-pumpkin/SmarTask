@@ -15,17 +15,21 @@ export class SmartTaskSettingTab extends PluginSettingTab {
 
 		containerEl.empty();
 
-		containerEl.createEl('h2', { text: 'SmartTask 设置' });
-
-		containerEl.createEl('h3', { text: '📥 任务保存设置' });
+		new Setting(containerEl)
+			.setName('SmartTask Settings')
+			.setHeading();
 
 		new Setting(containerEl)
-			.setName('默认保存位置')
-			.setDesc('新创建的任务保存到哪里')
+			.setName('📥 Task Saving')
+			.setHeading();
+
+		new Setting(containerEl)
+			.setName('Default Save Location')
+			.setDesc('Where newly created tasks should be saved')
 			.addDropdown(dropdown => dropdown
-				.addOption('inbox', '收件箱（指定文件）')
-				.addOption('currentFile', '当前打开的文件')
-				.addOption('dailyNote', '每日笔记')
+				.addOption('inbox', 'Inbox (specified file)')
+				.addOption('currentFile', 'Current file')
+				.addOption('dailyNote', 'Daily note')
 				.setValue(this.plugin.settings.saveTarget)
 				.onChange(async (value) => {
 					this.plugin.settings.saveTarget = value as any;
@@ -33,8 +37,8 @@ export class SmartTaskSettingTab extends PluginSettingTab {
 				}));
 
 		new Setting(containerEl)
-			.setName('收件箱文件路径')
-			.setDesc('收件箱模式下保存任务的文件路径')
+			.setName('Inbox File Path')
+			.setDesc('File path for saving tasks in inbox mode')
 			.addText(text => text
 				.setPlaceholder('SmartTask-Inbox.md')
 				.setValue(this.plugin.settings.inboxFilePath)
@@ -44,10 +48,10 @@ export class SmartTaskSettingTab extends PluginSettingTab {
 				}));
 
 		new Setting(containerEl)
-			.setName('自动添加标签')
-			.setDesc('新建任务时自动添加的标签（用逗号分隔）')
+			.setName('Auto-add Tags')
+			.setDesc('Tags to automatically add to new tasks (comma-separated)')
 			.addText(text => text
-				.setPlaceholder('例如: task, work')
+				.setPlaceholder('e.g., task, work')
 				.setValue(this.plugin.settings.autoAddTags.join(', '))
 				.onChange(async (value) => {
 					this.plugin.settings.autoAddTags = value
@@ -57,16 +61,18 @@ export class SmartTaskSettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 				}));
 
-		containerEl.createEl('h3', { text: '🎯 任务显示设置' });
+		new Setting(containerEl)
+			.setName('🎯 Task Display')
+			.setHeading();
 
 		new Setting(containerEl)
-			.setName('默认视图')
-			.setDesc('打开插件时默认显示的视图')
+			.setName('Default View')
+			.setDesc('Default view when opening the plugin')
 			.addDropdown(dropdown => dropdown
-				.addOption('list', '列表视图')
-				.addOption('kanban', '看板视图')
-				.addOption('calendar', '日历视图')
-				.addOption('timeline', '时间线视图')
+				.addOption('list', 'List')
+				.addOption('kanban', 'Kanban')
+				.addOption('calendar', 'Calendar')
+				.addOption('timeline', 'Timeline')
 				.setValue(this.plugin.settings.defaultView)
 				.onChange(async (value) => {
 					this.plugin.settings.defaultView = value as ViewType;
@@ -74,12 +80,12 @@ export class SmartTaskSettingTab extends PluginSettingTab {
 				}));
 
 		new Setting(containerEl)
-			.setName('时间线分组方式')
-			.setDesc('时间线视图中任务的分组方式')
+			.setName('Timeline Grouping')
+			.setDesc('How tasks are grouped in timeline view')
 			.addDropdown(dropdown => dropdown
-				.addOption('day', '按日')
-				.addOption('week', '按周')
-				.addOption('month', '按月')
+				.addOption('day', 'By day')
+				.addOption('week', 'By week')
+				.addOption('month', 'By month')
 				.setValue(this.plugin.settings.timelineGroupBy)
 				.onChange(async (value) => {
 					this.plugin.settings.timelineGroupBy = value as 'day' | 'week' | 'month';
@@ -87,15 +93,15 @@ export class SmartTaskSettingTab extends PluginSettingTab {
 				}));
 
 		new Setting(containerEl)
-			.setName('默认优先级')
-			.setDesc('新建任务时的默认优先级')
+			.setName('Default Priority')
+			.setDesc('Default priority for new tasks')
 			.addDropdown(dropdown => dropdown
-				.addOption(TaskPriority.Highest, '🔝 最高')
-				.addOption(TaskPriority.High, '🔺 高')
-				.addOption(TaskPriority.Medium, '🔼 中')
-				.addOption(TaskPriority.Low, '🔽 低')
-				.addOption(TaskPriority.Lowest, '⏬ 最低')
-				.addOption(TaskPriority.None, '➖ 无')
+				.addOption(TaskPriority.Highest, '🔝 Highest')
+				.addOption(TaskPriority.High, '🔺 High')
+				.addOption(TaskPriority.Medium, '🔼 Medium')
+				.addOption(TaskPriority.Low, '🔽 Low')
+				.addOption(TaskPriority.Lowest, '⏬ Lowest')
+				.addOption(TaskPriority.None, '➖ None')
 				.setValue(this.plugin.settings.defaultPriority)
 				.onChange(async (value) => {
 					this.plugin.settings.defaultPriority = value as TaskPriority;
@@ -103,8 +109,8 @@ export class SmartTaskSettingTab extends PluginSettingTab {
 				}));
 
 		new Setting(containerEl)
-			.setName('显示已完成任务')
-			.setDesc('在任务列表中显示已完成的任务')
+			.setName('Show Completed Tasks')
+			.setDesc('Display completed tasks in task list')
 			.addToggle(toggle => toggle
 				.setValue(this.plugin.settings.showCompleted)
 				.onChange(async (value) => {
@@ -113,8 +119,8 @@ export class SmartTaskSettingTab extends PluginSettingTab {
 				}));
 
 		new Setting(containerEl)
-			.setName('显示子任务')
-			.setDesc('在任务列表中展开显示子任务')
+			.setName('Show Subtasks')
+			.setDesc('Expand and show subtasks in task list')
 			.addToggle(toggle => toggle
 				.setValue(this.plugin.settings.showSubtasks)
 				.onChange(async (value) => {
@@ -122,17 +128,19 @@ export class SmartTaskSettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 				}));
 
-		containerEl.createEl('h3', { text: '🔍 排序与分组' });
+		new Setting(containerEl)
+			.setName('🔍 Sorting & Grouping')
+			.setHeading();
 
 		new Setting(containerEl)
-			.setName('分组方式')
-			.setDesc('任务列表的分组方式')
+			.setName('Group By')
+			.setDesc('How tasks are grouped in task list')
 			.addDropdown(dropdown => dropdown
-				.addOption('file', '按文件')
-				.addOption('priority', '按优先级')
-				.addOption('dueDate', '按截止日期')
-				.addOption('tag', '按标签')
-				.addOption('none', '不分组')
+				.addOption(GroupField.File, 'By file')
+				.addOption(GroupField.Priority, 'By priority')
+				.addOption(GroupField.DueDate, 'By due date')
+				.addOption(GroupField.Tag, 'By tag')
+				.addOption(GroupField.None, 'No grouping')
 				.setValue(this.plugin.settings.groupBy)
 				.onChange(async (value) => {
 					this.plugin.settings.groupBy = value as GroupField;
@@ -140,13 +148,13 @@ export class SmartTaskSettingTab extends PluginSettingTab {
 				}));
 
 		new Setting(containerEl)
-			.setName('排序字段')
-			.setDesc('任务列表的排序依据')
+			.setName('Sort By')
+			.setDesc('Field to sort tasks by')
 			.addDropdown(dropdown => dropdown
-				.addOption('dueDate', '截止日期')
-				.addOption('priority', '优先级')
-				.addOption('description', '描述')
-				.addOption('createdDate', '创建日期')
+				.addOption(SortField.DueDate, 'Due date')
+				.addOption(SortField.Priority, 'Priority')
+				.addOption(SortField.Description, 'Description')
+				.addOption(SortField.CreatedDate, 'Created date')
 				.setValue(this.plugin.settings.sortBy)
 				.onChange(async (value) => {
 					this.plugin.settings.sortBy = value as SortField;
@@ -154,22 +162,24 @@ export class SmartTaskSettingTab extends PluginSettingTab {
 				}));
 
 		new Setting(containerEl)
-			.setName('排序顺序')
-			.setDesc('任务列表的排序顺序')
+			.setName('Sort Order')
+			.setDesc('Sort order for task list')
 			.addDropdown(dropdown => dropdown
-				.addOption('asc', '升序')
-				.addOption('desc', '降序')
+				.addOption('asc', 'Ascending')
+				.addOption('desc', 'Descending')
 				.setValue(this.plugin.settings.sortOrder)
 				.onChange(async (value) => {
 					this.plugin.settings.sortOrder = value as 'asc' | 'desc';
 					await this.plugin.saveSettings();
 				}));
 
-		containerEl.createEl('h3', { text: '⚡ 性能设置' });
+		new Setting(containerEl)
+			.setName('⚡ Performance')
+			.setHeading();
 
 		new Setting(containerEl)
-			.setName('启用索引')
-			.setDesc('启用任务索引以提升查询性能（推荐开启）')
+			.setName('Enable Indexing')
+			.setDesc('Enable task indexing for better query performance (recommended)')
 			.addToggle(toggle => toggle
 				.setValue(this.plugin.settings.indexingEnabled)
 				.onChange(async (value) => {
@@ -177,18 +187,28 @@ export class SmartTaskSettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 				}));
 
-		containerEl.createEl('h3', { text: '⌨️ 快捷键' });
-		const shortcuts = containerEl.createEl('div', { cls: 'shortcut-hint' });
-		shortcuts.style.cssText = 'font-size: 13px; color: var(--text-muted); line-height: 1.8;';
-		shortcuts.innerHTML = `
-			<p><code>Ctrl+Shift+T</code> — 快速创建任务</p>
-			<p><code>Ctrl+Enter</code> — 切换当前行任务状态</p>
-			<p><code>Ctrl+Shift+Enter</code> — 在当前任务下添加子任务</p>
-		`;
+		new Setting(containerEl)
+			.setName('⌨️ Keyboard Shortcuts')
+			.setHeading();
 
-		containerEl.createEl('h3', { text: '关于' });
+		const shortcuts = containerEl.createEl('div', { cls: 'shortcut-hint' });
+		const shortcutItems = [
+			{ keys: 'Ctrl+Shift+T', desc: 'Quick create task' },
+			{ keys: 'Ctrl+Enter', desc: 'Toggle task status' },
+			{ keys: 'Ctrl+Shift+Enter', desc: 'Add subtask' },
+		];
+		for (const item of shortcutItems) {
+			const p = shortcuts.createEl('p');
+			const code = p.createEl('code', { text: item.keys });
+			p.appendText(` — ${item.desc}`);
+		}
+
+		new Setting(containerEl)
+			.setName('About')
+			.setHeading();
+
 		containerEl.createEl('p', {
-			text: `SmartTask v1.1.0 — 高性能的 Obsidian 任务管理插件`,
+			text: `SmartTask v1.1.0 — High-performance task management plugin for Obsidian`,
 		});
 	}
 }

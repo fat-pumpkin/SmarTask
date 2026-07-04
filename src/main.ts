@@ -28,34 +28,28 @@ export default class SmartTaskPlugin extends Plugin {
 		);
 
 		this.addRibbonIcon('check-circle', 'SmartTask', () => {
-			this.activateView();
+			void this.activateView();
 		});
 
 		this.addCommand({
-			id: 'open-smarttask',
-			name: '打开 SmartTask 视图',
+			id: 'open-view',
+			name: 'Open SmartTask View',
 			callback: () => {
-				this.activateView();
+				void this.activateView();
 			},
 		});
 
 		this.addCommand({
-			id: 'quick-create-task',
-			name: '快速创建任务',
+			id: 'quick-create',
+			name: 'Quick Create Task',
 			callback: () => {
 				new QuickCreateModal(this.app, this).open();
 			},
-			hotkeys: [
-				{
-					modifiers: ['Mod', 'Shift'],
-					key: 'T',
-				},
-			],
 		});
 
 		this.addCommand({
-			id: 'toggle-task-status',
-			name: '切换当前行任务状态',
+			id: 'toggle-status',
+			name: 'Toggle Task Status',
 			editorCallback: (editor, view) => {
 				const cursor = editor.getCursor();
 				const line = editor.getLine(cursor.line);
@@ -67,20 +61,14 @@ export default class SmartTaskPlugin extends Plugin {
 						(match, prefix) => `${prefix} [${newStatus ? 'x' : ' '}]`
 					);
 					editor.setLine(cursor.line, newLine);
-					new Notice(newStatus ? '任务已完成 🎉' : '任务已恢复');
+					new Notice(newStatus ? 'Task completed 🎉' : 'Task restored');
 				}
 			},
-			hotkeys: [
-				{
-					modifiers: ['Mod'],
-					key: 'Enter',
-				},
-			],
 		});
 
 		this.addCommand({
 			id: 'add-subtask',
-			name: '在当前任务下添加子任务',
+			name: 'Add Subtask',
 			editorCallback: (editor, view) => {
 				const cursor = editor.getCursor();
 				const line = editor.getLine(cursor.line);
@@ -88,7 +76,7 @@ export default class SmartTaskPlugin extends Plugin {
 				if (task) {
 					const indentMatch = line.match(/^(\s*)/);
 					const indent = (indentMatch ? indentMatch[1] : '') + '  ';
-					const newLine = `${indent}- [ ] 子任务`;
+					const newLine = `${indent}- [ ] Subtask`;
 					editor.replaceRange(
 						`\n${newLine}`,
 						{ line: cursor.line, ch: line.length }
@@ -96,12 +84,6 @@ export default class SmartTaskPlugin extends Plugin {
 					editor.setCursor({ line: cursor.line + 1, ch: indent.length + 6 });
 				}
 			},
-			hotkeys: [
-				{
-					modifiers: ['Mod', 'Shift'],
-					key: 'Enter',
-				},
-			],
 		});
 
 		this.addSettingTab(new SmartTaskSettingTab(this.app, this));
@@ -480,32 +462,28 @@ class QuickCreateModal extends Modal {
 		const { contentEl } = this;
 		contentEl.empty();
 
-		contentEl.createEl('h3', { text: '快速创建任务' });
+		contentEl.createEl('h3', { text: 'Quick Create Task' });
 
 		const form = contentEl.createDiv({ cls: 'smarttask-quick-form' });
 
 		const descInput = form.createEl('input', {
 			type: 'text',
-			placeholder: '任务描述...',
+			placeholder: 'Task description...',
 			cls: 'smarttask-input',
 		});
-		descInput.style.cssText = 'width: 100%; padding: 10px; margin-bottom: 12px; box-sizing: border-box; border: 1px solid var(--background-modifier-border); border-radius: 6px; font-size: 14px;';
 
-		const dateRow = form.createDiv();
-		dateRow.style.cssText = 'display: flex; gap: 10px; margin-bottom: 12px; align-items: center; flex-wrap: wrap;';
+		const dateRow = form.createDiv({ cls: 'smarttask-row' });
 
-		dateRow.createSpan({ text: '截止日期:' });
-		const dateInput = dateRow.createEl('input', { type: 'date' });
-		dateInput.style.cssText = 'padding: 6px; border: 1px solid var(--background-modifier-border); border-radius: 4px;';
+		dateRow.createSpan({ text: 'Due Date:' });
+		const dateInput = dateRow.createEl('input', { type: 'date', cls: 'smarttask-date-input' });
 
 		const quickDates = [
-			{ label: '今天', days: 0 },
-			{ label: '明天', days: 1 },
-			{ label: '下周', days: 7 },
+			{ label: 'Today', days: 0 },
+			{ label: 'Tomorrow', days: 1 },
+			{ label: 'Next Week', days: 7 },
 		];
 		for (const qd of quickDates) {
-			const btn = dateRow.createEl('button', { text: qd.label });
-			btn.style.cssText = 'padding: 4px 10px; font-size: 12px; border: 1px solid var(--background-modifier-border); background: var(--background-primary); border-radius: 4px; cursor: pointer;';
+			const btn = dateRow.createEl('button', { text: qd.label, cls: 'smarttask-btn' });
 			btn.onclick = () => {
 				const d = new Date();
 				d.setDate(d.getDate() + qd.days);
@@ -513,48 +491,41 @@ class QuickCreateModal extends Modal {
 			};
 		}
 
-		const priorityRow = form.createDiv();
-		priorityRow.style.cssText = 'display: flex; gap: 8px; margin-bottom: 16px; align-items: center; flex-wrap: wrap;';
+		const priorityRow = form.createDiv({ cls: 'smarttask-row small-gap' });
 
-		priorityRow.createSpan({ text: '优先级:' });
-		const prioritySelect = priorityRow.createEl('select');
+		priorityRow.createSpan({ text: 'Priority:' });
+		const prioritySelect = form.createEl('select', { cls: 'smarttask-select' });
 		const options = [
-			{ value: '', text: '无' },
-			{ value: TaskPriority.Highest, text: '🔝 最高' },
-			{ value: TaskPriority.High, text: '🔺 高' },
-			{ value: TaskPriority.Medium, text: '🔼 中' },
-			{ value: TaskPriority.Low, text: '🔽 低' },
-			{ value: TaskPriority.Lowest, text: '⏬ 最低' },
+			{ value: '', text: 'None' },
+			{ value: TaskPriority.Highest, text: '🔝 Highest' },
+			{ value: TaskPriority.High, text: '🔺 High' },
+			{ value: TaskPriority.Medium, text: '🔼 Medium' },
+			{ value: TaskPriority.Low, text: '🔽 Low' },
+			{ value: TaskPriority.Lowest, text: '⏬ Lowest' },
 		];
 		for (const opt of options) {
 			prioritySelect.createEl('option', { value: opt.value, text: opt.text });
 		}
-		prioritySelect.style.cssText = 'padding: 6px; border: 1px solid var(--background-modifier-border); border-radius: 4px;';
 
-		const targetRow = form.createDiv();
-		targetRow.style.cssText = 'display: flex; gap: 8px; margin-bottom: 16px; align-items: center; flex-wrap: wrap;';
+		const targetRow = form.createDiv({ cls: 'smarttask-row small-gap' });
 
-		targetRow.createSpan({ text: '保存到:' });
-		const targetSelect = targetRow.createEl('select');
-		targetSelect.createEl('option', { value: 'inbox', text: '收件箱' });
-		targetSelect.createEl('option', { value: 'currentFile', text: '当前文件' });
-		targetSelect.createEl('option', { value: 'dailyNote', text: '日记' });
+		targetRow.createSpan({ text: 'Save to:' });
+		const targetSelect = form.createEl('select', { cls: 'smarttask-select' });
+		targetSelect.createEl('option', { value: 'inbox', text: 'Inbox' });
+		targetSelect.createEl('option', { value: 'currentFile', text: 'Current File' });
+		targetSelect.createEl('option', { value: 'dailyNote', text: 'Daily Note' });
 		targetSelect.value = this.plugin.settings.saveTarget;
-		targetSelect.style.cssText = 'padding: 6px; border: 1px solid var(--background-modifier-border); border-radius: 4px;';
 		targetSelect.onchange = async () => {
 			this.plugin.settings.saveTarget = targetSelect.value as any;
 			await this.plugin.saveSettings();
 		};
 
-		const btnRow = form.createDiv();
-		btnRow.style.cssText = 'display: flex; justify-content: flex-end; gap: 8px;';
+		const btnRow = form.createDiv({ cls: 'smarttask-btn-row' });
 
-		const cancelBtn = btnRow.createEl('button', { text: '取消' });
-		cancelBtn.style.cssText = 'padding: 8px 16px; border: 1px solid var(--background-modifier-border); background: transparent; border-radius: 6px; cursor: pointer; color: var(--text-normal);';
+		const cancelBtn = btnRow.createEl('button', { text: 'Cancel', cls: 'smarttask-btn-cancel' });
 		cancelBtn.onclick = () => this.close();
 
-		const createBtn = btnRow.createEl('button', { text: '创建' });
-		createBtn.style.cssText = 'padding: 8px 16px; background: var(--interactive-accent); color: var(--text-on-accent); border: none; border-radius: 6px; cursor: pointer;';
+		const createBtn = btnRow.createEl('button', { text: 'Create', cls: 'smarttask-btn-create' });
 		createBtn.onclick = async () => {
 			const desc = descInput.value.trim();
 			if (desc) {
@@ -567,7 +538,7 @@ class QuickCreateModal extends Modal {
 			}
 		};
 
-		setTimeout(() => descInput.focus(), 100);
+		window.setTimeout(() => descInput.focus(), 100);
 
 		descInput.addEventListener('keydown', (e) => {
 			if (e.key === 'Enter') {

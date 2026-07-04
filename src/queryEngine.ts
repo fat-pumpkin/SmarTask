@@ -53,7 +53,7 @@ export class QueryEngine {
 		const groups = new Map<string, Task[]>();
 
 		switch (groupBy) {
-			case 'file':
+			case GroupField.File:
 				for (const task of tasks) {
 					const fileName = task.filePath.split('/').pop() || task.filePath;
 					if (!groups.has(fileName)) {
@@ -63,7 +63,7 @@ export class QueryEngine {
 				}
 				break;
 
-			case 'priority':
+			case GroupField.Priority: {
 				const priorityOrder = [
 					TaskPriority.Highest,
 					TaskPriority.High,
@@ -80,8 +80,9 @@ export class QueryEngine {
 					groups.get(label)!.push(task);
 				}
 				break;
+			}
 
-			case 'dueDate':
+			case GroupField.DueDate:
 				for (const task of tasks) {
 					const key = task.dueDate || '无截止日期';
 					if (!groups.has(key)) {
@@ -91,7 +92,7 @@ export class QueryEngine {
 				}
 				break;
 
-			case 'tag':
+			case GroupField.Tag:
 				for (const task of tasks) {
 					if (task.tags.length === 0) {
 						const key = '无标签';
@@ -107,18 +108,19 @@ export class QueryEngine {
 				}
 				break;
 
+			case GroupField.None:
 			default:
 				groups.set('全部任务', tasks);
 		}
 
 		const result: TaskGroup[] = [];
 		for (const [name, groupTasks] of groups) {
-			if (groupTasks.length > 0 || groupBy === 'priority') {
+			if (groupTasks.length > 0 || groupBy === GroupField.Priority) {
 				result.push({ name, tasks: groupTasks });
 			}
 		}
 
-		if (groupBy === 'dueDate') {
+		if (groupBy === GroupField.DueDate) {
 			result.sort((a, b) => {
 				if (a.name === '无截止日期') return 1;
 				if (b.name === '无截止日期') return -1;
@@ -136,27 +138,29 @@ export class QueryEngine {
 
 		sorted.sort((a, b) => {
 			switch (sortBy) {
-				case 'dueDate':
+				case SortField.DueDate:
 					if (!a.dueDate && !b.dueDate) return 0;
 					if (!a.dueDate) return 1;
 					if (!b.dueDate) return -1;
 					return a.dueDate.localeCompare(b.dueDate) * multiplier;
 
-				case 'priority':
+				case SortField.Priority:
 					return (this.priorityValue(a.priority) - this.priorityValue(b.priority)) * multiplier;
 
-				case 'description':
+				case SortField.Description:
 					return a.description.localeCompare(b.description) * multiplier;
 
-				case 'createdDate':
+				case SortField.CreatedDate: {
 					const aCreated = a.createdDate || '';
 					const bCreated = b.createdDate || '';
 					return aCreated.localeCompare(bCreated) * multiplier;
+				}
 
-				case 'completedDate':
+				case SortField.CompletedDate: {
 					const aCompleted = a.completedDate || '';
 					const bCompleted = b.completedDate || '';
 					return aCompleted.localeCompare(bCompleted) * multiplier;
+				}
 
 				default:
 					return 0;

@@ -982,6 +982,140 @@ body.theme-dark .smarttask-container {
 	color: var(--link-color-hover);
 }
 
+.smarttask-quick-form {
+	width: 100%;
+}
+
+.smarttask-quick-form .smarttask-input {
+	width: 100%;
+	padding: 10px;
+	margin-bottom: 12px;
+	box-sizing: border-box;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 6px;
+	font-size: 14px;
+	background: var(--background-primary);
+	color: var(--text-normal);
+	font-family: inherit;
+}
+
+.smarttask-quick-form .smarttask-input:focus {
+	outline: none;
+	border-color: var(--interactive-accent);
+}
+
+.smarttask-quick-form .smarttask-input::placeholder {
+	color: var(--text-muted);
+}
+
+.smarttask-quick-form .smarttask-row {
+	display: flex;
+	gap: 10px;
+	margin-bottom: 12px;
+	align-items: center;
+	flex-wrap: wrap;
+}
+
+.smarttask-quick-form .smarttask-row.small-gap {
+	gap: 8px;
+	margin-bottom: 16px;
+}
+
+.smarttask-quick-form .smarttask-btn {
+	padding: 4px 10px;
+	font-size: 12px;
+	border: 1px solid var(--background-modifier-border);
+	background: var(--background-primary);
+	border-radius: 4px;
+	cursor: pointer;
+	color: var(--text-normal);
+	transition: all 0.15s;
+}
+
+.smarttask-quick-form .smarttask-btn:hover {
+	background: var(--background-modifier-hover);
+}
+
+.smarttask-quick-form .smarttask-select {
+	padding: 6px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 4px;
+	background: var(--background-primary);
+	color: var(--text-normal);
+	font-family: inherit;
+}
+
+.smarttask-quick-form .smarttask-select:focus {
+	outline: none;
+	border-color: var(--interactive-accent);
+}
+
+.smarttask-quick-form .smarttask-date-input {
+	padding: 6px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 4px;
+	background: var(--background-primary);
+	color: var(--text-normal);
+}
+
+.smarttask-quick-form .smarttask-date-input:focus {
+	outline: none;
+	border-color: var(--interactive-accent);
+}
+
+.smarttask-quick-form .smarttask-btn-row {
+	display: flex;
+	justify-content: flex-end;
+	gap: 8px;
+}
+
+.smarttask-quick-form .smarttask-btn-cancel {
+	padding: 8px 16px;
+	border: 1px solid var(--background-modifier-border);
+	background: transparent;
+	border-radius: 6px;
+	cursor: pointer;
+	color: var(--text-normal);
+	transition: all 0.15s;
+}
+
+.smarttask-quick-form .smarttask-btn-cancel:hover {
+	background: var(--background-modifier-hover);
+}
+
+.smarttask-quick-form .smarttask-btn-create {
+	padding: 8px 16px;
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+	border: none;
+	border-radius: 6px;
+	cursor: pointer;
+	transition: all 0.15s;
+}
+
+.smarttask-quick-form .smarttask-btn-create:hover {
+	opacity: 0.9;
+}
+
+.shortcut-hint {
+	font-size: 13px;
+	color: var(--text-muted);
+	line-height: 1.8;
+	padding: 8px 0;
+}
+
+.shortcut-hint p {
+	margin: 4px 0;
+}
+
+.shortcut-hint code {
+	background: var(--background-secondary);
+	padding: 2px 6px;
+	border-radius: 4px;
+	font-family: var(--font-mono);
+	font-size: 0.9em;
+}
+
 .inline-tag {
 	color: var(--tag-color);
 	background: var(--tag-background);

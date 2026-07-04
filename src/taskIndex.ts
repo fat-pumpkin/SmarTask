@@ -56,7 +56,7 @@ export class TaskIndex {
 			clearTimeout(this.debounceTimer);
 		}
 		this.debounceTimer = window.setTimeout(() => {
-			this.incrementalReindex();
+			void this.incrementalReindex();
 		}, 1000);
 	}
 
@@ -113,7 +113,7 @@ export class TaskIndex {
 		for (let i = 0; i < files.length; i += batchSize) {
 			const batch = files.slice(i, i + batchSize);
 			await Promise.all(batch.map(file => this.indexFile(file)));
-			await new Promise(resolve => setTimeout(resolve, 10));
+			await new Promise(resolve => window.setTimeout(resolve, 10));
 		}
 
 		this.rebuildAllTasks();
