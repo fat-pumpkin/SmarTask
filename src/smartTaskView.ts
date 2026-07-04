@@ -1289,10 +1289,12 @@ export class SmartTaskViewController {
 				const widthPct = (width / totalUnits) * 100;
 				
 				const bar = barsContainer.createDiv({ cls: 'gantt-bar' });
-				bar.style.left = `${leftPct}%`;
-				bar.style.width = `${widthPct}%`;
-				bar.style.background = rowColors[i % rowColors.length];
-				if (task.completed) bar.style.opacity = '0.5';
+				bar.setCssProps({
+					'--gantt-left': `${leftPct}%`,
+					'--gantt-width': `${widthPct}%`,
+					'--gantt-color': rowColors[i % rowColors.length],
+				});
+				if (task.completed) bar.addClass('completed');
 				if (this.isOverdue(task) && !task.completed) {
 					bar.addClass('overdue');
 				}
@@ -1686,7 +1688,7 @@ export class SmartTaskViewController {
 	}
 
 	private openTaskEditor(task: Task): void {
-		const modal = document.createElement('div');
+		const modal = activeDocument.createElement('div');
 		modal.className = 'task-editor-modal-overlay';
 
 		const modalInner = modal.createDiv({ cls: 'task-editor-modal' });
@@ -1735,7 +1737,7 @@ export class SmartTaskViewController {
 		const cancelBtn = actions.createEl('button', { cls: 'task-editor-btn cancel-btn', text: 'Cancel' });
 		const saveBtn = actions.createEl('button', { cls: 'task-editor-btn save-btn', text: 'Save' });
 
-		document.body.appendChild(modal);
+		activeDocument.body.appendChild(modal);
 
 		const closeModal = () => {
 			modal.remove();
@@ -1794,7 +1796,7 @@ export class SmartTaskViewController {
 	}
 
 	private escapeHtml(text: string): string {
-		const div = document.createElement('div');
+		const div = activeDocument.createElement('div');
 		div.textContent = text;
 		return div.innerHTML;
 	}
@@ -1946,7 +1948,7 @@ export class SmartTaskViewController {
 	}
 
 	private showDayTasks(dateStr: string, tasks: Task[]): void {
-		const modal = document.createElement('div');
+		const modal = activeDocument.createElement('div');
 		modal.className = 'task-editor-modal-overlay';
 
 		const modalInner = modal.createDiv({ cls: 'task-editor-modal' });
@@ -1982,7 +1984,7 @@ export class SmartTaskViewController {
 			});
 		}
 
-		document.body.appendChild(modal);
+		activeDocument.body.appendChild(modal);
 
 		const closeModal = () => modal.remove();
 		closeBtn.addEventListener('click', closeModal);
@@ -1992,7 +1994,7 @@ export class SmartTaskViewController {
 	}
 
 	private showWheelDatePicker(callback: (date: string) => void, initialDate?: string): void {
-		const modal = document.createElement('div');
+		const modal = activeDocument.createElement('div');
 		modal.className = 'wheel-picker-overlay';
 		
 		const now = new Date();
@@ -2030,7 +2032,7 @@ export class SmartTaskViewController {
 		const dayWrapper = dayCol.createDiv({ cls: 'wheel-wrapper' });
 		dayCol.createDiv({ cls: 'wheel-highlight' });
 
-		document.body.appendChild(modal);
+		activeDocument.body.appendChild(modal);
 
 		const years: number[] = [];
 		for (let y = year - 5; y <= year + 10; y++) years.push(y);
@@ -2044,33 +2046,26 @@ export class SmartTaskViewController {
 
 		const setupColumn = (colEl: HTMLElement, values: number[], selected: number, format: (v: number) => string, onChange?: (v: number) => void) => {
 			const wrapper = colEl.querySelector('.wheel-wrapper') as HTMLElement;
-			wrapper.innerHTML = '';
-			wrapper.style.transition = 'transform 0.15s ease-out';
+			wrapper.empty();
+			wrapper.setCssProps({ '--wheel-transition': 'transform 0.15s ease-out' });
 			
 			const padding = Math.floor(VISIBLE_COUNT / 2);
 			for (let i = 0; i < padding; i++) {
-				const empty = document.createElement('div');
-				empty.className = 'wheel-item wheel-empty';
-				wrapper.appendChild(empty);
+				const empty = wrapper.createDiv({ cls: 'wheel-item wheel-empty' });
 			}
 			
 			for (const v of values) {
-				const item = document.createElement('div');
-				item.className = 'wheel-item';
-				item.textContent = format(v);
+				const item = wrapper.createDiv({ cls: 'wheel-item', text: format(v) });
 				item.dataset.value = v.toString();
-				wrapper.appendChild(item);
 			}
 			
 			for (let i = 0; i < padding; i++) {
-				const empty = document.createElement('div');
-				empty.className = 'wheel-item wheel-empty';
-				wrapper.appendChild(empty);
+				const empty = wrapper.createDiv({ cls: 'wheel-item wheel-empty' });
 			}
 
 			const selectedIndex = values.indexOf(selected);
 			let currentOffset = selectedIndex * ITEM_HEIGHT;
-			wrapper.style.transform = `translateY(-${currentOffset}px)`;
+			wrapper.setCssProps({ '--wheel-offset': `${currentOffset}px` });
 
 			let isDragging = false;
 			let startY = 0;
@@ -2080,7 +2075,7 @@ export class SmartTaskViewController {
 				const index = Math.round(currentOffset / ITEM_HEIGHT);
 				const clampedIndex = Math.max(0, Math.min(values.length - 1, index));
 				currentOffset = clampedIndex * ITEM_HEIGHT;
-				wrapper.style.transform = `translateY(-${currentOffset}px)`;
+				wrapper.setCssProps({ '--wheel-offset': `${currentOffset}px` });
 				return values[clampedIndex];
 			};
 
@@ -2088,7 +2083,7 @@ export class SmartTaskViewController {
 				isDragging = true;
 				startY = clientY;
 				startOffset = currentOffset;
-				wrapper.style.transition = 'none';
+				wrapper.setCssProps({ '--wheel-transition': 'none' });
 			};
 
 			const onMove = (clientY: number) => {
@@ -2097,17 +2092,17 @@ export class SmartTaskViewController {
 				currentOffset = startOffset + delta;
 				const maxOffset = (values.length - 1) * ITEM_HEIGHT;
 				currentOffset = Math.max(-ITEM_HEIGHT, Math.min(maxOffset + ITEM_HEIGHT, currentOffset));
-				wrapper.style.transform = `translateY(-${currentOffset}px)`;
+				wrapper.setCssProps({ '--wheel-offset': `${currentOffset}px` });
 			};
 
 			const onEnd = () => {
 				if (!isDragging) return;
 				isDragging = false;
-				wrapper.style.transition = 'transform 0.15s ease-out';
+				wrapper.setCssProps({ '--wheel-transition': 'transform 0.15s ease-out' });
 				const newValue = updateSelection();
 				onChange?.(newValue);
-				document.removeEventListener('mousemove', onDocMove);
-				document.removeEventListener('mouseup', onDocUp);
+				activeDocument.removeEventListener('mousemove', onDocMove);
+				activeDocument.removeEventListener('mouseup', onDocUp);
 			};
 
 			const onDocMove = (e: MouseEvent) => onMove(e.clientY);
@@ -2116,8 +2111,8 @@ export class SmartTaskViewController {
 			wrapper.addEventListener('mousedown', (e) => {
 				e.preventDefault();
 				onStart(e.clientY);
-				document.addEventListener('mousemove', onDocMove);
-				document.addEventListener('mouseup', onDocUp);
+				activeDocument.addEventListener('mousemove', onDocMove);
+				activeDocument.addEventListener('mouseup', onDocUp);
 			});
 
 			wrapper.addEventListener('touchstart', (e) => {
@@ -2134,13 +2129,15 @@ export class SmartTaskViewController {
 					const idx = values.indexOf(v);
 					if (idx >= 0) {
 						currentOffset = idx * ITEM_HEIGHT;
-						wrapper.style.transition = 'transform 0.15s ease-out';
-						wrapper.style.transform = `translateY(-${currentOffset}px)`;
+						wrapper.setCssProps({ 
+							'--wheel-transition': 'transform 0.15s ease-out',
+							'--wheel-offset': `${currentOffset}px`
+						});
 					}
 				},
 				destroy: () => {
-					document.removeEventListener('mousemove', onDocMove);
-					document.removeEventListener('mouseup', onDocUp);
+					activeDocument.removeEventListener('mousemove', onDocMove);
+					activeDocument.removeEventListener('mouseup', onDocUp);
 				}
 			};
 		};

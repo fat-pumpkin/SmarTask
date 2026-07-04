@@ -1997,7 +1997,13 @@ body.theme-dark .smarttask-container {
 	cursor: pointer;
 	transition: all 0.25s ease;
 	box-shadow: var(--shadow-sm);
-	background: linear-gradient(135deg, var(--interactive-accent), rgba(var(--interactive-accent-rgb), 0.8));
+	left: var(--gantt-left, 0%);
+	width: var(--gantt-width, 100%);
+	background: linear-gradient(135deg, var(--gantt-color, var(--interactive-accent)), rgba(var(--interactive-accent-rgb), 0.8));
+}
+
+.gantt-bar.completed {
+	opacity: 0.5;
 }
 
 .gantt-bar:hover {
@@ -2501,6 +2507,8 @@ body.theme-dark .smarttask-container {
 	cursor: grab;
 	user-select: none;
 	touch-action: none;
+	transition: var(--wheel-transition, transform 0.15s ease-out);
+	transform: translateY(calc(-1 * var(--wheel-offset, 0px)));
 }
 
 .wheel-wrapper:active {

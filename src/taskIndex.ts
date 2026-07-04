@@ -53,7 +53,7 @@ export class TaskIndex {
 
 	private scheduleReindex(): void {
 		if (this.debounceTimer !== null) {
-			clearTimeout(this.debounceTimer);
+			window.clearTimeout(this.debounceTimer);
 		}
 		this.debounceTimer = window.setTimeout(() => {
 			void this.incrementalReindex();
@@ -250,7 +250,7 @@ export class TaskIndex {
 
 	destroy(): void {
 		if (this.debounceTimer !== null) {
-			clearTimeout(this.debounceTimer);
+			window.clearTimeout(this.debounceTimer);
 		}
 		this.listeners.clear();
 		this.taskCache.clear();
