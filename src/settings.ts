@@ -1,6 +1,6 @@
 import { App, PluginSettingTab, Setting } from 'obsidian';
 import SmartTaskPlugin from './main';
-import { SmartTaskSettings, DEFAULT_SETTINGS, TaskPriority, GroupField, SortField, ViewType } from './types';
+import { TaskPriority, GroupField, SortField, ViewType } from './types';
 
 export class SmartTaskSettingTab extends PluginSettingTab {
 	plugin: SmartTaskPlugin;

@@ -8,7 +8,7 @@ export class TaskParser {
 	private static readonly COMPLETED_DATE_REGEX = /✅\s*(\d{4}-\d{2}-\d{2})/;
 	private static readonly PRIORITY_REGEX = /[🔝🔺⏫🔼🔽⏬🔻]\s*/g;
 	private static readonly RECURRENCE_REGEX = /🔁\s+(.+)$/;
-	private static readonly TAG_REGEX = /#([a-zA-Z0-9_\u4e00-\u9fa5][a-zA-Z0-9_\u4e00-\u9fa5\/-]*)/g;
+	private static readonly TAG_REGEX = /#([a-zA-Z0-9_\u4e00-\u9fa5][a-zA-Z0-9_\u4e00-\u9fa5/-]*)/g;
 	private static readonly WIKILINK_REGEX = /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g;
 	private static readonly PRIORITY_MAP: { [key: string]: TaskPriority } = {
 		'🔝': TaskPriority.Highest,

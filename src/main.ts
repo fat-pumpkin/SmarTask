@@ -1,7 +1,7 @@
-import { App, Modal, Notice, Plugin, TFile, TFolder } from 'obsidian';
+import { App, Modal, Notice, Plugin, TFile } from 'obsidian';
 import { TaskIndex } from './taskIndex';
 import { TaskParser } from './taskParser';
-import { Task, SmartTaskSettings, DEFAULT_SETTINGS, TaskPriority, ViewType, TaskQuery } from './types';
+import { Task, SmartTaskSettings, DEFAULT_SETTINGS, TaskPriority, TaskQuery } from './types';
 import { SmartTaskSettingTab } from './settings';
 import { SmartTaskView, SMARTTASK_VIEW_TYPE } from './view';
 
@@ -302,7 +302,6 @@ export default class SmartTaskPlugin extends Plugin {
 			const dailyNotePlugin = (this.app as any).internalPlugins?.plugins?.['daily-notes'];
 			if (dailyNotePlugin?.enabled) {
 				const today = new Date();
-				const dateStr = today.toISOString().split('T')[0];
 				const folder = dailyNotePlugin.instance?.options?.folder || '';
 				const format = dailyNotePlugin.instance?.options?.format || 'YYYY-MM-DD';
 				const fileName = this.formatDate(today, format);
@@ -314,7 +313,6 @@ export default class SmartTaskPlugin extends Plugin {
 				}
 
 				if (dailyNotePlugin.instance?.options?.template) {
-					const templatePath = dailyNotePlugin.instance.options.template;
 					try {
 						await (this.app as any).commands.executeCommandById('daily-notes');
 						const file = this.app.vault.getAbstractFileByPath(filePath);

@@ -1,4 +1,4 @@
-import { App, Notice } from 'obsidian';
+import { Modal, Notice } from 'obsidian';
 import SmartTaskPlugin from './main';
 import { Task, TaskPriority, TaskQuery, TaskGroup, ViewType } from './types';
 import { QueryEngine } from './queryEngine';
@@ -216,7 +216,7 @@ export class SmartTaskViewController {
 		const toolbar = this.quickCreateEl.createDiv({ cls: 'quick-toolbar' });
 		
 		const dateGroup = toolbar.createDiv({ cls: 'quick-tool-group' });
-		const dateLabel = dateGroup.createSpan({ cls: 'quick-tool-label', text: '📅' });
+		dateGroup.createSpan({ cls: 'quick-tool-label', text: '📅' });
 		const dateBtns = dateGroup.createDiv({ cls: 'quick-tool-btns' });
 		const dateOptions = [
 			{ value: 'today', label: '今天', title: '今天截止' },
@@ -254,7 +254,7 @@ export class SmartTaskViewController {
 		});
 
 		const priGroup = toolbar.createDiv({ cls: 'quick-tool-group' });
-		const priLabel = priGroup.createSpan({ cls: 'quick-tool-label', text: '🎯' });
+		priGroup.createSpan({ cls: 'quick-tool-label', text: '🎯' });
 		const priBtns = priGroup.createDiv({ cls: 'quick-tool-btns' });
 		const priorities = [
 			{ value: 'highest', label: '🔝', title: '最高优先级' },
@@ -953,10 +953,7 @@ export class SmartTaskViewController {
 
 	private renderDescriptionWithLinks(container: HTMLElement, task: Task): void {
 		const desc = task.description;
-		const wikilinkRegex = /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g;
-		const tagRegex = /#([a-zA-Z0-9_\u4e00-\u9fa5][a-zA-Z0-9_\u4e00-\u9fa5\/-]*)/g;
-
-		const combinedRegex = /(\[\[[^\]|]+(?:\|[^\]]+)?\]\])|(#[a-zA-Z0-9_\u4e00-\u9fa5][a-zA-Z0-9_\u4e00-\u9fa5\/-]*)/g;
+		const combinedRegex = /(\[\[[^\]|]+(?:\|[^\]]+)?\]\])|(#[a-zA-Z0-9_\u4e00-\u9fa5][a-zA-Z0-9_\u4e00-\u9fa5/-]*)/g;
 
 		let lastIndex = 0;
 		let match;
@@ -1120,7 +1117,7 @@ export class SmartTaskViewController {
 			groupEls.push({ key: group.key, el: groupEl });
 
 			const groupHeader = groupEl.createDiv({ cls: 'timeline-group-header classic-group-header' });
-			const dateDot = groupHeader.createSpan({ cls: 'timeline-dot classic-dot' });
+			groupHeader.createSpan({ cls: 'timeline-dot classic-dot' });
 			groupHeader.createSpan({ cls: 'timeline-group-title', text: group.name });
 			groupHeader.createSpan({ cls: 'timeline-group-count', text: `${group.tasks.length} 个任务` });
 
@@ -1252,8 +1249,6 @@ export class SmartTaskViewController {
 			
 			let left = 0;
 			let width = 0;
-			let startUnit = '';
-			let endUnit = '';
 			
 			if (this.timelineGroupBy === 'day') {
 				const startDate = task.startDate || task.dueDate;
@@ -1261,8 +1256,6 @@ export class SmartTaskViewController {
 				if (startDate && endDate && unitToIndex.has(startDate) && unitToIndex.has(endDate)) {
 					left = unitToIndex.get(startDate)!;
 					width = unitToIndex.get(endDate)! - left + 1;
-					startUnit = startDate;
-					endUnit = endDate;
 				}
 			} else if (this.timelineGroupBy === 'week') {
 				const startKey = task.startDate ? this.getTimelineGroupKey(task.startDate) : this.getTimelineGroupKey(task.dueDate!);
@@ -1270,8 +1263,6 @@ export class SmartTaskViewController {
 				if (unitToIndex.has(startKey) && unitToIndex.has(endKey)) {
 					left = unitToIndex.get(startKey)!;
 					width = unitToIndex.get(endKey)! - left + 1;
-					startUnit = startKey;
-					endUnit = endKey;
 				}
 			} else {
 				const startKey = task.startDate ? task.startDate.substring(0, 7) : task.dueDate!.substring(0, 7);
@@ -1279,8 +1270,6 @@ export class SmartTaskViewController {
 				if (unitToIndex.has(startKey) && unitToIndex.has(endKey)) {
 					left = unitToIndex.get(startKey)!;
 					width = unitToIndex.get(endKey)! - left + 1;
-					startUnit = startKey;
-					endUnit = endKey;
 				}
 			}
 			
@@ -1308,7 +1297,7 @@ export class SmartTaskViewController {
 
 	private renderZigzagTimeline(timelineEl: HTMLElement, groups: { key: string; name: string; tasks: Task[] }[]): void {
 		const zigzagContainer = timelineEl.createDiv({ cls: 'zigzag-timeline' });
-		const zigzagLine = zigzagContainer.createDiv({ cls: 'zigzag-center-line' });
+		zigzagContainer.createDiv({ cls: 'zigzag-center-line' });
 
 		for (let i = 0; i < groups.length; i++) {
 			const group = groups[i];
@@ -1407,7 +1396,7 @@ export class SmartTaskViewController {
 				if (this.isOverdue(task) && !task.completed) card.addClass('overdue');
 
 				const cardTop = card.createDiv({ cls: 'task-card-top' });
-				const priorityDot = cardTop.createSpan({ 
+				cardTop.createSpan({ 
 					cls: 'task-card-priority',
 					attr: { 'data-priority': task.priority }
 				});
@@ -1676,7 +1665,6 @@ export class SmartTaskViewController {
 	private findFirstVisibleGroup(groupEls: { key: string; el: HTMLElement }[]): number {
 		const container = this.contentEl;
 		if (!container) return 0;
-		const containerTop = container.scrollTop;
 		for (let i = 0; i < groupEls.length; i++) {
 			const rect = groupEls[i].el.getBoundingClientRect();
 			const containerRect = container.getBoundingClientRect();
@@ -1778,17 +1766,29 @@ export class SmartTaskViewController {
 			}
 		});
 
-		deleteBtn.addEventListener('click', async () => {
-			if (confirm('Are you sure you want to delete this task?')) {
+		deleteBtn.addEventListener('click', () => {
+			const confirmModal = new Modal(this.plugin.app);
+			confirmModal.titleEl.setText('Confirm Delete');
+			confirmModal.contentEl.createEl('p', { text: 'Are you sure you want to delete this task?' });
+			
+			const btnContainer = confirmModal.contentEl.createDiv({ cls: 'modal-button-container' });
+			const cancelBtn = btnContainer.createEl('button', { cls: 'mod-cta', text: 'Cancel' });
+			const deleteBtn2 = btnContainer.createEl('button', { cls: 'mod-danger', text: 'Delete' });
+			
+			cancelBtn.onclick = () => confirmModal.close();
+			deleteBtn2.onclick = async () => {
 				try {
 					await this.plugin.deleteTask(task);
 					closeModal();
+					confirmModal.close();
 					new Notice('Task deleted');
 				} catch (e) {
 					console.error('Failed to delete task:', e);
 					new Notice('Failed to delete task');
 				}
-			}
+			};
+			
+			confirmModal.open();
 		});
 
 		descInput.focus();
@@ -1815,7 +1815,7 @@ export class SmartTaskViewController {
 			text: '◀',
 			attr: { title: '上个月' }
 		});
-		const monthLabel = navGroup.createSpan({
+		navGroup.createSpan({
 			cls: 'calendar-month-label',
 			text: `${this.calendarYear}年${this.calendarMonth + 1}月`
 		});
@@ -1905,7 +1905,7 @@ export class SmartTaskViewController {
 			if (isOverdue) cell.addClass('has-overdue');
 			if (dayTasks.length > 0) cell.addClass('has-tasks');
 
-			const dayNum = cell.createDiv({ cls: 'calendar-day-number', text: day.toString() });
+			cell.createDiv({ cls: 'calendar-day-number', text: day.toString() });
 
 			if (dayTasks.length > 0) {
 				const tasksContainer = cell.createDiv({ cls: 'calendar-day-tasks' });
@@ -1978,7 +1978,7 @@ export class SmartTaskViewController {
 				modal.remove();
 			});
 
-			const priority = item.createSpan({
+			item.createSpan({
 				cls: 'day-task-priority',
 				text: this.getPriorityIcon(task.priority)
 			});

@@ -1,4 +1,4 @@
-import { App, TFile, Vault, Notice } from 'obsidian';
+import { App, TFile, Vault } from 'obsidian';
 import { Task } from './types';
 import { TaskParser } from './taskParser';
 

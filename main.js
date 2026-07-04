@@ -237,7 +237,7 @@ TaskParser.START_DATE_REGEX = /[🛫🚀]\s*(\d{4}-\d{2}-\d{2})/;
 TaskParser.COMPLETED_DATE_REGEX = /✅\s*(\d{4}-\d{2}-\d{2})/;
 TaskParser.PRIORITY_REGEX = /[🔝🔺⏫🔼🔽⏬🔻]\s*/g;
 TaskParser.RECURRENCE_REGEX = /🔁\s+(.+)$/;
-TaskParser.TAG_REGEX = /#([a-zA-Z0-9_\u4e00-\u9fa5][a-zA-Z0-9_\u4e00-\u9fa5\/-]*)/g;
+TaskParser.TAG_REGEX = /#([a-zA-Z0-9_\u4e00-\u9fa5][a-zA-Z0-9_\u4e00-\u9fa5/-]*)/g;
 TaskParser.WIKILINK_REGEX = /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g;
 TaskParser.PRIORITY_MAP = {
   "\u{1F51D}": "highest" /* Highest */,
@@ -955,7 +955,7 @@ var SmartTaskViewController = class {
     };
     const toolbar = this.quickCreateEl.createDiv({ cls: "quick-toolbar" });
     const dateGroup = toolbar.createDiv({ cls: "quick-tool-group" });
-    const dateLabel = dateGroup.createSpan({ cls: "quick-tool-label", text: "\u{1F4C5}" });
+    dateGroup.createSpan({ cls: "quick-tool-label", text: "\u{1F4C5}" });
     const dateBtns = dateGroup.createDiv({ cls: "quick-tool-btns" });
     const dateOptions = [
       { value: "today", label: "\u4ECA\u5929", title: "\u4ECA\u5929\u622A\u6B62" },
@@ -994,7 +994,7 @@ var SmartTaskViewController = class {
       }, dueDate);
     });
     const priGroup = toolbar.createDiv({ cls: "quick-tool-group" });
-    const priLabel = priGroup.createSpan({ cls: "quick-tool-label", text: "\u{1F3AF}" });
+    priGroup.createSpan({ cls: "quick-tool-label", text: "\u{1F3AF}" });
     const priBtns = priGroup.createDiv({ cls: "quick-tool-btns" });
     const priorities = [
       { value: "highest", label: "\u{1F51D}", title: "\u6700\u9AD8\u4F18\u5148\u7EA7" },
@@ -1646,9 +1646,7 @@ var SmartTaskViewController = class {
   }
   renderDescriptionWithLinks(container, task) {
     const desc = task.description;
-    const wikilinkRegex = /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g;
-    const tagRegex = /#([a-zA-Z0-9_\u4e00-\u9fa5][a-zA-Z0-9_\u4e00-\u9fa5\/-]*)/g;
-    const combinedRegex = /(\[\[[^\]|]+(?:\|[^\]]+)?\]\])|(#[a-zA-Z0-9_\u4e00-\u9fa5][a-zA-Z0-9_\u4e00-\u9fa5\/-]*)/g;
+    const combinedRegex = /(\[\[[^\]|]+(?:\|[^\]]+)?\]\])|(#[a-zA-Z0-9_\u4e00-\u9fa5][a-zA-Z0-9_\u4e00-\u9fa5/-]*)/g;
     let lastIndex = 0;
     let match;
     while ((match = combinedRegex.exec(desc)) !== null) {
@@ -1798,7 +1796,7 @@ var SmartTaskViewController = class {
       });
       groupEls.push({ key: group.key, el: groupEl });
       const groupHeader = groupEl.createDiv({ cls: "timeline-group-header classic-group-header" });
-      const dateDot = groupHeader.createSpan({ cls: "timeline-dot classic-dot" });
+      groupHeader.createSpan({ cls: "timeline-dot classic-dot" });
       groupHeader.createSpan({ cls: "timeline-group-title", text: group.name });
       groupHeader.createSpan({ cls: "timeline-group-count", text: `${group.tasks.length} \u4E2A\u4EFB\u52A1` });
       const tasksEl = groupEl.createDiv({ cls: "timeline-tasks classic-tasks" });
@@ -1919,16 +1917,12 @@ var SmartTaskViewController = class {
       const barsContainer = row.createDiv({ cls: "gantt-bars" });
       let left = 0;
       let width = 0;
-      let startUnit = "";
-      let endUnit = "";
       if (this.timelineGroupBy === "day") {
         const startDate = task.startDate || task.dueDate;
         const endDate = task.dueDate || task.startDate;
         if (startDate && endDate && unitToIndex.has(startDate) && unitToIndex.has(endDate)) {
           left = unitToIndex.get(startDate);
           width = unitToIndex.get(endDate) - left + 1;
-          startUnit = startDate;
-          endUnit = endDate;
         }
       } else if (this.timelineGroupBy === "week") {
         const startKey = task.startDate ? this.getTimelineGroupKey(task.startDate) : this.getTimelineGroupKey(task.dueDate);
@@ -1936,8 +1930,6 @@ var SmartTaskViewController = class {
         if (unitToIndex.has(startKey) && unitToIndex.has(endKey)) {
           left = unitToIndex.get(startKey);
           width = unitToIndex.get(endKey) - left + 1;
-          startUnit = startKey;
-          endUnit = endKey;
         }
       } else {
         const startKey = task.startDate ? task.startDate.substring(0, 7) : task.dueDate.substring(0, 7);
@@ -1945,8 +1937,6 @@ var SmartTaskViewController = class {
         if (unitToIndex.has(startKey) && unitToIndex.has(endKey)) {
           left = unitToIndex.get(startKey);
           width = unitToIndex.get(endKey) - left + 1;
-          startUnit = startKey;
-          endUnit = endKey;
         }
       }
       if (width > 0) {
@@ -1974,7 +1964,7 @@ var SmartTaskViewController = class {
   }
   renderZigzagTimeline(timelineEl, groups) {
     const zigzagContainer = timelineEl.createDiv({ cls: "zigzag-timeline" });
-    const zigzagLine = zigzagContainer.createDiv({ cls: "zigzag-center-line" });
+    zigzagContainer.createDiv({ cls: "zigzag-center-line" });
     for (let i = 0; i < groups.length; i++) {
       const group = groups[i];
       const isLeft = i % 2 === 0;
@@ -2060,7 +2050,7 @@ var SmartTaskViewController = class {
         if (this.isOverdue(task) && !task.completed)
           card.addClass("overdue");
         const cardTop = card.createDiv({ cls: "task-card-top" });
-        const priorityDot = cardTop.createSpan({
+        cardTop.createSpan({
           cls: "task-card-priority",
           attr: { "data-priority": task.priority }
         });
@@ -2302,7 +2292,6 @@ var SmartTaskViewController = class {
     const container = this.contentEl;
     if (!container)
       return 0;
-    const containerTop = container.scrollTop;
     for (let i = 0; i < groupEls.length; i++) {
       const rect = groupEls[i].el.getBoundingClientRect();
       const containerRect = container.getBoundingClientRect();
@@ -2386,17 +2375,26 @@ var SmartTaskViewController = class {
         new import_obsidian3.Notice("Failed to update task");
       }
     });
-    deleteBtn.addEventListener("click", async () => {
-      if (confirm("Are you sure you want to delete this task?")) {
+    deleteBtn.addEventListener("click", () => {
+      const confirmModal = new import_obsidian3.Modal(this.plugin.app);
+      confirmModal.titleEl.setText("Confirm Delete");
+      confirmModal.contentEl.createEl("p", { text: "Are you sure you want to delete this task?" });
+      const btnContainer = confirmModal.contentEl.createDiv({ cls: "modal-button-container" });
+      const cancelBtn2 = btnContainer.createEl("button", { cls: "mod-cta", text: "Cancel" });
+      const deleteBtn2 = btnContainer.createEl("button", { cls: "mod-danger", text: "Delete" });
+      cancelBtn2.onclick = () => confirmModal.close();
+      deleteBtn2.onclick = async () => {
         try {
           await this.plugin.deleteTask(task);
           closeModal();
+          confirmModal.close();
           new import_obsidian3.Notice("Task deleted");
         } catch (e) {
           console.error("Failed to delete task:", e);
           new import_obsidian3.Notice("Failed to delete task");
         }
-      }
+      };
+      confirmModal.open();
     });
     descInput.focus();
     descInput.select();
@@ -2415,7 +2413,7 @@ var SmartTaskViewController = class {
       text: "\u25C0",
       attr: { title: "\u4E0A\u4E2A\u6708" }
     });
-    const monthLabel = navGroup.createSpan({
+    navGroup.createSpan({
       cls: "calendar-month-label",
       text: `${this.calendarYear}\u5E74${this.calendarMonth + 1}\u6708`
     });
@@ -2494,7 +2492,7 @@ var SmartTaskViewController = class {
         cell.addClass("has-overdue");
       if (dayTasks.length > 0)
         cell.addClass("has-tasks");
-      const dayNum = cell.createDiv({ cls: "calendar-day-number", text: day.toString() });
+      cell.createDiv({ cls: "calendar-day-number", text: day.toString() });
       if (dayTasks.length > 0) {
         const tasksContainer = cell.createDiv({ cls: "calendar-day-tasks" });
         const notDone = dayTasks.filter((t) => !t.completed);
@@ -2557,7 +2555,7 @@ var SmartTaskViewController = class {
         this.plugin.openTaskFile(task.filePath, task.lineNumber);
         modal.remove();
       });
-      const priority = item.createSpan({
+      item.createSpan({
         cls: "day-task-priority",
         text: this.getPriorityIcon(task.priority)
       });
@@ -3058,7 +3056,6 @@ ${newLine}`,
       const dailyNotePlugin = (_b = (_a = this.app.internalPlugins) == null ? void 0 : _a.plugins) == null ? void 0 : _b["daily-notes"];
       if (dailyNotePlugin == null ? void 0 : dailyNotePlugin.enabled) {
         const today = /* @__PURE__ */ new Date();
-        const dateStr = today.toISOString().split("T")[0];
         const folder = ((_d = (_c = dailyNotePlugin.instance) == null ? void 0 : _c.options) == null ? void 0 : _d.folder) || "";
         const format = ((_f = (_e = dailyNotePlugin.instance) == null ? void 0 : _e.options) == null ? void 0 : _f.format) || "YYYY-MM-DD";
         const fileName = this.formatDate(today, format);
@@ -3068,7 +3065,6 @@ ${newLine}`,
           return existing;
         }
         if ((_h = (_g = dailyNotePlugin.instance) == null ? void 0 : _g.options) == null ? void 0 : _h.template) {
-          const templatePath = dailyNotePlugin.instance.options.template;
           try {
             await this.app.commands.executeCommandById("daily-notes");
             const file = this.app.vault.getAbstractFileByPath(filePath);
