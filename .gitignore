@@ -1,0 +1,9 @@
+node_modules
+main.js
+main.js.map
+styles.css
+.DS_Store
+*.log
+dist/
+.vscode/
+.obsidian/
