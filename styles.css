@@ -1992,27 +1992,63 @@ body.theme-dark .smarttask-container {
 	position: absolute;
 	top: 50%;
 	transform: translateY(-50%);
-	height: 28px;
-	border-radius: var(--radius-sm);
+	height: 24px;
+	border-radius: 6px;
 	cursor: pointer;
-	transition: all 0.25s ease;
-	box-shadow: var(--shadow-sm);
+	transition: all 0.2s ease;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 	left: var(--gantt-left, 0%);
 	width: var(--gantt-width, 100%);
-	background: linear-gradient(135deg, var(--gantt-color, var(--interactive-accent)), rgba(var(--interactive-accent-rgb), 0.8));
+	background: var(--gantt-color, var(--interactive-accent));
+	border: 1px solid rgba(255, 255, 255, 0.2);
+	min-width: 8px;
+}
+
+.gantt-bar::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	height: 3px;
+	background: rgba(255, 255, 255, 0.4);
+	border-radius: 6px 6px 0 0;
+}
+
+.gantt-bar .gantt-bar-label {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	font-size: 11px;
+	font-weight: 500;
+	color: rgba(255, 255, 255, 0.95);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	max-width: calc(100% - 8px);
+	text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 .gantt-bar.completed {
-	opacity: 0.5;
+	opacity: 0.65;
+	background: var(--text-muted);
+}
+
+.gantt-bar.completed::before {
+	background: rgba(255, 255, 255, 0.2);
 }
 
 .gantt-bar:hover {
-	transform: translateY(-50%) scaleY(1.2);
-	box-shadow: var(--shadow-md);
-	height: 32px;
+	transform: translateY(-50%) scaleY(1.3);
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+	height: 28px;
+	z-index: 10;
 }
 
 .gantt-bar.overdue {
+	background: #ff4757;
+	border-color: rgba(255, 71, 87, 0.5);
 	animation: overdue-pulse 2s infinite;
 }
 

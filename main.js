@@ -1953,6 +1953,8 @@ var SmartTaskViewController = class {
         if (this.isOverdue(task) && !task.completed) {
           bar.addClass("overdue");
         }
+        const shortDesc = task.description.length > 12 ? task.description.substring(0, 12) + "..." : task.description;
+        bar.createDiv({ cls: "gantt-bar-label", text: shortDesc });
         bar.title = `${task.description}
 \u8D77\u59CB: ${task.startDate || "\u65E0"}
 \u622A\u6B62: ${task.dueDate || "\u65E0"}`;

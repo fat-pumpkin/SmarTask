@@ -157,6 +157,23 @@ Timeline view supports four styles: Classic, Zigzag, Card, and Gantt.
 └── esbuild.config.mjs    # Build configuration
 ```
 
+## Changelog
+
+### v1.0.1
+- **Fixed**: Gantt chart style clarity - improved bar visibility with enhanced colors, borders, and labels
+- **Fixed**: Removed unused variables and imports for better code quality
+- **Fixed**: Replaced `confirm()` with Obsidian Modal for better UX
+- **Fixed**: Regex escape character issues
+
+### v1.0.0
+- Initial release
+- Multiple views: List, Kanban, Calendar, Timeline
+- Quick task creation with inline chips
+- Subtask support with unlimited nesting
+- Smart query & filter system
+- Obsidian native features integration
+- Performance optimization with incremental indexing
+
 ## Version Release
 
 This project uses GitHub Actions for automatic releases. Create a tag in `v*` format to trigger the release workflow:

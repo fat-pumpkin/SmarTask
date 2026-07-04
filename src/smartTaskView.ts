@@ -1287,6 +1287,8 @@ export class SmartTaskViewController {
 				if (this.isOverdue(task) && !task.completed) {
 					bar.addClass('overdue');
 				}
+				const shortDesc = task.description.length > 12 ? task.description.substring(0, 12) + '...' : task.description;
+				bar.createDiv({ cls: 'gantt-bar-label', text: shortDesc });
 				bar.title = `${task.description}\n起始: ${task.startDate || '无'}\n截止: ${task.dueDate || '无'}`;
 				bar.addEventListener('click', () => {
 					this.plugin.openTaskFile(task.filePath, task.lineNumber);
