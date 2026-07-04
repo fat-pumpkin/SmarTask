@@ -277,8 +277,8 @@ export class SmartTaskViewController {
 			});
 		}
 
-		input.addEventListener('keydown', (e) => {
-			if (e.key === 'Enter' && !(e as KeyboardEvent).shiftKey) {
+		input.addEventListener('keydown', (e: KeyboardEvent) => {
+			if (e.key === 'Enter' && !e.shiftKey) {
 				e.preventDefault();
 				const desc = input.value.trim();
 				if (desc) {
@@ -354,7 +354,7 @@ export class SmartTaskViewController {
 		};
 		updateClearBtn();
 
-		searchInput.addEventListener('input', (e) => {
+		searchInput.addEventListener('input', (e: Event) => {
 			this.searchQuery = (e.target as HTMLInputElement).value;
 			updateClearBtn();
 			this.renderContent();
@@ -510,12 +510,13 @@ export class SmartTaskViewController {
 				text: p.label,
 				attr: { 'data-color': p.color }
 			});
-			if (this.filterPriorities.includes(p.value as TaskPriority)) btn.addClass('active');
+			const priorityValue = p.value as TaskPriority;
+			if (this.filterPriorities.includes(priorityValue)) btn.addClass('active');
 			btn.addEventListener('click', () => {
-				if (this.filterPriorities.includes(p.value as TaskPriority)) {
-					this.filterPriorities = this.filterPriorities.filter(x => x !== p.value);
+				if (this.filterPriorities.includes(priorityValue)) {
+					this.filterPriorities = this.filterPriorities.filter(x => x !== priorityValue);
 				} else {
-					this.filterPriorities = [...this.filterPriorities, p.value as TaskPriority];
+					this.filterPriorities = [...this.filterPriorities, priorityValue];
 				}
 				this.renderFilterPanel();
 				this.renderHeader();
@@ -711,7 +712,7 @@ export class SmartTaskViewController {
 		const checkboxWrap = item.createDiv({ cls: 'task-checkbox' });
 		const checkbox = checkboxWrap.createEl('input', {
 			type: 'checkbox',
-		}) as HTMLInputElement;
+		});
 		checkbox.checked = task.completed;
 		checkbox.addEventListener('change', (e) => {
 			e.stopPropagation();
@@ -773,7 +774,7 @@ export class SmartTaskViewController {
 				if (subtask.completed) stItem.addClass('completed');
 				const stCheckbox = stItem.createEl('input', {
 					type: 'checkbox',
-				}) as HTMLInputElement;
+				});
 				stCheckbox.checked = subtask.completed;
 				stItem.createSpan({ cls: 'subtask-text', text: subtask.description });
 				if (subtask.dueDate) {
@@ -911,7 +912,7 @@ export class SmartTaskViewController {
 			if (subtask.completed) stItem.addClass('completed');
 			const stCheckbox = stItem.createEl('input', {
 				type: 'checkbox',
-			}) as HTMLInputElement;
+			});
 			stCheckbox.checked = subtask.completed;
 			stCheckbox.addEventListener('change', (e) => {
 				e.stopPropagation();
@@ -1347,7 +1348,7 @@ export class SmartTaskViewController {
 
 				const checkbox = taskMain.createEl('input', { 
 					type: 'checkbox', 
-				}) as HTMLInputElement;
+				});
 				checkbox.checked = task.completed;
 				checkbox.addEventListener('change', (e) => {
 					e.stopPropagation();
@@ -1444,7 +1445,7 @@ export class SmartTaskViewController {
 				const cardFooter = card.createDiv({ cls: 'task-card-footer' });
 				const checkbox = cardFooter.createEl('input', { 
 					type: 'checkbox', 
-				}) as HTMLInputElement;
+				});
 				checkbox.checked = task.completed;
 				checkbox.addEventListener('change', (e) => {
 					e.stopPropagation();
@@ -1487,7 +1488,7 @@ export class SmartTaskViewController {
 			const checkboxWrap = item.createDiv({ cls: 'task-checkbox' });
 			const checkbox = checkboxWrap.createEl('input', {
 				type: 'checkbox',
-			}) as HTMLInputElement;
+			});
 			checkbox.checked = task.completed;
 			checkbox.addEventListener('change', (e) => {
 				e.stopPropagation();
@@ -1690,17 +1691,17 @@ export class SmartTaskViewController {
 
 		const descField = body.createDiv({ cls: 'task-editor-field' });
 		descField.createEl('label', { text: 'Description' });
-		const descInput = descField.createEl('input', { type: 'text', cls: 'task-editor-input' }) as HTMLInputElement;
+		const descInput = descField.createEl('input', { type: 'text', cls: 'task-editor-input' });
 		descInput.value = task.description;
 
 		const dateField = body.createDiv({ cls: 'task-editor-field' });
 		dateField.createEl('label', { text: 'Due Date' });
-		const dateInput = dateField.createEl('input', { type: 'date', cls: 'task-editor-date' }) as HTMLInputElement;
+		const dateInput = dateField.createEl('input', { type: 'date', cls: 'task-editor-date' });
 		if (task.dueDate) dateInput.value = task.dueDate;
 
 		const priorityField = body.createDiv({ cls: 'task-editor-field' });
 		priorityField.createEl('label', { text: 'Priority' });
-		const prioritySelect = priorityField.createEl('select', { cls: 'task-editor-priority' }) as HTMLSelectElement;
+		const prioritySelect = priorityField.createEl('select', { cls: 'task-editor-priority' });
 		const priorityOptions = [
 			{ value: 'none', text: 'None' },
 			{ value: 'highest', text: '🔝 Highest' },
@@ -1716,7 +1717,7 @@ export class SmartTaskViewController {
 
 		const tagsField = body.createDiv({ cls: 'task-editor-field' });
 		tagsField.createEl('label', { text: 'Tags (comma-separated)' });
-		const tagsInput = tagsField.createEl('input', { type: 'text', cls: 'task-editor-tags' }) as HTMLInputElement;
+		const tagsInput = tagsField.createEl('input', { type: 'text', cls: 'task-editor-tags' });
 		tagsInput.value = task.tags.join(', ');
 
 		const footer = modalInner.createDiv({ cls: 'task-editor-footer' });
@@ -1738,33 +1739,35 @@ export class SmartTaskViewController {
 			if (e.target === modal) closeModal();
 		});
 
-		saveBtn.addEventListener('click', async () => {
-			const newDesc = descInput.value.trim();
-			const newDate = dateInput.value || undefined;
-			const newPriority = prioritySelect.value;
-			const newTags = tagsInput.value
-				.split(',')
-				.map(t => t.trim())
-				.filter(t => t.length > 0);
+		saveBtn.addEventListener('click', () => {
+			void (async () => {
+				const newDesc = descInput.value.trim();
+				const newDate = dateInput.value || undefined;
+				const newPriority = prioritySelect.value;
+				const newTags = tagsInput.value
+					.split(',')
+					.map(t => t.trim())
+					.filter(t => t.length > 0);
 
-			if (!newDesc) {
-				new Notice('Description cannot be empty');
-				return;
-			}
+				if (!newDesc) {
+					new Notice('Description cannot be empty');
+					return;
+				}
 
-			try {
-				await this.plugin.updateTask(task, {
-					description: newDesc,
-					dueDate: newDate,
-					priority: newPriority as TaskPriority,
-					tags: newTags
-				});
-				closeModal();
-				new Notice('Task updated ✅');
-			} catch (e) {
-				console.error('Failed to update task:', e);
-				new Notice('Failed to update task');
-			}
+				try {
+					await this.plugin.updateTask(task, {
+						description: newDesc,
+						dueDate: newDate,
+						priority: newPriority as TaskPriority,
+						tags: newTags
+					});
+					closeModal();
+					new Notice('Task updated ✅');
+				} catch (e) {
+					console.error('Failed to update task:', e);
+					new Notice('Failed to update task');
+				}
+			})();
 		});
 
 		deleteBtn.addEventListener('click', () => {
@@ -1917,7 +1920,7 @@ export class SmartTaskViewController {
 				for (const task of displayTasks) {
 					const taskEl = tasksContainer.createDiv({ cls: 'calendar-task-dot' });
 					if (task.completed) taskEl.addClass('completed');
-					if (task.priority === 'highest' || task.priority === 'high') taskEl.addClass('high-priority');
+					if (task.priority === TaskPriority.Highest || task.priority === TaskPriority.High) taskEl.addClass('high-priority');
 					taskEl.title = task.description;
 					taskEl.addEventListener('click', (e) => {
 						e.stopPropagation();
@@ -1966,11 +1969,11 @@ export class SmartTaskViewController {
 			
 			const checkbox = item.createEl('input', {
 				type: 'checkbox',
-			}) as HTMLInputElement;
+			});
 			checkbox.checked = task.completed;
 			checkbox.addEventListener('change', (e) => {
 				e.stopPropagation();
-				this.plugin.toggleTaskStatus(task, checkbox.checked);
+				void this.plugin.toggleTaskStatus(task, checkbox.checked);
 			});
 
 			const desc = item.createSpan({ cls: 'day-task-desc', text: task.description });

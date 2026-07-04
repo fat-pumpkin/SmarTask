@@ -116,12 +116,13 @@ export default class SmartTaskPlugin extends Plugin {
 	private async activateView() {
 		const { workspace } = this.app;
 
-		let leaf: any = workspace.getLeavesOfType(SMARTTASK_VIEW_TYPE)[0];
+		const leaves = workspace.getLeavesOfType(SMARTTASK_VIEW_TYPE);
+		let leaf = leaves.length > 0 ? leaves[0] : null;
 
 		if (!leaf) {
 			leaf = workspace.getRightLeaf(false);
 			if (leaf) {
-				await leaf.setViewState({
+				void leaf.setViewState({
 					type: SMARTTASK_VIEW_TYPE,
 					active: true,
 				});
@@ -193,7 +194,7 @@ export default class SmartTaskPlugin extends Plugin {
 		try {
 			await this.taskIndex.updateTaskStatus(task, completed);
 			new Notice(completed ? '任务已完成 🎉' : '任务已恢复');
-		} catch (e) {
+		} catch (e: unknown) {
 			console.error('Failed to toggle task:', e);
 			new Notice('更新任务失败');
 		}
@@ -269,9 +270,9 @@ export default class SmartTaskPlugin extends Plugin {
 			await this.app.vault.modify(targetFile, newContent);
 
 			new Notice(parentTask ? '子任务已添加 ✅' : '任务已创建 ✅');
-		} catch (e) {
+		} catch (e: unknown) {
 			console.error('Failed to create task:', e);
-			new Notice('创建任务失败: ' + (e as Error).message);
+			new Notice('创建任务失败: ' + (e instanceof Error ? e.message : String(e)));
 		}
 	}
 
@@ -299,38 +300,16 @@ export default class SmartTaskPlugin extends Plugin {
 
 	private async getDailyNoteFile(): Promise<TFile | null> {
 		try {
-			const internalPlugins = (this.app as any).internalPlugins as { plugins: Record<string, { enabled: boolean; instance: { options: { folder?: string; format?: string; template?: string } } }> };
-			const dailyNotePlugin = internalPlugins?.plugins?.['daily-notes'];
-			if (dailyNotePlugin?.enabled) {
+			const dailyNoteApi = (this.app as unknown as { plugins: { dailyNotes?: { getDailyNote: (date: Date) => TFile | null; createDailyNote: (date: Date) => Promise<TFile> } } }).plugins.dailyNotes;
+			if (dailyNoteApi) {
 				const today = new Date();
-				const folder = dailyNotePlugin.instance.options.folder || '';
-				const format = dailyNotePlugin.instance.options.format || 'YYYY-MM-DD';
-				const fileName = this.formatDate(today, format);
-				const filePath = folder ? `${folder}/${fileName}.md` : `${fileName}.md`;
-
-				const existing = this.app.vault.getAbstractFileByPath(filePath);
-				if (existing instanceof TFile) {
-					return existing;
+				let file = dailyNoteApi.getDailyNote(today);
+				if (!file) {
+					file = await dailyNoteApi.createDailyNote(today);
 				}
-
-				if (dailyNotePlugin.instance.options.template) {
-					try {
-						const commands = (this.app as any).commands as { executeCommandById: (id: string) => Promise<void> };
-						await commands.executeCommandById('daily-notes');
-						const file = this.app.vault.getAbstractFileByPath(filePath);
-						if (file instanceof TFile) return file;
-					} catch (e) {
-						console.warn('Failed to create daily note via command', e);
-					}
-				}
-
-				const dir = filePath.substring(0, filePath.lastIndexOf('/'));
-				if (dir && !this.app.vault.getAbstractFileByPath(dir)) {
-					await this.app.vault.createFolder(dir);
-				}
-				return await this.app.vault.create(filePath, `# ${fileName}\n\n`);
+				return file;
 			}
-		} catch (e) {
+		} catch (e: unknown) {
 			console.warn('Daily note access failed, falling back to inbox', e);
 		}
 
@@ -394,17 +373,7 @@ export default class SmartTaskPlugin extends Plugin {
 	openTaskFile(filePath: string, lineNumber: number): void {
 		const file = this.app.vault.getAbstractFileByPath(filePath);
 		if (file instanceof TFile) {
-			void this.app.workspace.openLinkText(filePath, '', true).then(() => {
-				const leaves = this.app.workspace.getLeavesOfType('markdown');
-				for (const leaf of leaves) {
-					const editor = (leaf.view as any).editor;
-					if (editor) {
-						editor.setCursor({ line: lineNumber - 1, ch: 0 });
-						editor.focus();
-						break;
-					}
-				}
-			});
+			void this.app.workspace.openLinkText(filePath, '', true);
 		}
 	}
 
@@ -427,7 +396,7 @@ export default class SmartTaskPlugin extends Plugin {
 		for (const listener of this.tasksChangeListeners) {
 			try {
 				listener();
-			} catch (e) {
+			} catch (e: unknown) {
 				console.error('SmartTask: Listener error', e);
 			}
 		}

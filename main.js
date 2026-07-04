@@ -476,7 +476,7 @@ var SmartTaskSettingTab = class extends import_obsidian2.PluginSettingTab {
   display() {
     const { containerEl } = this;
     containerEl.empty();
-    new import_obsidian2.Setting(containerEl).setName("General").setHeading();
+    new import_obsidian2.Setting(containerEl).setName("Task Settings").setHeading();
     new import_obsidian2.Setting(containerEl).setName("\u{1F4E5} Task Saving").setHeading();
     new import_obsidian2.Setting(containerEl).setName("Default Save Location").setDesc("Where newly created tasks should be saved").addDropdown((dropdown) => dropdown.addOption("inbox", "Inbox (specified file)").addOption("currentFile", "Current file").addOption("dailyNote", "Daily note").setValue(this.plugin.settings.saveTarget).onChange(async (value) => {
       this.plugin.settings.saveTarget = value;
@@ -1228,13 +1228,14 @@ var SmartTaskViewController = class {
         text: p.label,
         attr: { "data-color": p.color }
       });
-      if (this.filterPriorities.includes(p.value))
+      const priorityValue = p.value;
+      if (this.filterPriorities.includes(priorityValue))
         btn.addClass("active");
       btn.addEventListener("click", () => {
-        if (this.filterPriorities.includes(p.value)) {
-          this.filterPriorities = this.filterPriorities.filter((x) => x !== p.value);
+        if (this.filterPriorities.includes(priorityValue)) {
+          this.filterPriorities = this.filterPriorities.filter((x) => x !== priorityValue);
         } else {
-          this.filterPriorities = [...this.filterPriorities, p.value];
+          this.filterPriorities = [...this.filterPriorities, priorityValue];
         }
         this.renderFilterPanel();
         this.renderHeader();
@@ -2353,28 +2354,30 @@ var SmartTaskViewController = class {
       if (e.target === modal)
         closeModal();
     });
-    saveBtn.addEventListener("click", async () => {
-      const newDesc = descInput.value.trim();
-      const newDate = dateInput.value || void 0;
-      const newPriority = prioritySelect.value;
-      const newTags = tagsInput.value.split(",").map((t) => t.trim()).filter((t) => t.length > 0);
-      if (!newDesc) {
-        new import_obsidian3.Notice("Description cannot be empty");
-        return;
-      }
-      try {
-        await this.plugin.updateTask(task, {
-          description: newDesc,
-          dueDate: newDate,
-          priority: newPriority,
-          tags: newTags
-        });
-        closeModal();
-        new import_obsidian3.Notice("Task updated \u2705");
-      } catch (e) {
-        console.error("Failed to update task:", e);
-        new import_obsidian3.Notice("Failed to update task");
-      }
+    saveBtn.addEventListener("click", () => {
+      void (async () => {
+        const newDesc = descInput.value.trim();
+        const newDate = dateInput.value || void 0;
+        const newPriority = prioritySelect.value;
+        const newTags = tagsInput.value.split(",").map((t) => t.trim()).filter((t) => t.length > 0);
+        if (!newDesc) {
+          new import_obsidian3.Notice("Description cannot be empty");
+          return;
+        }
+        try {
+          await this.plugin.updateTask(task, {
+            description: newDesc,
+            dueDate: newDate,
+            priority: newPriority,
+            tags: newTags
+          });
+          closeModal();
+          new import_obsidian3.Notice("Task updated \u2705");
+        } catch (e) {
+          console.error("Failed to update task:", e);
+          new import_obsidian3.Notice("Failed to update task");
+        }
+      })();
     });
     deleteBtn.addEventListener("click", () => {
       const confirmModal = new import_obsidian3.Modal(this.plugin.app);
@@ -2503,7 +2506,7 @@ var SmartTaskViewController = class {
           const taskEl = tasksContainer.createDiv({ cls: "calendar-task-dot" });
           if (task.completed)
             taskEl.addClass("completed");
-          if (task.priority === "highest" || task.priority === "high")
+          if (task.priority === "highest" /* Highest */ || task.priority === "high" /* High */)
             taskEl.addClass("high-priority");
           taskEl.title = task.description;
           taskEl.addEventListener("click", (e) => {
@@ -2549,7 +2552,7 @@ var SmartTaskViewController = class {
       checkbox.checked = task.completed;
       checkbox.addEventListener("change", (e) => {
         e.stopPropagation();
-        this.plugin.toggleTaskStatus(task, checkbox.checked);
+        void this.plugin.toggleTaskStatus(task, checkbox.checked);
       });
       const desc = item.createSpan({ cls: "day-task-desc", text: task.description });
       desc.addEventListener("click", () => {
@@ -2892,11 +2895,12 @@ ${newLine}`,
   }
   async activateView() {
     const { workspace } = this.app;
-    let leaf = workspace.getLeavesOfType(SMARTTASK_VIEW_TYPE)[0];
+    const leaves = workspace.getLeavesOfType(SMARTTASK_VIEW_TYPE);
+    let leaf = leaves.length > 0 ? leaves[0] : null;
     if (!leaf) {
       leaf = workspace.getRightLeaf(false);
       if (leaf) {
-        await leaf.setViewState({
+        void leaf.setViewState({
           type: SMARTTASK_VIEW_TYPE,
           active: true
         });
@@ -3029,7 +3033,7 @@ ${newLine}`,
       new import_obsidian5.Notice(parentTask ? "\u5B50\u4EFB\u52A1\u5DF2\u6DFB\u52A0 \u2705" : "\u4EFB\u52A1\u5DF2\u521B\u5EFA \u2705");
     } catch (e) {
       console.error("Failed to create task:", e);
-      new import_obsidian5.Notice("\u521B\u5EFA\u4EFB\u52A1\u5931\u8D25: " + e.message);
+      new import_obsidian5.Notice("\u521B\u5EFA\u4EFB\u52A1\u5931\u8D25: " + (e instanceof Error ? e.message : String(e)));
     }
   }
   async getTargetFile() {
@@ -3052,38 +3056,15 @@ ${newLine}`,
     return await this.getInboxFile();
   }
   async getDailyNoteFile() {
-    var _a;
     try {
-      const internalPlugins = this.app.internalPlugins;
-      const dailyNotePlugin = (_a = internalPlugins == null ? void 0 : internalPlugins.plugins) == null ? void 0 : _a["daily-notes"];
-      if (dailyNotePlugin == null ? void 0 : dailyNotePlugin.enabled) {
+      const dailyNoteApi = this.app.plugins.dailyNotes;
+      if (dailyNoteApi) {
         const today = /* @__PURE__ */ new Date();
-        const folder = dailyNotePlugin.instance.options.folder || "";
-        const format = dailyNotePlugin.instance.options.format || "YYYY-MM-DD";
-        const fileName = this.formatDate(today, format);
-        const filePath = folder ? `${folder}/${fileName}.md` : `${fileName}.md`;
-        const existing = this.app.vault.getAbstractFileByPath(filePath);
-        if (existing instanceof import_obsidian5.TFile) {
-          return existing;
+        let file = dailyNoteApi.getDailyNote(today);
+        if (!file) {
+          file = await dailyNoteApi.createDailyNote(today);
         }
-        if (dailyNotePlugin.instance.options.template) {
-          try {
-            const commands = this.app.commands;
-            await commands.executeCommandById("daily-notes");
-            const file = this.app.vault.getAbstractFileByPath(filePath);
-            if (file instanceof import_obsidian5.TFile)
-              return file;
-          } catch (e) {
-            console.warn("Failed to create daily note via command", e);
-          }
-        }
-        const dir = filePath.substring(0, filePath.lastIndexOf("/"));
-        if (dir && !this.app.vault.getAbstractFileByPath(dir)) {
-          await this.app.vault.createFolder(dir);
-        }
-        return await this.app.vault.create(filePath, `# ${fileName}
-
-`);
+        return file;
       }
     } catch (e) {
       console.warn("Daily note access failed, falling back to inbox", e);
@@ -3136,17 +3117,7 @@ ${newLine}`,
   openTaskFile(filePath, lineNumber) {
     const file = this.app.vault.getAbstractFileByPath(filePath);
     if (file instanceof import_obsidian5.TFile) {
-      void this.app.workspace.openLinkText(filePath, "", true).then(() => {
-        const leaves = this.app.workspace.getLeavesOfType("markdown");
-        for (const leaf of leaves) {
-          const editor = leaf.view.editor;
-          if (editor) {
-            editor.setCursor({ line: lineNumber - 1, ch: 0 });
-            editor.focus();
-            break;
-          }
-        }
-      });
+      void this.app.workspace.openLinkText(filePath, "", true);
     }
   }
   async updateTask(task, updates) {

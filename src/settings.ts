@@ -16,7 +16,7 @@ export class SmartTaskSettingTab extends PluginSettingTab {
 		containerEl.empty();
 
 		new Setting(containerEl)
-			.setName('General')
+			.setName('Task Settings')
 			.setHeading();
 
 		new Setting(containerEl)
