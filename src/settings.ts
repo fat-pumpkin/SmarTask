@@ -16,7 +16,7 @@ export class SmartTaskSettingTab extends PluginSettingTab {
 		containerEl.empty();
 
 		new Setting(containerEl)
-			.setName('SmartTask Settings')
+			.setName('General')
 			.setHeading();
 
 		new Setting(containerEl)
@@ -32,7 +32,7 @@ export class SmartTaskSettingTab extends PluginSettingTab {
 				.addOption('dailyNote', 'Daily note')
 				.setValue(this.plugin.settings.saveTarget)
 				.onChange(async (value) => {
-					this.plugin.settings.saveTarget = value as any;
+					this.plugin.settings.saveTarget = value as 'inbox' | 'currentFile' | 'dailyNote';
 					await this.plugin.saveSettings();
 				}));
 
@@ -199,7 +199,7 @@ export class SmartTaskSettingTab extends PluginSettingTab {
 		];
 		for (const item of shortcutItems) {
 			const p = shortcuts.createEl('p');
-			const code = p.createEl('code', { text: item.keys });
+			p.createEl('code', { text: item.keys });
 			p.appendText(` — ${item.desc}`);
 		}
 

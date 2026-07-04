@@ -375,7 +375,7 @@ export class SmartTaskViewController {
 			});
 			if (this.filterStatus === tab.id) btn.addClass('active');
 			btn.addEventListener('click', () => {
-				this.filterStatus = tab.id as any;
+				this.filterStatus = tab.id as 'all' | 'done' | 'not-done';
 				this.renderSearchRow();
 				this.renderContent();
 			});
@@ -485,7 +485,7 @@ export class SmartTaskViewController {
 			});
 			if (this.dateFilter === df.value) btn.addClass('active');
 			btn.addEventListener('click', () => {
-				this.dateFilter = df.value as any;
+				this.dateFilter = df.value as 'all' | 'overdue' | 'today' | 'week' | 'month';
 				this.renderFilterPanel();
 				this.renderHeader();
 				this.renderContent();
@@ -510,12 +510,12 @@ export class SmartTaskViewController {
 				text: p.label,
 				attr: { 'data-color': p.color }
 			});
-			if (this.filterPriorities.includes(p.value as any)) btn.addClass('active');
+			if (this.filterPriorities.includes(p.value as TaskPriority)) btn.addClass('active');
 			btn.addEventListener('click', () => {
-				if (this.filterPriorities.includes(p.value as any)) {
+				if (this.filterPriorities.includes(p.value as TaskPriority)) {
 					this.filterPriorities = this.filterPriorities.filter(x => x !== p.value);
 				} else {
-					this.filterPriorities = [...this.filterPriorities, p.value as any];
+					this.filterPriorities = [...this.filterPriorities, p.value as TaskPriority];
 				}
 				this.renderFilterPanel();
 				this.renderHeader();
@@ -1056,7 +1056,7 @@ export class SmartTaskViewController {
 			});
 			if (this.timelineGroupBy === opt.value) btn.addClass('active');
 			btn.addEventListener('click', () => {
-				this.timelineGroupBy = opt.value as any;
+				this.timelineGroupBy = opt.value as 'day' | 'week' | 'month';
 				this.renderContent();
 			});
 		}
@@ -1076,8 +1076,8 @@ export class SmartTaskViewController {
 			});
 			if (this.timelineStyle === opt.value) btn.addClass('active');
 			btn.addEventListener('click', () => {
-				this.timelineStyle = opt.value as any;
-				this.plugin.settings.timelineStyle = opt.value as any;
+				this.timelineStyle = opt.value as 'classic' | 'gantt' | 'zigzag' | 'cards';
+				this.plugin.settings.timelineStyle = opt.value as 'classic' | 'gantt' | 'zigzag' | 'cards';
 				void this.plugin.saveSettings();
 				this.renderContent();
 			});
@@ -1617,7 +1617,6 @@ export class SmartTaskViewController {
 	}
 
 	private getTimelineGroupKey(dateStr: string): string {
-		const date = new Date(dateStr);
 		if (this.timelineGroupBy === 'day') {
 			return dateStr;
 		} else if (this.timelineGroupBy === 'week') {
@@ -1757,7 +1756,7 @@ export class SmartTaskViewController {
 				await this.plugin.updateTask(task, {
 					description: newDesc,
 					dueDate: newDate,
-					priority: newPriority as any,
+					priority: newPriority as TaskPriority,
 					tags: newTags
 				});
 				closeModal();
@@ -2023,15 +2022,15 @@ export class SmartTaskViewController {
 		const body = modalInner.createDiv({ cls: 'wheel-picker-body' });
 
 		const yearCol = body.createDiv({ cls: 'wheel-column', attr: { 'data-col': 'year' } });
-		const yearWrapper = yearCol.createDiv({ cls: 'wheel-wrapper' });
+		yearCol.createDiv({ cls: 'wheel-wrapper' });
 		yearCol.createDiv({ cls: 'wheel-highlight' });
 
 		const monthCol = body.createDiv({ cls: 'wheel-column', attr: { 'data-col': 'month' } });
-		const monthWrapper = monthCol.createDiv({ cls: 'wheel-wrapper' });
+		monthCol.createDiv({ cls: 'wheel-wrapper' });
 		monthCol.createDiv({ cls: 'wheel-highlight' });
 
 		const dayCol = body.createDiv({ cls: 'wheel-column', attr: { 'data-col': 'day' } });
-		const dayWrapper = dayCol.createDiv({ cls: 'wheel-wrapper' });
+		dayCol.createDiv({ cls: 'wheel-wrapper' });
 		dayCol.createDiv({ cls: 'wheel-highlight' });
 
 		activeDocument.body.appendChild(modal);
@@ -2053,7 +2052,7 @@ export class SmartTaskViewController {
 			
 			const padding = Math.floor(VISIBLE_COUNT / 2);
 			for (let i = 0; i < padding; i++) {
-				const empty = wrapper.createDiv({ cls: 'wheel-item wheel-empty' });
+				wrapper.createDiv({ cls: 'wheel-item wheel-empty' });
 			}
 			
 			for (const v of values) {
@@ -2062,7 +2061,7 @@ export class SmartTaskViewController {
 			}
 			
 			for (let i = 0; i < padding; i++) {
-				const empty = wrapper.createDiv({ cls: 'wheel-item wheel-empty' });
+				wrapper.createDiv({ cls: 'wheel-item wheel-empty' });
 			}
 
 			const selectedIndex = values.indexOf(selected);
@@ -2144,9 +2143,13 @@ export class SmartTaskViewController {
 			};
 		};
 
-		let yearCtrl: any = null;
-		let monthCtrl: any = null;
-		let dayCtrl: any = null;
+		interface ColumnControl {
+			destroy: () => void;
+			getValue: () => number;
+		}
+		let yearCtrl: ColumnControl | null = null;
+		let monthCtrl: ColumnControl | null = null;
+		let dayCtrl: ColumnControl | null = null;
 
 		const buildDayValues = () => {
 			const days: number[] = [];

@@ -33,7 +33,7 @@ export default class SmartTaskPlugin extends Plugin {
 
 		this.addCommand({
 			id: 'open-view',
-			name: 'Open SmartTask View',
+			name: 'Open View',
 			callback: () => {
 				void this.activateView();
 			},
@@ -104,7 +104,7 @@ export default class SmartTaskPlugin extends Plugin {
 	}
 
 	async loadSettings() {
-		const saved = await this.loadData();
+		const saved = await this.loadData() as Partial<SmartTaskSettings>;
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, saved);
 	}
 
@@ -299,11 +299,12 @@ export default class SmartTaskPlugin extends Plugin {
 
 	private async getDailyNoteFile(): Promise<TFile | null> {
 		try {
-			const dailyNotePlugin = (this.app as any).internalPlugins?.plugins?.['daily-notes'];
+			const internalPlugins = (this.app as any).internalPlugins as { plugins: Record<string, { enabled: boolean; instance: { options: { folder?: string; format?: string; template?: string } } }> };
+			const dailyNotePlugin = internalPlugins?.plugins?.['daily-notes'];
 			if (dailyNotePlugin?.enabled) {
 				const today = new Date();
-				const folder = dailyNotePlugin.instance?.options?.folder || '';
-				const format = dailyNotePlugin.instance?.options?.format || 'YYYY-MM-DD';
+				const folder = dailyNotePlugin.instance.options.folder || '';
+				const format = dailyNotePlugin.instance.options.format || 'YYYY-MM-DD';
 				const fileName = this.formatDate(today, format);
 				const filePath = folder ? `${folder}/${fileName}.md` : `${fileName}.md`;
 
@@ -312,9 +313,10 @@ export default class SmartTaskPlugin extends Plugin {
 					return existing;
 				}
 
-				if (dailyNotePlugin.instance?.options?.template) {
+				if (dailyNotePlugin.instance.options.template) {
 					try {
-						await (this.app as any).commands.executeCommandById('daily-notes');
+						const commands = (this.app as any).commands as { executeCommandById: (id: string) => Promise<void> };
+						await commands.executeCommandById('daily-notes');
 						const file = this.app.vault.getAbstractFileByPath(filePath);
 						if (file instanceof TFile) return file;
 					} catch (e) {
@@ -392,12 +394,15 @@ export default class SmartTaskPlugin extends Plugin {
 	openTaskFile(filePath: string, lineNumber: number): void {
 		const file = this.app.vault.getAbstractFileByPath(filePath);
 		if (file instanceof TFile) {
-			this.app.workspace.openLinkText(filePath, '', true).then(() => {
-				const activeLeaf = this.app.workspace.activeLeaf;
-				if (activeLeaf && (activeLeaf.view as any).editor) {
-					const editor = (activeLeaf.view as any).editor;
-					editor.setCursor({ line: lineNumber - 1, ch: 0 });
-					editor.focus();
+			void this.app.workspace.openLinkText(filePath, '', true).then(() => {
+				const leaves = this.app.workspace.getLeavesOfType('markdown');
+				for (const leaf of leaves) {
+					const editor = (leaf.view as any).editor;
+					if (editor) {
+						editor.setCursor({ line: lineNumber - 1, ch: 0 });
+						editor.focus();
+						break;
+					}
 				}
 			});
 		}

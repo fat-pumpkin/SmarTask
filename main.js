@@ -230,15 +230,15 @@ var TaskParser = class {
     return line;
   }
 };
-TaskParser.TASK_REGEX = /^\s*([-*+]|\d+\.)\s+\[([ xX])\]\s+(.+)$/;
-TaskParser.DUE_DATE_REGEX = /[📅📆🗓]\s*(\d{4}-\d{2}-\d{2})/;
-TaskParser.SCHEDULED_DATE_REGEX = /[⏳⌛]\s*(\d{4}-\d{2}-\d{2})/;
-TaskParser.START_DATE_REGEX = /[🛫🚀]\s*(\d{4}-\d{2}-\d{2})/;
-TaskParser.COMPLETED_DATE_REGEX = /✅\s*(\d{4}-\d{2}-\d{2})/;
-TaskParser.PRIORITY_REGEX = /[🔝🔺⏫🔼🔽⏬🔻]\s*/g;
-TaskParser.RECURRENCE_REGEX = /🔁\s+(.+)$/;
-TaskParser.TAG_REGEX = /#([a-zA-Z0-9_\u4e00-\u9fa5][a-zA-Z0-9_\u4e00-\u9fa5/-]*)/g;
-TaskParser.WIKILINK_REGEX = /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g;
+TaskParser.TASK_REGEX = /^\s*([-*+]|\d+\.)\s+\[([ xX])\]\s+(.+)$/u;
+TaskParser.DUE_DATE_REGEX = /[📅📆🗓]\s*(\d{4}-\d{2}-\d{2})/u;
+TaskParser.SCHEDULED_DATE_REGEX = /[⏳⌛]\s*(\d{4}-\d{2}-\d{2})/u;
+TaskParser.START_DATE_REGEX = /[🛫🚀]\s*(\d{4}-\d{2}-\d{2})/u;
+TaskParser.COMPLETED_DATE_REGEX = /✅\s*(\d{4}-\d{2}-\d{2})/u;
+TaskParser.PRIORITY_REGEX = /[🔝🔺⏫🔼🔽⏬🔻]\s*/gu;
+TaskParser.RECURRENCE_REGEX = /🔁\s+(.+)$/u;
+TaskParser.TAG_REGEX = /#([a-zA-Z0-9_\u4e00-\u9fa5][a-zA-Z0-9_\u4e00-\u9fa5/-]*)/gu;
+TaskParser.WIKILINK_REGEX = /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/gu;
 TaskParser.PRIORITY_MAP = {
   "\u{1F51D}": "highest" /* Highest */,
   "\u{1F53A}": "high" /* High */,
@@ -476,7 +476,7 @@ var SmartTaskSettingTab = class extends import_obsidian2.PluginSettingTab {
   display() {
     const { containerEl } = this;
     containerEl.empty();
-    new import_obsidian2.Setting(containerEl).setName("SmartTask Settings").setHeading();
+    new import_obsidian2.Setting(containerEl).setName("General").setHeading();
     new import_obsidian2.Setting(containerEl).setName("\u{1F4E5} Task Saving").setHeading();
     new import_obsidian2.Setting(containerEl).setName("Default Save Location").setDesc("Where newly created tasks should be saved").addDropdown((dropdown) => dropdown.addOption("inbox", "Inbox (specified file)").addOption("currentFile", "Current file").addOption("dailyNote", "Daily note").setValue(this.plugin.settings.saveTarget).onChange(async (value) => {
       this.plugin.settings.saveTarget = value;
@@ -538,7 +538,7 @@ var SmartTaskSettingTab = class extends import_obsidian2.PluginSettingTab {
     ];
     for (const item of shortcutItems) {
       const p = shortcuts.createEl("p");
-      const code = p.createEl("code", { text: item.keys });
+      p.createEl("code", { text: item.keys });
       p.appendText(` \u2014 ${item.desc}`);
     }
     new import_obsidian2.Setting(containerEl).setName("About").setHeading();
@@ -2246,7 +2246,6 @@ var SmartTaskViewController = class {
     return result;
   }
   getTimelineGroupKey(dateStr) {
-    const date = new Date(dateStr);
     if (this.timelineGroupBy === "day") {
       return dateStr;
     } else if (this.timelineGroupBy === "week") {
@@ -2592,13 +2591,13 @@ var SmartTaskViewController = class {
     const confirmBtn = header.createEl("button", { cls: "wheel-picker-confirm", text: "OK" });
     const body = modalInner.createDiv({ cls: "wheel-picker-body" });
     const yearCol = body.createDiv({ cls: "wheel-column", attr: { "data-col": "year" } });
-    const yearWrapper = yearCol.createDiv({ cls: "wheel-wrapper" });
+    yearCol.createDiv({ cls: "wheel-wrapper" });
     yearCol.createDiv({ cls: "wheel-highlight" });
     const monthCol = body.createDiv({ cls: "wheel-column", attr: { "data-col": "month" } });
-    const monthWrapper = monthCol.createDiv({ cls: "wheel-wrapper" });
+    monthCol.createDiv({ cls: "wheel-wrapper" });
     monthCol.createDiv({ cls: "wheel-highlight" });
     const dayCol = body.createDiv({ cls: "wheel-column", attr: { "data-col": "day" } });
-    const dayWrapper = dayCol.createDiv({ cls: "wheel-wrapper" });
+    dayCol.createDiv({ cls: "wheel-wrapper" });
     dayCol.createDiv({ cls: "wheel-highlight" });
     activeDocument.body.appendChild(modal);
     const years = [];
@@ -2616,14 +2615,14 @@ var SmartTaskViewController = class {
       wrapper.setCssProps({ "--wheel-transition": "transform 0.15s ease-out" });
       const padding = Math.floor(VISIBLE_COUNT / 2);
       for (let i = 0; i < padding; i++) {
-        const empty = wrapper.createDiv({ cls: "wheel-item wheel-empty" });
+        wrapper.createDiv({ cls: "wheel-item wheel-empty" });
       }
       for (const v of values) {
         const item = wrapper.createDiv({ cls: "wheel-item", text: format(v) });
         item.dataset.value = v.toString();
       }
       for (let i = 0; i < padding; i++) {
-        const empty = wrapper.createDiv({ cls: "wheel-item wheel-empty" });
+        wrapper.createDiv({ cls: "wheel-item wheel-empty" });
       }
       const selectedIndex = values.indexOf(selected);
       let currentOffset = selectedIndex * ITEM_HEIGHT;
@@ -2818,7 +2817,7 @@ var SmartTaskPlugin = class extends import_obsidian5.Plugin {
     });
     this.addCommand({
       id: "open-view",
-      name: "Open SmartTask View",
+      name: "Open View",
       callback: () => {
         void this.activateView();
       }
@@ -3053,22 +3052,24 @@ ${newLine}`,
     return await this.getInboxFile();
   }
   async getDailyNoteFile() {
-    var _a, _b, _c, _d, _e, _f, _g, _h;
+    var _a;
     try {
-      const dailyNotePlugin = (_b = (_a = this.app.internalPlugins) == null ? void 0 : _a.plugins) == null ? void 0 : _b["daily-notes"];
+      const internalPlugins = this.app.internalPlugins;
+      const dailyNotePlugin = (_a = internalPlugins == null ? void 0 : internalPlugins.plugins) == null ? void 0 : _a["daily-notes"];
       if (dailyNotePlugin == null ? void 0 : dailyNotePlugin.enabled) {
         const today = /* @__PURE__ */ new Date();
-        const folder = ((_d = (_c = dailyNotePlugin.instance) == null ? void 0 : _c.options) == null ? void 0 : _d.folder) || "";
-        const format = ((_f = (_e = dailyNotePlugin.instance) == null ? void 0 : _e.options) == null ? void 0 : _f.format) || "YYYY-MM-DD";
+        const folder = dailyNotePlugin.instance.options.folder || "";
+        const format = dailyNotePlugin.instance.options.format || "YYYY-MM-DD";
         const fileName = this.formatDate(today, format);
         const filePath = folder ? `${folder}/${fileName}.md` : `${fileName}.md`;
         const existing = this.app.vault.getAbstractFileByPath(filePath);
         if (existing instanceof import_obsidian5.TFile) {
           return existing;
         }
-        if ((_h = (_g = dailyNotePlugin.instance) == null ? void 0 : _g.options) == null ? void 0 : _h.template) {
+        if (dailyNotePlugin.instance.options.template) {
           try {
-            await this.app.commands.executeCommandById("daily-notes");
+            const commands = this.app.commands;
+            await commands.executeCommandById("daily-notes");
             const file = this.app.vault.getAbstractFileByPath(filePath);
             if (file instanceof import_obsidian5.TFile)
               return file;
@@ -3135,12 +3136,15 @@ ${newLine}`,
   openTaskFile(filePath, lineNumber) {
     const file = this.app.vault.getAbstractFileByPath(filePath);
     if (file instanceof import_obsidian5.TFile) {
-      this.app.workspace.openLinkText(filePath, "", true).then(() => {
-        const activeLeaf = this.app.workspace.activeLeaf;
-        if (activeLeaf && activeLeaf.view.editor) {
-          const editor = activeLeaf.view.editor;
-          editor.setCursor({ line: lineNumber - 1, ch: 0 });
-          editor.focus();
+      void this.app.workspace.openLinkText(filePath, "", true).then(() => {
+        const leaves = this.app.workspace.getLeavesOfType("markdown");
+        for (const leaf of leaves) {
+          const editor = leaf.view.editor;
+          if (editor) {
+            editor.setCursor({ line: lineNumber - 1, ch: 0 });
+            editor.focus();
+            break;
+          }
         }
       });
     }
