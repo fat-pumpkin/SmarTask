@@ -130,7 +130,7 @@ export default class SmartTaskPlugin extends Plugin {
 		}
 
 		if (leaf) {
-			void workspace.revealLeaf(leaf);
+			void workspace.setActiveLeaf(leaf, { focus: true });
 		}
 	}
 
@@ -342,15 +342,6 @@ export default class SmartTaskPlugin extends Plugin {
 			const sameName = matchingFiles.find(f => f.path === inboxPath);
 			if (sameName) return sameName;
 			return matchingFiles[0];
-		}
-
-		const dirIndex = inboxPath.lastIndexOf('/');
-		if (dirIndex > 0) {
-			const dir = inboxPath.substring(0, dirIndex);
-			const dirExists = this.app.vault.getAbstractFileByPath(dir);
-			if (!dirExists && typeof this.app.vault.createFolder === 'function') {
-				await this.app.vault.createFolder(dir);
-			}
 		}
 
 		return await this.app.vault.create(inboxPath, '');
