@@ -130,7 +130,7 @@ export default class SmartTaskPlugin extends Plugin {
 		}
 
 		if (leaf) {
-			workspace.revealLeaf(leaf);
+			void workspace.revealLeaf(leaf);
 		}
 	}
 
@@ -219,9 +219,9 @@ export default class SmartTaskPlugin extends Plugin {
 			const baseIndent = parentTask ? '  ' : '';
 			taskLine = `${baseIndent}- [ ] ${description}`;
 
-			const effectivePriority: TaskPriority | undefined = priority || (this.settings.defaultPriority !== TaskPriority.None ? this.settings.defaultPriority : undefined);
+			const effectivePriority = priority ?? (this.settings.defaultPriority !== TaskPriority.None ? this.settings.defaultPriority : undefined);
 			if (effectivePriority) {
-				switch (effectivePriority) {
+				switch (effectivePriority as TaskPriority) {
 					case TaskPriority.Highest:
 						taskLine += ' 🔝';
 						break;
@@ -348,7 +348,7 @@ export default class SmartTaskPlugin extends Plugin {
 		if (dirIndex > 0) {
 			const dir = inboxPath.substring(0, dirIndex);
 			const dirExists = this.app.vault.getAbstractFileByPath(dir);
-			if (!dirExists) {
+			if (!dirExists && typeof this.app.vault.createFolder === 'function') {
 				await this.app.vault.createFolder(dir);
 			}
 		}
@@ -488,8 +488,11 @@ class QuickCreateModal extends Modal {
 		targetSelect.createEl('option', { value: 'dailyNote', text: 'Daily Note' });
 		targetSelect.value = this.plugin.settings.saveTarget;
 		targetSelect.onchange = async () => {
-			this.plugin.settings.saveTarget = targetSelect.value as 'inbox' | 'currentFile' | 'dailyNote';
-			await this.plugin.saveSettings();
+			const value = targetSelect.value;
+			if (value === 'inbox' || value === 'currentFile' || value === 'dailyNote') {
+				this.plugin.settings.saveTarget = value;
+				await this.plugin.saveSettings();
+			}
 		};
 
 		const btnRow = form.createDiv({ cls: 'smarttask-btn-row' });
@@ -502,10 +505,13 @@ class QuickCreateModal extends Modal {
 			const desc = descInput.value.trim();
 			if (desc) {
 				const priValue = prioritySelect.value;
+				const effectivePriority = ['highest', 'high', 'medium', 'low', 'lowest'].includes(priValue)
+					? priValue as TaskPriority
+					: undefined;
 				await this.plugin.createQuickTask(
 					desc,
 					dateInput.value || undefined,
-					priValue ? (priValue as TaskPriority) : undefined
+					effectivePriority
 				);
 				this.close();
 			}

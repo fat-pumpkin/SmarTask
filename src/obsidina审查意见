@@ -1,0 +1,109 @@
+## Source code
+
+- **Error**: Uses Obsidian APIs newer than the declared `minAppVersion`
+  - obsidianmd/no-unsupported-api
+  - src/main.ts:150, src/main.ts:347, src/main.ts:391
+- **Error**: Sets styles directly instead of using CSS classes, `setCssProps`, or `setCssStyles`
+  - obsidianmd/no-static-styles-assignment
+  - src/main.ts:492, src/main.ts:495, src/main.ts:499, src/main.ts:508, src/main.ts:517, src/main.ts:532, src/main.ts:535, src/main.ts:543, src/main.ts:550, src/main.ts:553, src/main.ts:557, src/settings.ts:182, src/smartTaskView.ts:1295, src/smartTaskView.ts:2052, src/smartTaskView.ts:2095, src/smartTaskView.ts:2110, src/smartTaskView.ts:2141
+- **Error**: For a consistent UI use `new Setting(containerEl).setName(...).setHeading()` instead of creating HTML heading elements directly.
+  - src/settings.ts:18, src/settings.ts:20, src/settings.ts:60, src/settings.ts:125, src/settings.ts:168, src/settings.ts:180, src/settings.ts:189
+- **Error**: Unsafe assignment to innerHTML
+  - src/smartTaskView.ts:1691-1730
+- **Error**: Unsafe assignment to innerHTML (Variable 'dateStr' declared as function parameter, which is considered unsafe. 'FunctionExpression' at 1948:21)
+  - src/smartTaskView.ts:1951-1960
+- **Warning**: Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator.
+  - src/main.ts:31, src/main.ts:38, src/main.ts:150, src/main.ts:415-422, src/smartTaskView.ts:285, src/smartTaskView.ts:301, src/smartTaskView.ts:718, src/smartTaskView.ts:804, src/smartTaskView.ts:918, src/smartTaskView.ts:941, src/smartTaskView.ts:1012, src/smartTaskView.ts:1018, src/smartTaskView.ts:1084, src/smartTaskView.ts:1361, src/smartTaskView.ts:1458, src/smartTaskView.ts:1501, src/smartTaskView.ts:1974, src/taskIndex.ts:59
+- **Warning**: The command ID should not include the plugin ID. Obsidian will make sure that there are no conflicts with other plugins.
+  - src/main.ts:35
+- **Warning**: The command name should not include the plugin name, the plugin name is already shown next to the command name in the UI.
+  - src/main.ts:36
+- **Warning**: Don't provide a default hotkey, as they might conflict with other hotkeys the user has already set, or that are included with Obsidian by default.
+  - src/main.ts:48-53, src/main.ts:73-78, src/main.ts:99-104
+- **Warning**: Unsafe assignment of an `error` or `any` typed value
+  - @typescript-eslint/no-unsafe-assignment
+  - src/main.ts:125, src/main.ts:126, src/main.ts:320, src/main.ts:324, src/main.ts:325, src/main.ts:335, src/main.ts:418, src/main.ts:545, src/settings.ts:31, src/smartTaskView.ts:378, src/smartTaskView.ts:488, src/smartTaskView.ts:518, src/smartTaskView.ts:1062, src/smartTaskView.ts:1082, src/smartTaskView.ts:1083, src/smartTaskView.ts:1768, src/smartTaskView.ts:2196, src/smartTaskView.ts:2197, src/smartTaskView.ts:2198
+- **Warning**: Unexpected any. Specify a different type.
+  - src/main.ts:137, src/main.ts:320, src/main.ts:337, src/main.ts:417, src/main.ts:418, src/main.ts:545, src/settings.ts:31, src/smartTaskView.ts:378, src/smartTaskView.ts:488, src/smartTaskView.ts:513, src/smartTaskView.ts:515, src/smartTaskView.ts:518, src/smartTaskView.ts:1062, src/smartTaskView.ts:1082, src/smartTaskView.ts:1083, src/smartTaskView.ts:1768, src/smartTaskView.ts:2156, src/smartTaskView.ts:2157, src/smartTaskView.ts:2158
+- **Warning**: Unsafe call of an `error` or `any` typed value
+  - @typescript-eslint/no-unsafe-call
+  - src/main.ts:142, src/main.ts:337, src/main.ts:419, src/main.ts:420, src/smartTaskView.ts:2169, src/smartTaskView.ts:2186, src/smartTaskView.ts:2187, src/smartTaskView.ts:2188, src/smartTaskView.ts:2196, src/smartTaskView.ts:2197, src/smartTaskView.ts:2198, src/smartTaskView.ts:2199, src/smartTaskView.ts:2199, src/smartTaskView.ts:2199, src/smartTaskView.ts:2199
+- **Warning**: Unsafe member access on an `error` or `any` typed value
+  - @typescript-eslint/no-unsafe-member-access
+  - src/main.ts:142, src/main.ts:320, src/main.ts:321, src/main.ts:324, src/main.ts:325, src/main.ts:334, src/main.ts:335, src/main.ts:337, src/main.ts:417, src/main.ts:418, src/main.ts:419, src/main.ts:420, src/smartTaskView.ts:2169, src/smartTaskView.ts:2186, src/smartTaskView.ts:2187, src/smartTaskView.ts:2188, src/smartTaskView.ts:2196, src/smartTaskView.ts:2197, src/smartTaskView.ts:2198, src/smartTaskView.ts:2199, src/smartTaskView.ts:2199, src/smartTaskView.ts:2199, src/smartTaskView.ts:2199
+- **Warning**: Passes unsafe values into typed parameters
+  - @typescript-eslint/no-unsafe-argument
+  - src/main.ts:150, src/main.ts:326, src/smartTaskView.ts:513, src/smartTaskView.ts:515
+- **Warning**: The case statement does not have a shared enum type with the switch predicate.
+  - src/main.ts:242-244, src/main.ts:245-247, src/main.ts:248-250, src/main.ts:251-253, src/main.ts:254-256
+- **Warning**: Use 'window.setTimeout()' instead of 'setTimeout()' for popout window compatibility.
+  - src/main.ts:570, src/smartTaskView.ts:1137, src/taskIndex.ts:116
+- **Warning**: Unexpected lexical declaration in case block.
+  - src/queryEngine.ts:67-74, src/queryEngine.ts:152, src/queryEngine.ts:153, src/queryEngine.ts:157, src/queryEngine.ts:158
+- **Warning**: Do not write to DOM directly using innerHTML/outerHTML property
+  - src/settings.ts:183-187, src/smartTaskView.ts:1691-1730, src/smartTaskView.ts:1951-1960, src/smartTaskView.ts:2014-2036
+- **Warning**: This assertion is unnecessary since it does not change the type of the expression.
+  - src/smartTaskView.ts:281, src/smartTaskView.ts:712-714, src/smartTaskView.ts:774-776, src/smartTaskView.ts:912-914, src/smartTaskView.ts:1355-1357, src/smartTaskView.ts:1452-1454, src/smartTaskView.ts:1495-1497, src/smartTaskView.ts:1968-1970
+- **Warning**: The two values in this comparison do not have a shared enum type.
+  - src/smartTaskView.ts:516, src/smartTaskView.ts:1917, src/smartTaskView.ts:1917
+- **Warning**: Unnecessary escape character: \/.
+  - src/smartTaskView.ts:957, src/smartTaskView.ts:959, src/taskParser.ts:11
+- **Warning**: Use 'activeDocument' instead of 'document' for popout window compatibility.
+  - src/smartTaskView.ts:1689, src/smartTaskView.ts:1731, src/smartTaskView.ts:1797, src/smartTaskView.ts:1949, src/smartTaskView.ts:1961, src/smartTaskView.ts:1997, src/smartTaskView.ts:2037, src/smartTaskView.ts:2056, src/smartTaskView.ts:2062, src/smartTaskView.ts:2070, src/smartTaskView.ts:2113, src/smartTaskView.ts:2114, src/smartTaskView.ts:2123, src/smartTaskView.ts:2124, src/smartTaskView.ts:2146, src/smartTaskView.ts:2147
+- **Warning**: Promise returned in function argument where a void return was expected.
+  - src/smartTaskView.ts:1746-1777, src/smartTaskView.ts:1779-1790
+- **Warning**: Unexpected confirm.
+  - src/smartTaskView.ts:1780
+- **Warning**: Use 'window.clearTimeout()' instead of 'clearTimeout()' for popout window compatibility.
+  - src/taskIndex.ts:56, src/taskIndex.ts:253
+- **Warning**: Unexpected surrogate pair in character class. Use 'u' flag.
+  - src/taskParser.ts:5, src/taskParser.ts:5, src/taskParser.ts:5, src/taskParser.ts:7, src/taskParser.ts:7, src/taskParser.ts:9, src/taskParser.ts:9, src/taskParser.ts:9, src/taskParser.ts:9, src/taskParser.ts:9
+- **Recommendation**: 'TFolder' is defined but never used.
+  - src/main.ts:1
+- **Recommendation**: 'ViewType' is defined but never used.
+  - src/main.ts:4
+- **Recommendation**: 'dateStr' is assigned a value but never used.
+  - src/main.ts:323
+- **Recommendation**: 'templatePath' is assigned a value but never used.
+  - src/main.ts:335
+- **Recommendation**: `activeLeaf` is deprecated. The use of this field is discouraged.
+The recommended alternatives are:
+- If you need information about the current view, use {@link Workspace.getActiveViewOfType}.
+- If you need to open a new file or navigate a view, use {@link Workspace.getLeaf}.
+  - src/main.ts:416
+- **Recommendation**: 'SmartTaskSettings' is defined but never used.
+  - src/settings.ts:3
+- **Recommendation**: 'DEFAULT_SETTINGS' is defined but never used.
+  - src/settings.ts:3
+- **Recommendation**: 'App' is defined but never used.
+  - src/smartTaskView.ts:1
+- **Recommendation**: 'dateLabel' is assigned a value but never used.
+  - src/smartTaskView.ts:219
+- **Recommendation**: 'priLabel' is assigned a value but never used.
+  - src/smartTaskView.ts:257
+- **Recommendation**: 'wikilinkRegex' is assigned a value but never used.
+  - src/smartTaskView.ts:956
+- **Recommendation**: 'tagRegex' is assigned a value but never used.
+  - src/smartTaskView.ts:957
+- **Recommendation**: 'dateDot' is assigned a value but never used.
+  - src/smartTaskView.ts:1123
+- **Recommendation**: 'startUnit' is assigned a value but never used.
+  - src/smartTaskView.ts:1282
+- **Recommendation**: 'endUnit' is assigned a value but never used.
+  - src/smartTaskView.ts:1283
+- **Recommendation**: 'zigzagLine' is assigned a value but never used.
+  - src/smartTaskView.ts:1309
+- **Recommendation**: 'priorityDot' is assigned a value but never used.
+  - src/smartTaskView.ts:1408
+- **Recommendation**: 'date' is assigned a value but never used.
+  - src/smartTaskView.ts:1627
+- **Recommendation**: 'containerTop' is assigned a value but never used.
+  - src/smartTaskView.ts:1677
+- **Recommendation**: 'monthLabel' is assigned a value but never used.
+  - src/smartTaskView.ts:1816
+- **Recommendation**: 'dayNum' is assigned a value but never used.
+  - src/smartTaskView.ts:1906
+- **Recommendation**: 'priority' is assigned a value but never used.
+  - src/smartTaskView.ts:1983
+- **Recommendation**: 'Notice' is defined but never used.
+  - src/taskIndex.ts:1

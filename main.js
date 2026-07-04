@@ -2907,7 +2907,7 @@ ${newLine}`,
       }
     }
     if (leaf) {
-      workspace.revealLeaf(leaf);
+      void workspace.revealLeaf(leaf);
     }
   }
   updateStatusBar() {
@@ -2987,7 +2987,7 @@ ${newLine}`,
       let taskLine = "";
       const baseIndent = parentTask ? "  " : "";
       taskLine = `${baseIndent}- [ ] ${description}`;
-      const effectivePriority = priority || (this.settings.defaultPriority !== "none" /* None */ ? this.settings.defaultPriority : void 0);
+      const effectivePriority = priority != null ? priority : this.settings.defaultPriority !== "none" /* None */ ? this.settings.defaultPriority : void 0;
       if (effectivePriority) {
         switch (effectivePriority) {
           case "highest" /* Highest */:
@@ -3099,7 +3099,7 @@ ${newLine}`,
     if (dirIndex > 0) {
       const dir = inboxPath.substring(0, dirIndex);
       const dirExists = this.app.vault.getAbstractFileByPath(dir);
-      if (!dirExists) {
+      if (!dirExists && typeof this.app.vault.createFolder === "function") {
         await this.app.vault.createFolder(dir);
       }
     }
@@ -3213,8 +3213,11 @@ var QuickCreateModal = class extends import_obsidian5.Modal {
     targetSelect.createEl("option", { value: "dailyNote", text: "Daily Note" });
     targetSelect.value = this.plugin.settings.saveTarget;
     targetSelect.onchange = async () => {
-      this.plugin.settings.saveTarget = targetSelect.value;
-      await this.plugin.saveSettings();
+      const value = targetSelect.value;
+      if (value === "inbox" || value === "currentFile" || value === "dailyNote") {
+        this.plugin.settings.saveTarget = value;
+        await this.plugin.saveSettings();
+      }
     };
     const btnRow = form.createDiv({ cls: "smarttask-btn-row" });
     const cancelBtn = btnRow.createEl("button", { text: "Cancel", cls: "smarttask-btn-cancel" });
@@ -3224,10 +3227,11 @@ var QuickCreateModal = class extends import_obsidian5.Modal {
       const desc = descInput.value.trim();
       if (desc) {
         const priValue = prioritySelect.value;
+        const effectivePriority = ["highest", "high", "medium", "low", "lowest"].includes(priValue) ? priValue : void 0;
         await this.plugin.createQuickTask(
           desc,
           dateInput.value || void 0,
-          priValue ? priValue : void 0
+          effectivePriority
         );
         this.close();
       }
