@@ -1701,7 +1701,7 @@ var SmartTaskViewController = class {
     }
   }
   getPlainDescription(desc) {
-    return desc.replace(/\[\[([^\]|]+)(?:\|[^\]]+)?\]\]/g, (match, p1) => p1.split("|")[0].trim()).replace(/#[a-zA-Z0-9_\u4e00-\u9fa5][a-zA-Z0-9_\u4e00-\u9fa5/-]*/g, "").replace(/\s+/g, " ").trim();
+    return desc.replace(/\[\[([^\]|]+)(?:\|[^\]]+)?\]\]/g, (_match, p1) => p1.split("|")[0].trim()).replace(/#[a-zA-Z0-9_\u4e00-\u9fa5][a-zA-Z0-9_\u4e00-\u9fa5/-]*/g, "").replace(/\s+/g, " ").trim();
   }
   openWikiLink(target) {
     var _a;
@@ -2897,7 +2897,7 @@ ${newLine}`,
         active: true
       });
     }
-    workspace.revealLeaf(leaf);
+    workspace.setActiveLeaf(leaf);
   }
   updateStatusBar() {
     const tasks = this.getTasks();

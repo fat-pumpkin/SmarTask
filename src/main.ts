@@ -126,7 +126,7 @@ export default class SmartTaskPlugin extends Plugin {
 			});
 		}
 
-		workspace.revealLeaf(leaf);
+		workspace.setActiveLeaf(leaf);
 	}
 
 	private updateStatusBar(): void {
