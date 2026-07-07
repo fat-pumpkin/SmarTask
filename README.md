@@ -135,8 +135,8 @@ Timeline view supports four styles: Classic, Zigzag, Card, and Gantt.
 ## Tech Stack
 
 - **TypeScript** + **esbuild** for building
-- **Svelte** for componentized UI
 - **Obsidian Plugin API** for integration
+- Native DOM manipulation for UI rendering
 
 ## Project Structure
 
@@ -149,8 +149,7 @@ Timeline view supports four styles: Classic, Zigzag, Card, and Gantt.
 │   ├── types.ts          # Type definitions
 │   ├── taskParser.ts     # Task parser
 │   ├── taskIndex.ts      # Task indexing engine
-│   ├── queryEngine.ts    # Query engine
-│   └── ui/               # Svelte components
+│   └── queryEngine.ts    # Query engine
 ├── main.js               # Build output
 ├── styles.css            # Stylesheet
 ├── manifest.json         # Plugin manifest
@@ -159,13 +158,22 @@ Timeline view supports four styles: Classic, Zigzag, Card, and Gantt.
 
 ## Changelog
 
-### v1.0.1
+### 1.0.2
+- **Added**: Stats and progress bar displayed in header row for quick overview
+- **Added**: Tag input mode in filter panel (instead of enum list) for better tag management
+- **Added**: Enhanced search functionality supporting description, file path, tags, and subtasks
+- **Fixed**: Tag display consistency across all views (list, kanban, timeline zigzag, gantt)
+- **Fixed**: Wiki link rendering consistency across all views
+- **Fixed**: Progress bar layout - progress bar on left, percentage on right
+- **Removed**: Unused Svelte component files for cleaner codebase
+
+### 1.0.1
 - **Fixed**: Gantt chart style clarity - improved bar visibility with enhanced colors, borders, and labels
 - **Fixed**: Removed unused variables and imports for better code quality
 - **Fixed**: Replaced `confirm()` with Obsidian Modal for better UX
 - **Fixed**: Regex escape character issues
 
-### v1.0.0
+### 1.0.0
 - Initial release
 - Multiple views: List, Kanban, Calendar, Timeline
 - Quick task creation with inline chips
@@ -176,11 +184,11 @@ Timeline view supports four styles: Classic, Zigzag, Card, and Gantt.
 
 ## Version Release
 
-This project uses GitHub Actions for automatic releases. Create a tag in `v*` format to trigger the release workflow:
+This project uses GitHub Actions for automatic releases. Create a tag to trigger the release workflow:
 
 ```bash
-git tag v1.0.0
-git push origin v1.0.0
+git tag 1.0.0
+git push origin 1.0.0
 ```
 
 GitHub Actions will automatically build and create a Release with `main.js`, `manifest.json`, and `styles.css`, enabling Obsidian to perform online updates.

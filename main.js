@@ -587,9 +587,17 @@ var QueryEngine = class {
     }
     if (query.searchText) {
       const searchLower = query.searchText.toLowerCase();
-      results = results.filter(
-        (t) => t.description.toLowerCase().includes(searchLower)
-      );
+      results = results.filter((t) => {
+        if (t.description.toLowerCase().includes(searchLower))
+          return true;
+        if (t.filePath.toLowerCase().includes(searchLower))
+          return true;
+        if (t.tags.some((tag) => tag.toLowerCase().includes(searchLower)))
+          return true;
+        if (t.subtasks.some((st) => st.description.toLowerCase().includes(searchLower)))
+          return true;
+        return false;
+      });
     }
     if (query.sortBy) {
       results = this.sortTasks(results, query.sortBy, query.sortOrder || "asc");
@@ -792,7 +800,6 @@ var SmartTaskViewController = class {
     this.quickCreateEl = null;
     this.searchRowEl = null;
     this.filterPanelEl = null;
-    this.statsBarEl = null;
     this.contentEl = null;
     this.calendarYear = (/* @__PURE__ */ new Date()).getFullYear();
     this.calendarMonth = (/* @__PURE__ */ new Date()).getMonth();
@@ -806,11 +813,11 @@ var SmartTaskViewController = class {
   }
   render() {
     this.mainEl = this.container.createDiv({ cls: "smarttask-container" });
-    this.renderHeader();
+    this.headerEl = this.mainEl.createDiv({ cls: "smarttask-header" });
+    this.renderHeaderContent();
     this.renderQuickCreate();
     this.renderSearchRow();
     this.renderFilterPanel();
-    this.renderStatsBar();
     this.renderContent();
   }
   refresh() {
@@ -822,7 +829,7 @@ var SmartTaskViewController = class {
   updateTasks(tasks, allTags) {
     this.tasks = tasks;
     this.allTags = allTags;
-    this.renderStatsBar();
+    this.renderHeader();
     this.renderContent();
   }
   get filteredTasks() {
@@ -872,16 +879,60 @@ var SmartTaskViewController = class {
     return this.filterPriorities.length > 0 || this.filterTags.length > 0 || this.dateFilter !== "all" || this.searchQuery.length > 0;
   }
   renderHeader() {
-    if (this.headerEl) {
-      this.headerEl.remove();
-      this.headerEl = null;
-    }
-    this.headerEl = this.mainEl.createDiv({ cls: "smarttask-header" });
+    if (!this.headerEl)
+      return;
+    this.headerEl.empty();
+    this.renderHeaderContent();
+  }
+  renderHeaderContent() {
+    if (!this.headerEl)
+      return;
     const titleEl = this.headerEl.createDiv({ cls: "smarttask-title" });
     titleEl.createSpan({ cls: "smarttask-icon", text: "\u2705" });
     titleEl.createEl("h2", { text: "SmartTask" });
+    const statsEl = this.headerEl.createDiv({ cls: "header-stats" });
+    this.renderStatsInHeader(statsEl);
     const actionsEl = this.headerEl.createDiv({ cls: "header-actions" });
+    const filterBtn = actionsEl.createEl("button", {
+      cls: "filter-btn",
+      text: "\u{1F50D}",
+      attr: { title: "\u7B5B\u9009" }
+    });
+    if (this.showFilterPanel)
+      filterBtn.addClass("active");
+    if (this.hasActiveFilters)
+      filterBtn.addClass("has-filters");
+    filterBtn.addEventListener("click", () => {
+      this.showFilterPanel = !this.showFilterPanel;
+      this.renderHeader();
+      this.renderFilterPanel();
+    });
     this.renderViewToggle(actionsEl);
+  }
+  renderStatsInHeader(container) {
+    const total = this.tasks.length;
+    const done = this.tasks.filter((t) => t.completed).length;
+    const notDone = total - done;
+    const overdue = QueryEngine.getOverdueTasks(this.tasks).length;
+    const today = QueryEngine.getTodayTasks(this.tasks).length;
+    const upcoming = QueryEngine.getUpcomingTasks(this.tasks, 7).length;
+    const progress = total > 0 ? Math.round(done / total * 100) : 0;
+    const stats = [
+      { value: notDone, label: "\u5F85\u529E", cls: "pending" },
+      { value: overdue, label: "\u903E\u671F", cls: "overdue" },
+      { value: today, label: "\u4ECA\u65E5", cls: "today" },
+      { value: upcoming, label: "7\u5929\u5185", cls: "upcoming" }
+    ];
+    for (let i = 0; i < stats.length; i++) {
+      const s = stats[i];
+      const item = container.createDiv({ cls: `stat-item ${s.cls}` });
+      item.createSpan({ cls: "stat-label", text: s.label });
+      item.createSpan({ cls: "stat-num", text: s.value.toString() });
+    }
+    const progressWrap = container.createDiv({ cls: "header-progress-wrap" });
+    const progressBar = progressWrap.createDiv({ cls: "progress-bar-container" });
+    progressBar.createDiv({ cls: "progress-bar-fill", attr: { style: `width: ${progress}%` } });
+    progressWrap.createSpan({ cls: "progress-percent", text: `${progress}%` });
   }
   renderViewToggle(container) {
     const toggleEl = container.createDiv({ cls: "view-toggle" });
@@ -1186,9 +1237,14 @@ var SmartTaskViewController = class {
     if (!this.showFilterPanel)
       return;
     this.filterPanelEl = this.mainEl.createDiv({ cls: "filter-panel" });
-    const dateSection = this.filterPanelEl.createDiv({ cls: "filter-section" });
-    const dateHeader = dateSection.createDiv({ cls: "filter-header" });
-    dateHeader.createSpan({ cls: "filter-title", text: "\u{1F4C5} \u65E5\u671F\u7B5B\u9009" });
+    if (this.searchRowEl && this.searchRowEl.parentElement === this.mainEl) {
+      this.searchRowEl.after(this.filterPanelEl);
+    } else if (this.contentEl && this.contentEl.parentElement === this.mainEl) {
+      this.contentEl.before(this.filterPanelEl);
+    }
+    const filterRow = this.filterPanelEl.createDiv({ cls: "filter-row" });
+    const dateSection = filterRow.createDiv({ cls: "filter-section" });
+    dateSection.createSpan({ cls: "filter-title", text: "\u{1F4C5} \u65E5\u671F" });
     const dateOptions = dateSection.createDiv({ cls: "filter-options" });
     const dateFilters = [
       { value: "all", label: "\u5168\u90E8" },
@@ -1211,9 +1267,8 @@ var SmartTaskViewController = class {
         this.renderContent();
       });
     }
-    const priSection = this.filterPanelEl.createDiv({ cls: "filter-section" });
-    const priHeader = priSection.createDiv({ cls: "filter-header" });
-    priHeader.createSpan({ cls: "filter-title", text: "\u{1F3AF} \u4F18\u5148\u7EA7" });
+    const priSection = filterRow.createDiv({ cls: "filter-section" });
+    priSection.createSpan({ cls: "filter-title", text: "\u{1F3AF} \u4F18\u5148\u7EA7" });
     const priOptions = priSection.createDiv({ cls: "filter-options" });
     const priorities = [
       { value: "highest", label: "\u{1F51D} \u6700\u9AD8", color: "error" },
@@ -1242,31 +1297,36 @@ var SmartTaskViewController = class {
         this.renderContent();
       });
     }
-    const tagSection = this.filterPanelEl.createDiv({ cls: "filter-section" });
-    const tagHeader = tagSection.createDiv({ cls: "filter-header" });
-    tagHeader.createSpan({ cls: "filter-title", text: "\u{1F3F7}\uFE0F \u6807\u7B7E" });
-    if (this.allTags.length === 0) {
-      tagHeader.createSpan({ cls: "filter-hint", text: "\u6682\u65E0\u6807\u7B7E" });
-    }
-    const tagCloud = tagSection.createDiv({ cls: "tag-cloud" });
-    for (const tag of this.allTags) {
-      const btn = tagCloud.createEl("button", {
-        cls: "tag-chip",
-        text: `#${tag}`
-      });
-      if (this.filterTags.includes(tag))
-        btn.addClass("active");
-      btn.addEventListener("click", () => {
-        if (this.filterTags.includes(tag)) {
-          this.filterTags = this.filterTags.filter((t) => t !== tag);
-        } else {
-          this.filterTags = [...this.filterTags, tag];
-        }
+    const tagSection = filterRow.createDiv({ cls: "filter-section tag-section" });
+    tagSection.createSpan({ cls: "filter-title", text: "\u{1F3F7}\uFE0F \u6807\u7B7E" });
+    const tagInputWrapper = tagSection.createDiv({ cls: "tag-input-wrapper" });
+    const selectedTagsEl = tagInputWrapper.createDiv({ cls: "selected-tags" });
+    for (const tag of this.filterTags) {
+      const tagEl = selectedTagsEl.createSpan({ cls: "selected-tag", text: `#${tag}` });
+      const removeBtn = tagEl.createEl("button", { cls: "remove-tag", text: "\u2715" });
+      removeBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        this.filterTags = this.filterTags.filter((t) => t !== tag);
         this.renderFilterPanel();
         this.renderHeader();
         this.renderContent();
       });
     }
+    const tagInput = tagInputWrapper.createEl("input", {
+      type: "text",
+      attr: { placeholder: "\u8F93\u5165\u6807\u7B7E\uFF0C\u56DE\u8F66\u6DFB\u52A0..." }
+    });
+    tagInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        const value = e.target.value.trim().replace(/^#/, "");
+        if (value && !this.filterTags.includes(value)) {
+          this.filterTags = [...this.filterTags, value];
+          this.renderFilterPanel();
+          this.renderHeader();
+          this.renderContent();
+        }
+      }
+    });
     const actions = this.filterPanelEl.createDiv({ cls: "filter-actions" });
     const resetBtn = actions.createEl("button", { cls: "reset-btn", text: "\u{1F504} \u91CD\u7F6E\u7B5B\u9009" });
     resetBtn.addEventListener("click", () => {
@@ -1279,40 +1339,6 @@ var SmartTaskViewController = class {
       this.renderSearchRow();
       this.renderContent();
     });
-  }
-  renderStatsBar() {
-    if (this.statsBarEl) {
-      this.statsBarEl.remove();
-      this.statsBarEl = null;
-    }
-    this.statsBarEl = this.mainEl.createDiv({ cls: "stats-bar" });
-    const total = this.tasks.length;
-    const done = this.tasks.filter((t) => t.completed).length;
-    const notDone = total - done;
-    const overdue = QueryEngine.getOverdueTasks(this.tasks).length;
-    const today = QueryEngine.getTodayTasks(this.tasks).length;
-    const upcoming = QueryEngine.getUpcomingTasks(this.tasks, 7).length;
-    const progress = total > 0 ? Math.round(done / total * 100) : 0;
-    const stats = [
-      { value: notDone, label: "\u5F85\u529E", cls: "" },
-      { value: overdue, label: "\u903E\u671F", cls: "overdue" },
-      { value: today, label: "\u4ECA\u65E5", cls: "today" },
-      { value: upcoming, label: "7\u5929\u5185", cls: "upcoming" }
-    ];
-    for (let i = 0; i < stats.length; i++) {
-      const s = stats[i];
-      const item = this.statsBarEl.createDiv({ cls: `stat-item ${s.cls}` });
-      item.createSpan({ cls: "stat-value", text: s.value.toString() });
-      item.createSpan({ cls: "stat-label", text: s.label });
-      if (i < stats.length - 1) {
-        this.statsBarEl.createDiv({ cls: "stat-divider" });
-      }
-    }
-    this.statsBarEl.createDiv({ cls: "stat-divider" });
-    const progressItem = this.statsBarEl.createDiv({ cls: "stat-item progress-item" });
-    const progressBar = progressItem.createDiv({ cls: "progress-bar" });
-    progressBar.createDiv({ cls: "progress-fill", attr: { style: `width: ${progress}%` } });
-    progressItem.createSpan({ cls: "progress-text", text: `${progress}%` });
   }
   renderContent() {
     if (this.contentEl) {
@@ -1437,25 +1463,6 @@ var SmartTaskViewController = class {
     if (hasSubtasks) {
       const progress = this.getSubtaskProgress(task);
       meta.createSpan({ cls: "subtask-progress", text: `\u{1F4CB} ${progress.done}/${progress.total}` });
-    }
-    if (task.tags.length > 0) {
-      const tagsSpan = meta.createSpan({ cls: "task-tags" });
-      for (const tag of task.tags.slice(0, 2)) {
-        const tagEl = tagsSpan.createSpan({ cls: "tag tag-clickable", text: `#${tag}` });
-        tagEl.addEventListener("click", (e) => {
-          e.stopPropagation();
-          if (!this.filterTags.includes(tag)) {
-            this.filterTags = [...this.filterTags, tag];
-          }
-          this.showFilterPanel = true;
-          this.renderFilterPanel();
-          this.renderHeader();
-          this.renderContent();
-        });
-      }
-      if (task.tags.length > 2) {
-        tagsSpan.createSpan({ cls: "tag tag-more", text: `+${task.tags.length - 2}` });
-      }
     }
     meta.createSpan({ cls: "task-file", text: `\u{1F4C4} ${task.filePath.split("/").pop()}` });
     if (this.plugin.settings.showSubtasks && hasSubtasks && expanded) {
@@ -1669,15 +1676,17 @@ var SmartTaskViewController = class {
           });
         }
       } else if (match[2]) {
-        const tag = match[2];
+        const tagName = match[2].substring(1);
         const tagEl = container.createSpan({
-          cls: "inline-tag tag-clickable",
-          text: `#${tag}`
+          cls: "task-tag",
+          text: match[2]
         });
         tagEl.addEventListener("click", (e) => {
           e.stopPropagation();
-          if (!this.filterTags.includes(tag)) {
-            this.filterTags = [...this.filterTags, tag];
+          if (!this.filterTags.includes(tagName)) {
+            this.filterTags = [...this.filterTags, tagName];
+          } else {
+            this.filterTags = this.filterTags.filter((t) => t !== tagName);
           }
           this.showFilterPanel = true;
           this.renderFilterPanel();
@@ -1690,6 +1699,9 @@ var SmartTaskViewController = class {
     if (lastIndex < desc.length) {
       container.createSpan({ text: desc.substring(lastIndex) });
     }
+  }
+  getPlainDescription(desc) {
+    return desc.replace(/\[\[([^\]|]+)(?:\|[^\]]+)?\]\]/g, (match, p1) => p1.split("|")[0].trim()).replace(/#[a-zA-Z0-9_\u4e00-\u9fa5][a-zA-Z0-9_\u4e00-\u9fa5/-]*/g, "").replace(/\s+/g, " ").trim();
   }
   openWikiLink(target) {
     var _a;
@@ -1911,9 +1923,10 @@ var SmartTaskViewController = class {
       if (task.completed)
         row.addClass("completed");
       const labelCell = row.createDiv({ cls: "gantt-label" });
+      const plainDesc = this.getPlainDescription(task.description);
       labelCell.createSpan({
         cls: "gantt-task-label",
-        text: task.description.length > 20 ? task.description.substring(0, 20) + "..." : task.description
+        text: plainDesc.length > 20 ? plainDesc.substring(0, 20) + "..." : plainDesc
       });
       const barsContainer = row.createDiv({ cls: "gantt-bars" });
       let left = 0;
@@ -1954,9 +1967,10 @@ var SmartTaskViewController = class {
         if (this.isOverdue(task) && !task.completed) {
           bar.addClass("overdue");
         }
-        const shortDesc = task.description.length > 12 ? task.description.substring(0, 12) + "..." : task.description;
+        const plainDesc2 = this.getPlainDescription(task.description);
+        const shortDesc = plainDesc2.length > 12 ? plainDesc2.substring(0, 12) + "..." : plainDesc2;
         bar.createDiv({ cls: "gantt-bar-label", text: shortDesc });
-        bar.title = `${task.description}
+        bar.title = `${plainDesc2}
 \u8D77\u59CB: ${task.startDate || "\u65E0"}
 \u622A\u6B62: ${task.dueDate || "\u65E0"}`;
         bar.addEventListener("click", () => {
@@ -2014,7 +2028,8 @@ var SmartTaskViewController = class {
           e.stopPropagation();
           void this.plugin.toggleTaskStatus(task, checkbox.checked);
         });
-        const desc = taskMain.createSpan({ cls: "zigzag-task-desc", text: task.description });
+        const desc = taskMain.createSpan({ cls: "zigzag-task-desc" });
+        this.renderDescriptionWithLinks(desc, task);
         desc.addEventListener("click", () => {
           void this.plugin.openTaskFile(task.filePath, task.lineNumber);
         });
@@ -2059,16 +2074,11 @@ var SmartTaskViewController = class {
         });
         cardTop.createSpan({ cls: "task-card-date", text: task.dueDate || "" });
         const cardBody = card.createDiv({ cls: "task-card-body" });
-        const desc = cardBody.createSpan({ cls: "task-card-desc", text: task.description });
+        const desc = cardBody.createSpan({ cls: "task-card-desc" });
+        this.renderDescriptionWithLinks(desc, task);
         desc.addEventListener("click", () => {
           this.plugin.openTaskFile(task.filePath, task.lineNumber);
         });
-        if (task.tags.length > 0) {
-          const tags = cardBody.createDiv({ cls: "task-card-tags" });
-          for (const tag of task.tags.slice(0, 3)) {
-            tags.createSpan({ cls: "task-card-tag", text: `#${tag}` });
-          }
-        }
         const hasSubtasks = task.subtasks.length > 0;
         const expanded = this.expandedTasks.has(task.id) || hasSubtasks;
         if (hasSubtasks && this.plugin.settings.showSubtasks) {
@@ -2164,22 +2174,6 @@ var SmartTaskViewController = class {
       const descSpan = main.createSpan({ cls: "task-description" });
       this.renderDescriptionWithLinks(descSpan, task);
       const meta = content.createDiv({ cls: "task-meta" });
-      if (task.tags.length > 0) {
-        const tagsSpan = meta.createSpan({ cls: "task-tags" });
-        for (const tag of task.tags.slice(0, 2)) {
-          const tagEl = tagsSpan.createSpan({ cls: "tag tag-clickable", text: `#${tag}` });
-          tagEl.addEventListener("click", (e) => {
-            e.stopPropagation();
-            if (!this.filterTags.includes(tag)) {
-              this.filterTags = [...this.filterTags, tag];
-            }
-            this.showFilterPanel = true;
-            this.renderFilterPanel();
-            this.renderHeader();
-            this.renderContent();
-          });
-        }
-      }
       meta.createSpan({ cls: "task-file", text: `\u{1F4C4} ${task.filePath.split("/").pop()}` });
       if (hasSubtasks) {
         const progress = this.getSubtaskProgress(task);
@@ -2895,20 +2889,15 @@ ${newLine}`,
   }
   async activateView() {
     const { workspace } = this.app;
-    const leaves = workspace.getLeavesOfType(SMARTTASK_VIEW_TYPE);
-    let leaf = leaves.length > 0 ? leaves[0] : null;
+    let leaf = workspace.getLeavesOfType(SMARTTASK_VIEW_TYPE)[0];
     if (!leaf) {
-      leaf = workspace.getRightLeaf(false);
-      if (leaf) {
-        void leaf.setViewState({
-          type: SMARTTASK_VIEW_TYPE,
-          active: true
-        });
-      }
+      leaf = workspace.getLeaf(false);
+      await leaf.setViewState({
+        type: SMARTTASK_VIEW_TYPE,
+        active: true
+      });
     }
-    if (leaf) {
-      void workspace.setActiveLeaf(leaf, { focus: true });
-    }
+    workspace.revealLeaf(leaf);
   }
   updateStatusBar() {
     const tasks = this.getTasks();

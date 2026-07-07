@@ -1,7 +1,7 @@
 {
   "id": "smarttask",
   "name": "SmartTask",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "minAppVersion": "1.2.0",
   "description": "A high-performance, easy-to-use intelligent task management plugin that supports multiple views, quick creation, and smart queries.",
   "author": "SmartTask Team",

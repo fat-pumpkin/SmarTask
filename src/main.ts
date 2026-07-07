@@ -116,22 +116,17 @@ export default class SmartTaskPlugin extends Plugin {
 	private async activateView() {
 		const { workspace } = this.app;
 
-		const leaves = workspace.getLeavesOfType(SMARTTASK_VIEW_TYPE);
-		let leaf = leaves.length > 0 ? leaves[0] : null;
+		let leaf = workspace.getLeavesOfType(SMARTTASK_VIEW_TYPE)[0];
 
 		if (!leaf) {
-			leaf = workspace.getRightLeaf(false);
-			if (leaf) {
-				void leaf.setViewState({
-					type: SMARTTASK_VIEW_TYPE,
-					active: true,
-				});
-			}
+			leaf = workspace.getLeaf(false);
+			await leaf.setViewState({
+				type: SMARTTASK_VIEW_TYPE,
+				active: true,
+			});
 		}
 
-		if (leaf) {
-			void workspace.setActiveLeaf(leaf, { focus: true });
-		}
+		workspace.revealLeaf(leaf);
 	}
 
 	private updateStatusBar(): void {

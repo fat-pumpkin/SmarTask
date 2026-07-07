@@ -33,9 +33,13 @@ export class QueryEngine {
 
 		if (query.searchText) {
 			const searchLower = query.searchText.toLowerCase();
-			results = results.filter(t =>
-				t.description.toLowerCase().includes(searchLower)
-			);
+			results = results.filter(t => {
+				if (t.description.toLowerCase().includes(searchLower)) return true;
+				if (t.filePath.toLowerCase().includes(searchLower)) return true;
+				if (t.tags.some(tag => tag.toLowerCase().includes(searchLower))) return true;
+				if (t.subtasks.some(st => st.description.toLowerCase().includes(searchLower))) return true;
+				return false;
+			});
 		}
 
 		if (query.sortBy) {

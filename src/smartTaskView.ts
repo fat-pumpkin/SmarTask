@@ -1,3 +1,5 @@
+
+
 import { Modal, Notice } from 'obsidian';
 import SmartTaskPlugin from './main';
 import { Task, TaskPriority, TaskQuery, TaskGroup, ViewType } from './types';
@@ -25,7 +27,6 @@ export class SmartTaskViewController {
 	private quickCreateEl: HTMLElement | null = null;
 	private searchRowEl: HTMLElement | null = null;
 	private filterPanelEl: HTMLElement | null = null;
-	private statsBarEl: HTMLElement | null = null;
 	private contentEl: HTMLElement | null = null;
 
 	constructor(plugin: SmartTaskPlugin, container: HTMLElement) {
@@ -40,11 +41,11 @@ export class SmartTaskViewController {
 
 	render(): void {
 		this.mainEl = this.container.createDiv({ cls: 'smarttask-container' });
-		this.renderHeader();
+		this.headerEl = this.mainEl.createDiv({ cls: 'smarttask-header' });
+		this.renderHeaderContent();
 		this.renderQuickCreate();
 		this.renderSearchRow();
 		this.renderFilterPanel();
-		this.renderStatsBar();
 		this.renderContent();
 	}
 
@@ -58,7 +59,7 @@ export class SmartTaskViewController {
 	updateTasks(tasks: Task[], allTags: string[]): void {
 		this.tasks = tasks;
 		this.allTags = allTags;
-		this.renderStatsBar();
+		this.renderHeader();
 		this.renderContent();
 	}
 
@@ -121,18 +122,66 @@ export class SmartTaskViewController {
 	}
 
 	private renderHeader(): void {
-		if (this.headerEl) {
-			this.headerEl.remove();
-			this.headerEl = null;
-		}
-		this.headerEl = this.mainEl!.createDiv({ cls: 'smarttask-header' });
+		if (!this.headerEl) return;
+		this.headerEl.empty();
+		this.renderHeaderContent();
+	}
+
+	private renderHeaderContent(): void {
+		if (!this.headerEl) return;
 		
 		const titleEl = this.headerEl.createDiv({ cls: 'smarttask-title' });
 		titleEl.createSpan({ cls: 'smarttask-icon', text: '✅' });
 		titleEl.createEl('h2', { text: 'SmartTask' });
 
+		const statsEl = this.headerEl.createDiv({ cls: 'header-stats' });
+		this.renderStatsInHeader(statsEl);
+
 		const actionsEl = this.headerEl.createDiv({ cls: 'header-actions' });
+		
+		const filterBtn = actionsEl.createEl('button', {
+			cls: 'filter-btn',
+			text: '🔍',
+			attr: { title: '筛选' }
+		});
+		if (this.showFilterPanel) filterBtn.addClass('active');
+		if (this.hasActiveFilters) filterBtn.addClass('has-filters');
+		filterBtn.addEventListener('click', () => {
+			this.showFilterPanel = !this.showFilterPanel;
+			this.renderHeader();
+			this.renderFilterPanel();
+		});
+
 		this.renderViewToggle(actionsEl);
+	}
+
+	private renderStatsInHeader(container: HTMLElement): void {
+		const total = this.tasks.length;
+		const done = this.tasks.filter(t => t.completed).length;
+		const notDone = total - done;
+		const overdue = QueryEngine.getOverdueTasks(this.tasks).length;
+		const today = QueryEngine.getTodayTasks(this.tasks).length;
+		const upcoming = QueryEngine.getUpcomingTasks(this.tasks, 7).length;
+		const progress = total > 0 ? Math.round((done / total) * 100) : 0;
+
+		const stats = [
+			{ value: notDone, label: '待办', cls: 'pending' },
+			{ value: overdue, label: '逾期', cls: 'overdue' },
+			{ value: today, label: '今日', cls: 'today' },
+			{ value: upcoming, label: '7天内', cls: 'upcoming' },
+		];
+
+		for (let i = 0; i < stats.length; i++) {
+			const s = stats[i];
+			const item = container.createDiv({ cls: `stat-item ${s.cls}` });
+			item.createSpan({ cls: 'stat-label', text: s.label });
+			item.createSpan({ cls: 'stat-num', text: s.value.toString() });
+		}
+
+		const progressWrap = container.createDiv({ cls: 'header-progress-wrap' });
+		const progressBar = progressWrap.createDiv({ cls: 'progress-bar-container' });
+		progressBar.createDiv({ cls: 'progress-bar-fill', attr: { style: `width: ${progress}%` } });
+		progressWrap.createSpan({ cls: 'progress-percent', text: `${progress}%` });
 	}
 
 	private renderViewToggle(container: HTMLElement): void {
@@ -465,10 +514,16 @@ export class SmartTaskViewController {
 		if (!this.showFilterPanel) return;
 
 		this.filterPanelEl = this.mainEl!.createDiv({ cls: 'filter-panel' });
+		if (this.searchRowEl && this.searchRowEl.parentElement === this.mainEl) {
+			this.searchRowEl.after(this.filterPanelEl);
+		} else if (this.contentEl && this.contentEl.parentElement === this.mainEl) {
+			this.contentEl.before(this.filterPanelEl);
+		}
 
-		const dateSection = this.filterPanelEl.createDiv({ cls: 'filter-section' });
-		const dateHeader = dateSection.createDiv({ cls: 'filter-header' });
-		dateHeader.createSpan({ cls: 'filter-title', text: '📅 日期筛选' });
+		const filterRow = this.filterPanelEl.createDiv({ cls: 'filter-row' });
+
+		const dateSection = filterRow.createDiv({ cls: 'filter-section' });
+		dateSection.createSpan({ cls: 'filter-title', text: '📅 日期' });
 		
 		const dateOptions = dateSection.createDiv({ cls: 'filter-options' });
 		const dateFilters = [
@@ -492,9 +547,8 @@ export class SmartTaskViewController {
 			});
 		}
 
-		const priSection = this.filterPanelEl.createDiv({ cls: 'filter-section' });
-		const priHeader = priSection.createDiv({ cls: 'filter-header' });
-		priHeader.createSpan({ cls: 'filter-title', text: '🎯 优先级' });
+		const priSection = filterRow.createDiv({ cls: 'filter-section' });
+		priSection.createSpan({ cls: 'filter-title', text: '🎯 优先级' });
 		
 		const priOptions = priSection.createDiv({ cls: 'filter-options' });
 		const priorities = [
@@ -524,31 +578,38 @@ export class SmartTaskViewController {
 			});
 		}
 
-		const tagSection = this.filterPanelEl.createDiv({ cls: 'filter-section' });
-		const tagHeader = tagSection.createDiv({ cls: 'filter-header' });
-		tagHeader.createSpan({ cls: 'filter-title', text: '🏷️ 标签' });
-		if (this.allTags.length === 0) {
-			tagHeader.createSpan({ cls: 'filter-hint', text: '暂无标签' });
-		}
+		const tagSection = filterRow.createDiv({ cls: 'filter-section tag-section' });
+		tagSection.createSpan({ cls: 'filter-title', text: '🏷️ 标签' });
 		
-		const tagCloud = tagSection.createDiv({ cls: 'tag-cloud' });
-		for (const tag of this.allTags) {
-			const btn = tagCloud.createEl('button', {
-				cls: 'tag-chip',
-				text: `#${tag}`
-			});
-			if (this.filterTags.includes(tag)) btn.addClass('active');
-			btn.addEventListener('click', () => {
-				if (this.filterTags.includes(tag)) {
-					this.filterTags = this.filterTags.filter(t => t !== tag);
-				} else {
-					this.filterTags = [...this.filterTags, tag];
-				}
+		const tagInputWrapper = tagSection.createDiv({ cls: 'tag-input-wrapper' });
+		const selectedTagsEl = tagInputWrapper.createDiv({ cls: 'selected-tags' });
+		for (const tag of this.filterTags) {
+			const tagEl = selectedTagsEl.createSpan({ cls: 'selected-tag', text: `#${tag}` });
+			const removeBtn = tagEl.createEl('button', { cls: 'remove-tag', text: '✕' });
+			removeBtn.addEventListener('click', (e) => {
+				e.stopPropagation();
+				this.filterTags = this.filterTags.filter(t => t !== tag);
 				this.renderFilterPanel();
 				this.renderHeader();
 				this.renderContent();
 			});
 		}
+
+		const tagInput = tagInputWrapper.createEl('input', {
+			type: 'text',
+			attr: { placeholder: '输入标签，回车添加...' }
+		});
+		tagInput.addEventListener('keydown', (e) => {
+			if (e.key === 'Enter') {
+				const value = (e.target as HTMLInputElement).value.trim().replace(/^#/, '');
+				if (value && !this.filterTags.includes(value)) {
+					this.filterTags = [...this.filterTags, value];
+					this.renderFilterPanel();
+					this.renderHeader();
+					this.renderContent();
+				}
+			}
+		});
 
 		const actions = this.filterPanelEl.createDiv({ cls: 'filter-actions' });
 		const resetBtn = actions.createEl('button', { cls: 'reset-btn', text: '🔄 重置筛选' });
@@ -562,47 +623,6 @@ export class SmartTaskViewController {
 			this.renderSearchRow();
 			this.renderContent();
 		});
-	}
-
-	private renderStatsBar(): void {
-		if (this.statsBarEl) {
-			this.statsBarEl.remove();
-			this.statsBarEl = null;
-		}
-
-		this.statsBarEl = this.mainEl!.createDiv({ cls: 'stats-bar' });
-
-		const total = this.tasks.length;
-		const done = this.tasks.filter(t => t.completed).length;
-		const notDone = total - done;
-		const overdue = QueryEngine.getOverdueTasks(this.tasks).length;
-		const today = QueryEngine.getTodayTasks(this.tasks).length;
-		const upcoming = QueryEngine.getUpcomingTasks(this.tasks, 7).length;
-		const progress = total > 0 ? Math.round((done / total) * 100) : 0;
-
-		const stats = [
-			{ value: notDone, label: '待办', cls: '' },
-			{ value: overdue, label: '逾期', cls: 'overdue' },
-			{ value: today, label: '今日', cls: 'today' },
-			{ value: upcoming, label: '7天内', cls: 'upcoming' },
-		];
-
-		for (let i = 0; i < stats.length; i++) {
-			const s = stats[i];
-			const item = this.statsBarEl.createDiv({ cls: `stat-item ${s.cls}` });
-			item.createSpan({ cls: 'stat-value', text: s.value.toString() });
-			item.createSpan({ cls: 'stat-label', text: s.label });
-			if (i < stats.length - 1) {
-				this.statsBarEl.createDiv({ cls: 'stat-divider' });
-			}
-		}
-
-		this.statsBarEl.createDiv({ cls: 'stat-divider' });
-
-		const progressItem = this.statsBarEl.createDiv({ cls: 'stat-item progress-item' });
-		const progressBar = progressItem.createDiv({ cls: 'progress-bar' });
-		progressBar.createDiv({ cls: 'progress-fill', attr: { style: `width: ${progress}%` } });
-		progressItem.createSpan({ cls: 'progress-text', text: `${progress}%` });
 	}
 
 	private renderContent(): void {
@@ -743,26 +763,6 @@ export class SmartTaskViewController {
 		if (hasSubtasks) {
 			const progress = this.getSubtaskProgress(task);
 			meta.createSpan({ cls: 'subtask-progress', text: `📋 ${progress.done}/${progress.total}` });
-		}
-
-		if (task.tags.length > 0) {
-			const tagsSpan = meta.createSpan({ cls: 'task-tags' });
-			for (const tag of task.tags.slice(0, 2)) {
-				const tagEl = tagsSpan.createSpan({ cls: 'tag tag-clickable', text: `#${tag}` });
-				tagEl.addEventListener('click', (e) => {
-					e.stopPropagation();
-					if (!this.filterTags.includes(tag)) {
-						this.filterTags = [...this.filterTags, tag];
-					}
-					this.showFilterPanel = true;
-					this.renderFilterPanel();
-					this.renderHeader();
-					this.renderContent();
-				});
-			}
-			if (task.tags.length > 2) {
-				tagsSpan.createSpan({ cls: 'tag tag-more', text: `+${task.tags.length - 2}` });
-			}
 		}
 
 		meta.createSpan({ cls: 'task-file', text: `📄 ${task.filePath.split('/').pop()}` });
@@ -979,15 +979,17 @@ export class SmartTaskViewController {
 					});
 				}
 			} else if (match[2]) {
-				const tag = match[2];
+				const tagName = match[2].substring(1);
 				const tagEl = container.createSpan({
-					cls: 'inline-tag tag-clickable',
-					text: `#${tag}`
+					cls: 'task-tag',
+					text: match[2]
 				});
 				tagEl.addEventListener('click', (e) => {
 					e.stopPropagation();
-					if (!this.filterTags.includes(tag)) {
-						this.filterTags = [...this.filterTags, tag];
+					if (!this.filterTags.includes(tagName)) {
+						this.filterTags = [...this.filterTags, tagName];
+					} else {
+						this.filterTags = this.filterTags.filter(t => t !== tagName);
 					}
 					this.showFilterPanel = true;
 					this.renderFilterPanel();
@@ -1002,6 +1004,13 @@ export class SmartTaskViewController {
 		if (lastIndex < desc.length) {
 			container.createSpan({ text: desc.substring(lastIndex) });
 		}
+	}
+
+	private getPlainDescription(desc: string): string {
+		return desc
+			.replace(/\[\[([^\]|]+)(?:\|[^\]]+)?\]\]/g, (match, p1) => p1.split('|')[0].trim())
+			.replace(/#[a-zA-Z0-9_\u4e00-\u9fa5][a-zA-Z0-9_\u4e00-\u9fa5/-]*/g, '')
+			.replace(/\s+/g, ' ').trim();
 	}
 
 	private openWikiLink(target: string): void {
@@ -1241,9 +1250,10 @@ export class SmartTaskViewController {
 			if (task.completed) row.addClass('completed');
 
 			const labelCell = row.createDiv({ cls: 'gantt-label' });
+			const plainDesc = this.getPlainDescription(task.description);
 			labelCell.createSpan({ 
 				cls: 'gantt-task-label', 
-				text: task.description.length > 20 ? task.description.substring(0, 20) + '...' : task.description 
+				text: plainDesc.length > 20 ? plainDesc.substring(0, 20) + '...' : plainDesc 
 			});
 
 			const barsContainer = row.createDiv({ cls: 'gantt-bars' });
@@ -1288,9 +1298,10 @@ export class SmartTaskViewController {
 				if (this.isOverdue(task) && !task.completed) {
 					bar.addClass('overdue');
 				}
-				const shortDesc = task.description.length > 12 ? task.description.substring(0, 12) + '...' : task.description;
+				const plainDesc = this.getPlainDescription(task.description);
+				const shortDesc = plainDesc.length > 12 ? plainDesc.substring(0, 12) + '...' : plainDesc;
 				bar.createDiv({ cls: 'gantt-bar-label', text: shortDesc });
-				bar.title = `${task.description}\n起始: ${task.startDate || '无'}\n截止: ${task.dueDate || '无'}`;
+				bar.title = `${plainDesc}\n起始: ${task.startDate || '无'}\n截止: ${task.dueDate || '无'}`;
 				bar.addEventListener('click', () => {
 					this.plugin.openTaskFile(task.filePath, task.lineNumber);
 				});
@@ -1355,7 +1366,8 @@ export class SmartTaskViewController {
 					void this.plugin.toggleTaskStatus(task, checkbox.checked);
 				});
 
-				const desc = taskMain.createSpan({ cls: 'zigzag-task-desc', text: task.description });
+				const desc = taskMain.createSpan({ cls: 'zigzag-task-desc' });
+				this.renderDescriptionWithLinks(desc, task);
 				desc.addEventListener('click', () => {
 					void this.plugin.openTaskFile(task.filePath, task.lineNumber);
 				});
@@ -1406,17 +1418,11 @@ export class SmartTaskViewController {
 				cardTop.createSpan({ cls: 'task-card-date', text: task.dueDate || '' });
 
 				const cardBody = card.createDiv({ cls: 'task-card-body' });
-				const desc = cardBody.createSpan({ cls: 'task-card-desc', text: task.description });
+				const desc = cardBody.createSpan({ cls: 'task-card-desc' });
+				this.renderDescriptionWithLinks(desc, task);
 				desc.addEventListener('click', () => {
 					this.plugin.openTaskFile(task.filePath, task.lineNumber);
 				});
-
-				if (task.tags.length > 0) {
-					const tags = cardBody.createDiv({ cls: 'task-card-tags' });
-					for (const tag of task.tags.slice(0, 3)) {
-						tags.createSpan({ cls: 'task-card-tag', text: `#${tag}` });
-					}
-				}
 
 				const hasSubtasks = task.subtasks.length > 0;
 				const expanded = this.expandedTasks.has(task.id) || hasSubtasks;
@@ -1524,22 +1530,6 @@ export class SmartTaskViewController {
 			this.renderDescriptionWithLinks(descSpan, task);
 
 			const meta = content.createDiv({ cls: 'task-meta' });
-			if (task.tags.length > 0) {
-				const tagsSpan = meta.createSpan({ cls: 'task-tags' });
-				for (const tag of task.tags.slice(0, 2)) {
-					const tagEl = tagsSpan.createSpan({ cls: 'tag tag-clickable', text: `#${tag}` });
-					tagEl.addEventListener('click', (e) => {
-						e.stopPropagation();
-						if (!this.filterTags.includes(tag)) {
-							this.filterTags = [...this.filterTags, tag];
-						}
-						this.showFilterPanel = true;
-						this.renderFilterPanel();
-						this.renderHeader();
-						this.renderContent();
-					});
-				}
-			}
 			meta.createSpan({ cls: 'task-file', text: `📄 ${task.filePath.split('/').pop()}` });
 			
 			if (hasSubtasks) {
