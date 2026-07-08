@@ -225,7 +225,7 @@ var TaskParser = class {
     if (task.recurrence)
       line += ` \u{1F501} every ${task.recurrence.frequency}`;
     if (task.tags.length > 0) {
-      line += " " + task.tags.map((t) => `#${t}`).join(" ");
+      line += " " + task.tags.map((t2) => `#${t2}`).join(" ");
     }
     return line;
   }
@@ -468,6 +468,186 @@ var TaskIndex = class {
 
 // src/settings.ts
 var import_obsidian2 = require("obsidian");
+
+// src/i18n/en.ts
+var en = {
+  stats: {
+    pending: "Pending",
+    overdue: "Overdue",
+    today: "Today",
+    upcoming: "7d"
+  },
+  dates: {
+    today: "Today",
+    tomorrow: "Tomorrow",
+    week: "7 days",
+    day: "Day",
+    month: "Month",
+    overdue: "Overdue",
+    thisWeek: "This week",
+    thisMonth: "This month"
+  },
+  filters: {
+    all: "All",
+    pending: "Pending",
+    done: "Completed",
+    searchPlaceholder: "Search tasks...",
+    reset: "Reset Filter"
+  },
+  tabs: {
+    list: "List",
+    kanban: "Kanban",
+    calendar: "Calendar",
+    timeline: "Timeline"
+  },
+  timelineStyles: {
+    classic: "Classic",
+    zigzag: "Zigzag",
+    card: "Card",
+    gantt: "Gantt"
+  },
+  priorities: {
+    highest: "Highest",
+    high: "High",
+    medium: "Medium",
+    low: "Low",
+    lowest: "Lowest"
+  },
+  saveTargets: {
+    inbox: "Inbox",
+    currentFile: "Current File",
+    dailyNote: "Daily Note"
+  },
+  messages: {
+    noTasks: "No tasks found",
+    addTask: "Create a task to get started!",
+    quickCreatePlaceholder: "Quick create task... (Enter to submit)",
+    searchPlaceholder: "Search tasks...",
+    tagPlaceholder: "Enter tag and press Enter",
+    subtask: "Subtask",
+    subtasks: "Subtasks"
+  },
+  commands: {
+    openView: "Open SmartTask View",
+    quickCreate: "Quick Create Task",
+    toggleStatus: "Toggle Task Status",
+    addSubtask: "Add Subtask"
+  },
+  settings: {
+    defaultSaveLocation: "Default Save Location",
+    inboxFilePath: "Inbox File Path",
+    autoAddTags: "Auto-add Tags",
+    defaultView: "Default View",
+    defaultPriority: "Default Priority",
+    showCompleted: "Show Completed Tasks",
+    timelineGrouping: "Timeline Grouping",
+    timelineStyle: "Timeline Style",
+    showSubtasks: "Show Subtasks",
+    groupBy: "Group By",
+    sortBy: "Sort By"
+  }
+};
+
+// src/i18n/zh.ts
+var zh = {
+  stats: {
+    pending: "\u5F85\u529E",
+    overdue: "\u903E\u671F",
+    today: "\u4ECA\u65E5",
+    upcoming: "7\u5929\u5185"
+  },
+  dates: {
+    today: "\u4ECA\u5929",
+    tomorrow: "\u660E\u5929",
+    week: "7\u5929",
+    day: "\u5929",
+    month: "\u6708",
+    overdue: "\u5DF2\u903E\u671F",
+    thisWeek: "\u672C\u5468\u5185",
+    thisMonth: "\u672C\u6708\u5185"
+  },
+  filters: {
+    all: "\u5168\u90E8",
+    pending: "\u5F85\u529E",
+    done: "\u5DF2\u5B8C\u6210",
+    searchPlaceholder: "\u641C\u7D22\u4EFB\u52A1...",
+    reset: "\u91CD\u7F6E\u7B5B\u9009"
+  },
+  tabs: {
+    list: "\u5217\u8868",
+    kanban: "\u770B\u677F",
+    calendar: "\u65E5\u5386",
+    timeline: "\u65F6\u95F4\u7EBF"
+  },
+  timelineStyles: {
+    classic: "\u7ECF\u5178",
+    zigzag: "\u4EA4\u9519",
+    card: "\u5361\u7247",
+    gantt: "\u7518\u7279\u56FE"
+  },
+  priorities: {
+    highest: "\u6700\u9AD8",
+    high: "\u9AD8",
+    medium: "\u4E2D",
+    low: "\u4F4E",
+    lowest: "\u6700\u4F4E"
+  },
+  saveTargets: {
+    inbox: "\u6536\u4EF6\u7BB1",
+    currentFile: "\u5F53\u524D\u6587\u4EF6",
+    dailyNote: "\u6BCF\u65E5\u7B14\u8BB0"
+  },
+  messages: {
+    noTasks: "\u6682\u65E0\u4EFB\u52A1",
+    addTask: "\u5728\u4E0A\u65B9\u8F93\u5165\u6846\u521B\u5EFA\u4E00\u4E2A\u4EFB\u52A1\u5427\uFF01",
+    quickCreatePlaceholder: "\u5FEB\u901F\u521B\u5EFA\u4EFB\u52A1... (\u6309 Enter \u63D0\u4EA4)",
+    searchPlaceholder: "\u641C\u7D22\u4EFB\u52A1...",
+    tagPlaceholder: "\u8F93\u5165\u6807\u7B7E\u5E76\u6309\u56DE\u8F66",
+    subtask: "\u5B50\u4EFB\u52A1",
+    subtasks: "\u5B50\u4EFB\u52A1"
+  },
+  commands: {
+    openView: "\u6253\u5F00 SmartTask \u89C6\u56FE",
+    quickCreate: "\u5FEB\u901F\u521B\u5EFA\u4EFB\u52A1",
+    toggleStatus: "\u5207\u6362\u4EFB\u52A1\u72B6\u6001",
+    addSubtask: "\u6DFB\u52A0\u5B50\u4EFB\u52A1"
+  },
+  settings: {
+    defaultSaveLocation: "\u9ED8\u8BA4\u4FDD\u5B58\u4F4D\u7F6E",
+    inboxFilePath: "\u6536\u4EF6\u7BB1\u6587\u4EF6\u8DEF\u5F84",
+    autoAddTags: "\u81EA\u52A8\u6DFB\u52A0\u6807\u7B7E",
+    defaultView: "\u9ED8\u8BA4\u89C6\u56FE",
+    defaultPriority: "\u9ED8\u8BA4\u4F18\u5148\u7EA7",
+    showCompleted: "\u663E\u793A\u5DF2\u5B8C\u6210\u4EFB\u52A1",
+    timelineGrouping: "\u65F6\u95F4\u7EBF\u5206\u7EC4",
+    timelineStyle: "\u65F6\u95F4\u7EBF\u6837\u5F0F",
+    showSubtasks: "\u663E\u793A\u5B50\u4EFB\u52A1",
+    groupBy: "\u5206\u7EC4\u65B9\u5F0F",
+    sortBy: "\u6392\u5E8F\u65B9\u5F0F"
+  }
+};
+
+// src/i18n/index.ts
+var translations = {
+  en,
+  zh
+};
+var currentLocale = "en";
+function setLocale(locale) {
+  currentLocale = locale;
+}
+function t(key) {
+  return translations[currentLocale][key];
+}
+function detectLocale() {
+  const lang = window.navigator.language.toLowerCase();
+  if (lang.startsWith("zh")) {
+    return "zh";
+  }
+  return "en";
+}
+
+// src/settings.ts
 var SmartTaskSettingTab = class extends import_obsidian2.PluginSettingTab {
   constructor(app, plugin) {
     super(app, plugin);
@@ -478,45 +658,45 @@ var SmartTaskSettingTab = class extends import_obsidian2.PluginSettingTab {
     containerEl.empty();
     new import_obsidian2.Setting(containerEl).setName("Task Configuration").setHeading();
     new import_obsidian2.Setting(containerEl).setName("\u{1F4E5} Task Saving").setHeading();
-    new import_obsidian2.Setting(containerEl).setName("Default Save Location").setDesc("Where newly created tasks should be saved").addDropdown((dropdown) => dropdown.addOption("inbox", "Inbox (specified file)").addOption("currentFile", "Current file").addOption("dailyNote", "Daily note").setValue(this.plugin.settings.saveTarget).onChange(async (value) => {
+    new import_obsidian2.Setting(containerEl).setName(t("settings").defaultSaveLocation).setDesc("Where newly created tasks should be saved").addDropdown((dropdown) => dropdown.addOption("inbox", t("saveTargets").inbox).addOption("currentFile", t("saveTargets").currentFile).addOption("dailyNote", t("saveTargets").dailyNote).setValue(this.plugin.settings.saveTarget).onChange(async (value) => {
       this.plugin.settings.saveTarget = value;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian2.Setting(containerEl).setName("Inbox File Path").setDesc("File path for saving tasks in inbox mode").addText((text) => text.setPlaceholder("SmartTask-Inbox.md").setValue(this.plugin.settings.inboxFilePath).onChange(async (value) => {
+    new import_obsidian2.Setting(containerEl).setName(t("settings").inboxFilePath).setDesc("File path for saving tasks in inbox mode").addText((text) => text.setPlaceholder("SmartTask-Inbox.md").setValue(this.plugin.settings.inboxFilePath).onChange(async (value) => {
       this.plugin.settings.inboxFilePath = value || "SmartTask-Inbox.md";
       await this.plugin.saveSettings();
     }));
-    new import_obsidian2.Setting(containerEl).setName("Auto-add Tags").setDesc("Tags to automatically add to new tasks (comma-separated)").addText((text) => text.setPlaceholder("e.g., task, work").setValue(this.plugin.settings.autoAddTags.join(", ")).onChange(async (value) => {
-      this.plugin.settings.autoAddTags = value.split(",").map((t) => t.trim()).filter((t) => t.length > 0);
+    new import_obsidian2.Setting(containerEl).setName(t("settings").autoAddTags).setDesc("Tags to automatically add to new tasks (comma-separated)").addText((text) => text.setPlaceholder("e.g., task, work").setValue(this.plugin.settings.autoAddTags.join(", ")).onChange(async (value) => {
+      this.plugin.settings.autoAddTags = value.split(",").map((t2) => t2.trim()).filter((t2) => t2.length > 0);
       await this.plugin.saveSettings();
     }));
     new import_obsidian2.Setting(containerEl).setName("\u{1F3AF} Task Display").setHeading();
-    new import_obsidian2.Setting(containerEl).setName("Default View").setDesc("Default view when opening the plugin").addDropdown((dropdown) => dropdown.addOption("list", "List").addOption("kanban", "Kanban").addOption("calendar", "Calendar").addOption("timeline", "Timeline").setValue(this.plugin.settings.defaultView).onChange(async (value) => {
+    new import_obsidian2.Setting(containerEl).setName(t("settings").defaultView).setDesc("Default view when opening the plugin").addDropdown((dropdown) => dropdown.addOption("list", t("tabs").list).addOption("kanban", t("tabs").kanban).addOption("calendar", t("tabs").calendar).addOption("timeline", t("tabs").timeline).setValue(this.plugin.settings.defaultView).onChange(async (value) => {
       this.plugin.settings.defaultView = value;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian2.Setting(containerEl).setName("Timeline Grouping").setDesc("How tasks are grouped in timeline view").addDropdown((dropdown) => dropdown.addOption("day", "By day").addOption("week", "By week").addOption("month", "By month").setValue(this.plugin.settings.timelineGroupBy).onChange(async (value) => {
+    new import_obsidian2.Setting(containerEl).setName(t("settings").timelineGrouping).setDesc("How tasks are grouped in timeline view").addDropdown((dropdown) => dropdown.addOption("day", `By ${t("dates").day}`).addOption("week", `By ${t("dates").week}`).addOption("month", `By ${t("dates").month}`).setValue(this.plugin.settings.timelineGroupBy).onChange(async (value) => {
       this.plugin.settings.timelineGroupBy = value;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian2.Setting(containerEl).setName("Default Priority").setDesc("Default priority for new tasks").addDropdown((dropdown) => dropdown.addOption("highest" /* Highest */, "\u{1F51D} Highest").addOption("high" /* High */, "\u{1F53A} High").addOption("medium" /* Medium */, "\u{1F53C} Medium").addOption("low" /* Low */, "\u{1F53D} Low").addOption("lowest" /* Lowest */, "\u23EC Lowest").addOption("none" /* None */, "\u2796 None").setValue(this.plugin.settings.defaultPriority).onChange(async (value) => {
+    new import_obsidian2.Setting(containerEl).setName(t("settings").defaultPriority).setDesc("Default priority for new tasks").addDropdown((dropdown) => dropdown.addOption("highest" /* Highest */, `\u{1F51D} ${t("priorities").highest}`).addOption("high" /* High */, `\u{1F53A} ${t("priorities").high}`).addOption("medium" /* Medium */, `\u{1F53C} ${t("priorities").medium}`).addOption("low" /* Low */, `\u{1F53D} ${t("priorities").low}`).addOption("lowest" /* Lowest */, `\u23EC ${t("priorities").lowest}`).addOption("none" /* None */, "\u2796 None").setValue(this.plugin.settings.defaultPriority).onChange(async (value) => {
       this.plugin.settings.defaultPriority = value;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian2.Setting(containerEl).setName("Show Completed Tasks").setDesc("Display completed tasks in task list").addToggle((toggle) => toggle.setValue(this.plugin.settings.showCompleted).onChange(async (value) => {
+    new import_obsidian2.Setting(containerEl).setName(t("settings").showCompleted).setDesc("Display completed tasks in task list").addToggle((toggle) => toggle.setValue(this.plugin.settings.showCompleted).onChange(async (value) => {
       this.plugin.settings.showCompleted = value;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian2.Setting(containerEl).setName("Show Subtasks").setDesc("Expand and show subtasks in task list").addToggle((toggle) => toggle.setValue(this.plugin.settings.showSubtasks).onChange(async (value) => {
+    new import_obsidian2.Setting(containerEl).setName(t("settings").showSubtasks).setDesc("Expand and show subtasks in task list").addToggle((toggle) => toggle.setValue(this.plugin.settings.showSubtasks).onChange(async (value) => {
       this.plugin.settings.showSubtasks = value;
       await this.plugin.saveSettings();
     }));
     new import_obsidian2.Setting(containerEl).setName("\u{1F50D} Sorting & Grouping").setHeading();
-    new import_obsidian2.Setting(containerEl).setName("Group By").setDesc("How tasks are grouped in task list").addDropdown((dropdown) => dropdown.addOption("file" /* File */, "By file").addOption("priority" /* Priority */, "By priority").addOption("dueDate" /* DueDate */, "By due date").addOption("tag" /* Tag */, "By tag").addOption("none" /* None */, "No grouping").setValue(this.plugin.settings.groupBy).onChange(async (value) => {
+    new import_obsidian2.Setting(containerEl).setName(t("settings").groupBy).setDesc("How tasks are grouped in task list").addDropdown((dropdown) => dropdown.addOption("file" /* File */, "By file").addOption("priority" /* Priority */, "By priority").addOption("dueDate" /* DueDate */, "By due date").addOption("tag" /* Tag */, "By tag").addOption("none" /* None */, "No grouping").setValue(this.plugin.settings.groupBy).onChange(async (value) => {
       this.plugin.settings.groupBy = value;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian2.Setting(containerEl).setName("Sort By").setDesc("Field to sort tasks by").addDropdown((dropdown) => dropdown.addOption("dueDate" /* DueDate */, "Due date").addOption("priority" /* Priority */, "Priority").addOption("description" /* Description */, "Description").addOption("createdDate" /* CreatedDate */, "Created date").setValue(this.plugin.settings.sortBy).onChange(async (value) => {
+    new import_obsidian2.Setting(containerEl).setName(t("settings").sortBy).setDesc("Field to sort tasks by").addDropdown((dropdown) => dropdown.addOption("dueDate" /* DueDate */, "Due date").addOption("priority" /* Priority */, "Priority").addOption("description" /* Description */, "Description").addOption("createdDate" /* CreatedDate */, "Created date").setValue(this.plugin.settings.sortBy).onChange(async (value) => {
       this.plugin.settings.sortBy = value;
       await this.plugin.saveSettings();
     }));
@@ -559,15 +739,15 @@ var QueryEngine = class {
   static query(tasks, query) {
     let results = [...tasks];
     if (query.status === "done") {
-      results = results.filter((t) => t.completed);
+      results = results.filter((t2) => t2.completed);
     } else if (query.status === "not-done") {
-      results = results.filter((t) => !t.completed);
+      results = results.filter((t2) => !t2.completed);
     }
     if (query.dueDate) {
-      results = results.filter((t) => {
-        if (!t.dueDate)
+      results = results.filter((t2) => {
+        if (!t2.dueDate)
           return false;
-        const due = t.dueDate;
+        const due = t2.dueDate;
         if (query.dueDate.before && due >= query.dueDate.before)
           return false;
         if (query.dueDate.after && due <= query.dueDate.after)
@@ -578,23 +758,23 @@ var QueryEngine = class {
       });
     }
     if (query.priority && query.priority.length > 0) {
-      results = results.filter((t) => query.priority.includes(t.priority));
+      results = results.filter((t2) => query.priority.includes(t2.priority));
     }
     if (query.tags && query.tags.length > 0) {
       results = results.filter(
-        (t) => query.tags.some((tag) => t.tags.includes(tag))
+        (t2) => query.tags.some((tag) => t2.tags.includes(tag))
       );
     }
     if (query.searchText) {
       const searchLower = query.searchText.toLowerCase();
-      results = results.filter((t) => {
-        if (t.description.toLowerCase().includes(searchLower))
+      results = results.filter((t2) => {
+        if (t2.description.toLowerCase().includes(searchLower))
           return true;
-        if (t.filePath.toLowerCase().includes(searchLower))
+        if (t2.filePath.toLowerCase().includes(searchLower))
           return true;
-        if (t.tags.some((tag) => tag.toLowerCase().includes(searchLower)))
+        if (t2.tags.some((tag) => tag.toLowerCase().includes(searchLower)))
           return true;
-        if (t.subtasks.some((st) => st.description.toLowerCase().includes(searchLower)))
+        if (t2.subtasks.some((st) => st.description.toLowerCase().includes(searchLower)))
           return true;
         return false;
       });
@@ -763,11 +943,11 @@ var QueryEngine = class {
   }
   static getOverdueTasks(tasks) {
     const today = this.getToday();
-    return tasks.filter((t) => !t.completed && t.dueDate && t.dueDate < today);
+    return tasks.filter((t2) => !t2.completed && t2.dueDate && t2.dueDate < today);
   }
   static getTodayTasks(tasks) {
     const today = this.getToday();
-    return tasks.filter((t) => !t.completed && t.dueDate === today);
+    return tasks.filter((t2) => !t2.completed && t2.dueDate === today);
   }
   static getUpcomingTasks(tasks, days = 7) {
     const today = this.getToday();
@@ -775,7 +955,7 @@ var QueryEngine = class {
     future.setDate(future.getDate() + days);
     const futureStr = future.toISOString().split("T")[0];
     return tasks.filter(
-      (t) => !t.completed && t.dueDate && t.dueDate >= today && t.dueDate <= futureStr
+      (t2) => !t2.completed && t2.dueDate && t2.dueDate >= today && t2.dueDate <= futureStr
     );
   }
 };
@@ -911,17 +1091,17 @@ var SmartTaskViewController = class {
   }
   renderStatsInHeader(container) {
     const total = this.tasks.length;
-    const done = this.tasks.filter((t) => t.completed).length;
+    const done = this.tasks.filter((t2) => t2.completed).length;
     const notDone = total - done;
     const overdue = QueryEngine.getOverdueTasks(this.tasks).length;
     const today = QueryEngine.getTodayTasks(this.tasks).length;
     const upcoming = QueryEngine.getUpcomingTasks(this.tasks, 7).length;
     const progress = total > 0 ? Math.round(done / total * 100) : 0;
     const stats = [
-      { value: notDone, label: "\u5F85\u529E", cls: "pending" },
-      { value: overdue, label: "\u903E\u671F", cls: "overdue" },
-      { value: today, label: "\u4ECA\u65E5", cls: "today" },
-      { value: upcoming, label: "7\u5929\u5185", cls: "upcoming" }
+      { value: notDone, label: t("stats").pending, cls: "pending" },
+      { value: overdue, label: t("stats").overdue, cls: "overdue" },
+      { value: today, label: t("stats").today, cls: "today" },
+      { value: upcoming, label: t("stats").upcoming, cls: "upcoming" }
     ];
     for (let i = 0; i < stats.length; i++) {
       const s = stats[i];
@@ -1009,9 +1189,9 @@ var SmartTaskViewController = class {
     dateGroup.createSpan({ cls: "quick-tool-label", text: "\u{1F4C5}" });
     const dateBtns = dateGroup.createDiv({ cls: "quick-tool-btns" });
     const dateOptions = [
-      { value: "today", label: "\u4ECA\u5929", title: "\u4ECA\u5929\u622A\u6B62" },
-      { value: "tomorrow", label: "\u660E\u5929", title: "\u660E\u5929\u622A\u6B62" },
-      { value: "week", label: "7\u5929", title: "\u4E0B\u5468\u622A\u6B62" }
+      { value: "today", label: t("dates").today, title: `${t("dates").today}\u622A\u6B62` },
+      { value: "tomorrow", label: t("dates").tomorrow, title: `${t("dates").tomorrow}\u622A\u6B62` },
+      { value: "week", label: t("dates").week, title: "\u4E0B\u5468\u622A\u6B62" }
     ];
     for (const opt of dateOptions) {
       const btn = dateBtns.createEl("button", {
@@ -1145,9 +1325,9 @@ var SmartTaskViewController = class {
     });
     const tabsEl = this.searchRowEl.createDiv({ cls: "filter-tabs" });
     const tabs = [
-      { id: "not-done", label: "\u5F85\u529E" },
-      { id: "done", label: "\u5DF2\u5B8C\u6210" },
-      { id: "all", label: "\u5168\u90E8" }
+      { id: "not-done", label: t("filters").pending },
+      { id: "done", label: t("filters").done },
+      { id: "all", label: t("filters").all }
     ];
     for (const tab of tabs) {
       const btn = tabsEl.createEl("button", {
@@ -1167,10 +1347,10 @@ var SmartTaskViewController = class {
       const filterChipsEl = this.searchRowEl.createDiv({ cls: "active-filter-chips" });
       if (this.dateFilter !== "all") {
         const dateLabels = {
-          "overdue": "\u5DF2\u903E\u671F",
-          "today": "\u4ECA\u5929",
-          "week": "\u672C\u5468\u5185",
-          "month": "\u672C\u6708\u5185"
+          "overdue": t("dates").overdue,
+          "today": t("dates").today,
+          "week": t("dates").thisWeek,
+          "month": t("dates").thisMonth
         };
         const chip = filterChipsEl.createSpan({
           cls: "filter-chip date-filter-chip",
@@ -1209,7 +1389,7 @@ var SmartTaskViewController = class {
         });
         chip.createSpan({ cls: "filter-chip-remove", text: "\u2715" });
         chip.addEventListener("click", () => {
-          this.filterTags = this.filterTags.filter((t) => t !== tag);
+          this.filterTags = this.filterTags.filter((t2) => t2 !== tag);
           this.renderSearchRow();
           this.renderContent();
         });
@@ -1247,11 +1427,11 @@ var SmartTaskViewController = class {
     dateSection.createSpan({ cls: "filter-title", text: "\u{1F4C5} \u65E5\u671F" });
     const dateOptions = dateSection.createDiv({ cls: "filter-options" });
     const dateFilters = [
-      { value: "all", label: "\u5168\u90E8" },
-      { value: "overdue", label: "\u5DF2\u903E\u671F" },
-      { value: "today", label: "\u4ECA\u5929" },
-      { value: "week", label: "\u672C\u5468\u5185" },
-      { value: "month", label: "\u672C\u6708\u5185" }
+      { value: "all", label: t("filters").all },
+      { value: "overdue", label: t("dates").overdue },
+      { value: "today", label: t("dates").today },
+      { value: "week", label: t("dates").thisWeek },
+      { value: "month", label: t("dates").thisMonth }
     ];
     for (const df of dateFilters) {
       const btn = dateOptions.createEl("button", {
@@ -1306,7 +1486,7 @@ var SmartTaskViewController = class {
       const removeBtn = tagEl.createEl("button", { cls: "remove-tag", text: "\u2715" });
       removeBtn.addEventListener("click", (e) => {
         e.stopPropagation();
-        this.filterTags = this.filterTags.filter((t) => t !== tag);
+        this.filterTags = this.filterTags.filter((t2) => t2 !== tag);
         this.renderFilterPanel();
         this.renderHeader();
         this.renderContent();
@@ -1362,8 +1542,8 @@ var SmartTaskViewController = class {
     if (allEmpty) {
       const empty = listEl.createDiv({ cls: "empty-state" });
       empty.createDiv({ cls: "empty-icon", text: "\u{1F389}" });
-      empty.createEl("p", { text: "\u6682\u65E0\u4EFB\u52A1" });
-      empty.createEl("p", { cls: "empty-hint", text: "\u5728\u4E0A\u65B9\u8F93\u5165\u6846\u521B\u5EFA\u4F60\u7684\u7B2C\u4E00\u4E2A\u4EFB\u52A1\u5427\uFF01" });
+      empty.createEl("p", { text: t("messages").noTasks });
+      empty.createEl("p", { cls: "empty-hint", text: t("messages").addTask });
       return;
     }
     for (const group of groups) {
@@ -1386,8 +1566,8 @@ var SmartTaskViewController = class {
   }
   renderKanbanView(container) {
     const kanbanEl = container.createDiv({ cls: "kanban-view" });
-    const todoTasks = this.filteredTasks.filter((t) => !t.completed);
-    const doneTasks = this.filteredTasks.filter((t) => t.completed);
+    const todoTasks = this.filteredTasks.filter((t2) => !t2.completed);
+    const doneTasks = this.filteredTasks.filter((t2) => t2.completed);
     const todoCol = kanbanEl.createDiv({ cls: "kanban-column" });
     todoCol.createEl("h3", { text: `\u{1F4CB} \u5F85\u529E (${todoTasks.length})` });
     const todoList = todoCol.createDiv({ cls: "kanban-task-list" });
@@ -1686,7 +1866,7 @@ var SmartTaskViewController = class {
           if (!this.filterTags.includes(tagName)) {
             this.filterTags = [...this.filterTags, tagName];
           } else {
-            this.filterTags = this.filterTags.filter((t) => t !== tagName);
+            this.filterTags = this.filterTags.filter((t2) => t2 !== tagName);
           }
           this.showFilterPanel = true;
           this.renderFilterPanel();
@@ -1731,7 +1911,7 @@ var SmartTaskViewController = class {
     });
     const todayBtn = navGroup.createEl("button", {
       cls: "timeline-nav-btn today-btn",
-      text: "\u4ECA\u5929",
+      text: t("dates").today,
       attr: { title: "\u6EDA\u52A8\u5230\u4ECA\u5929" }
     });
     const nextBtn = navGroup.createEl("button", {
@@ -2220,7 +2400,7 @@ var SmartTaskViewController = class {
     }
   }
   getTimelineGroups() {
-    const tasksWithDate = this.filteredTasks.filter((t) => t.dueDate);
+    const tasksWithDate = this.filteredTasks.filter((t2) => t2.dueDate);
     const groups = /* @__PURE__ */ new Map();
     for (const task of tasksWithDate) {
       const key = this.getTimelineGroupKey(task.dueDate);
@@ -2353,7 +2533,7 @@ var SmartTaskViewController = class {
         const newDesc = descInput.value.trim();
         const newDate = dateInput.value || void 0;
         const newPriority = prioritySelect.value;
-        const newTags = tagsInput.value.split(",").map((t) => t.trim()).filter((t) => t.length > 0);
+        const newTags = tagsInput.value.split(",").map((t2) => t2.trim()).filter((t2) => t2.length > 0);
         if (!newDesc) {
           new import_obsidian3.Notice("Description cannot be empty");
           return;
@@ -2422,7 +2602,7 @@ var SmartTaskViewController = class {
     });
     const todayBtn = header.createEl("button", {
       cls: "calendar-today-btn",
-      text: "\u4ECA\u5929"
+      text: t("dates").today
     });
     const weekdays = ["\u65E5", "\u4E00", "\u4E8C", "\u4E09", "\u56DB", "\u4E94", "\u516D"];
     const weekdayRow = calendarEl.createDiv({ cls: "calendar-weekdays" });
@@ -2482,7 +2662,7 @@ var SmartTaskViewController = class {
       const dateStr = `${this.calendarYear}-${String(this.calendarMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
       const dayTasks = tasksByDate.get(dateStr) || [];
       const isToday = dateStr === todayStr;
-      const isOverdue = dayTasks.some((t) => !t.completed) && dateStr < todayStr;
+      const isOverdue = dayTasks.some((t2) => !t2.completed) && dateStr < todayStr;
       const cell = grid.createDiv({ cls: "calendar-day" });
       if (isToday)
         cell.addClass("today");
@@ -2493,8 +2673,8 @@ var SmartTaskViewController = class {
       cell.createDiv({ cls: "calendar-day-number", text: day.toString() });
       if (dayTasks.length > 0) {
         const tasksContainer = cell.createDiv({ cls: "calendar-day-tasks" });
-        const notDone = dayTasks.filter((t) => !t.completed);
-        const done = dayTasks.filter((t) => t.completed);
+        const notDone = dayTasks.filter((t2) => !t2.completed);
+        const done = dayTasks.filter((t2) => t2.completed);
         const displayTasks = [...notDone, ...done].slice(0, 3);
         for (const task of displayTasks) {
           const taskEl = tasksContainer.createDiv({ cls: "calendar-task-dot" });
@@ -2799,6 +2979,7 @@ var SmartTaskPlugin = class extends import_obsidian5.Plugin {
   }
   async onload() {
     await this.loadSettings();
+    setLocale(detectLocale());
     this.taskIndex = new TaskIndex(this.app);
     await this.taskIndex.initialize();
     this.taskIndex.onChange(() => {
@@ -2814,21 +2995,21 @@ var SmartTaskPlugin = class extends import_obsidian5.Plugin {
     });
     this.addCommand({
       id: "open-view",
-      name: "Open View",
+      name: t("commands").openView,
       callback: () => {
         void this.activateView();
       }
     });
     this.addCommand({
       id: "quick-create",
-      name: "Quick Create Task",
+      name: t("commands").quickCreate,
       callback: () => {
         new QuickCreateModal(this.app, this).open();
       }
     });
     this.addCommand({
       id: "toggle-status",
-      name: "Toggle Task Status",
+      name: t("commands").toggleStatus,
       editorCallback: (editor, view) => {
         var _a;
         const cursor = editor.getCursor();
@@ -2847,7 +3028,7 @@ var SmartTaskPlugin = class extends import_obsidian5.Plugin {
     });
     this.addCommand({
       id: "add-subtask",
-      name: "Add Subtask",
+      name: t("commands").addSubtask,
       editorCallback: (editor, view) => {
         var _a;
         const cursor = editor.getCursor();
@@ -2901,7 +3082,7 @@ ${newLine}`,
   }
   updateStatusBar() {
     const tasks = this.getTasks();
-    const notDone = tasks.filter((t) => !t.completed).length;
+    const notDone = tasks.filter((t2) => !t2.completed).length;
     if (this.statusBarItem) {
       this.statusBarItem.setText(`\u{1F4CB} ${notDone} \u5F85\u529E`);
     }
@@ -2915,15 +3096,15 @@ ${newLine}`,
     const allTasks = this.getTasks();
     let results = [...allTasks];
     if (query.status === "done") {
-      results = results.filter((t) => t.completed);
+      results = results.filter((t2) => t2.completed);
     } else if (query.status === "not-done") {
-      results = results.filter((t) => !t.completed);
+      results = results.filter((t2) => !t2.completed);
     }
     if (query.dueDate) {
-      results = results.filter((t) => {
-        if (!t.dueDate)
+      results = results.filter((t2) => {
+        if (!t2.dueDate)
           return false;
-        const due = t.dueDate;
+        const due = t2.dueDate;
         if (query.dueDate.before && due >= query.dueDate.before)
           return false;
         if (query.dueDate.after && due <= query.dueDate.after)
@@ -2934,17 +3115,17 @@ ${newLine}`,
       });
     }
     if (query.priority && query.priority.length > 0) {
-      results = results.filter((t) => query.priority.includes(t.priority));
+      results = results.filter((t2) => query.priority.includes(t2.priority));
     }
     if (query.tags && query.tags.length > 0) {
       results = results.filter(
-        (t) => query.tags.some((tag) => t.tags.includes(tag))
+        (t2) => query.tags.some((tag) => t2.tags.includes(tag))
       );
     }
     if (query.searchText) {
       const searchLower = query.searchText.toLowerCase();
       results = results.filter(
-        (t) => t.description.toLowerCase().includes(searchLower)
+        (t2) => t2.description.toLowerCase().includes(searchLower)
       );
     }
     return results;
@@ -3002,7 +3183,7 @@ ${newLine}`,
       const startDate = (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
       taskLine += ` \u{1F6EB} ${startDate}`;
       if (this.settings.autoAddTags && this.settings.autoAddTags.length > 0) {
-        const tagsStr = this.settings.autoAddTags.map((t) => `#${t}`).join(" ");
+        const tagsStr = this.settings.autoAddTags.map((t2) => `#${t2}`).join(" ");
         taskLine += ` ${tagsStr}`;
       }
       const content = await this.app.vault.read(targetFile);
@@ -3189,9 +3370,9 @@ var QuickCreateModal = class extends import_obsidian5.Modal {
     const targetRow = form.createDiv({ cls: "smarttask-row small-gap" });
     targetRow.createSpan({ text: "Save to:" });
     const targetSelect = form.createEl("select", { cls: "smarttask-select" });
-    targetSelect.createEl("option", { value: "inbox", text: "Inbox" });
-    targetSelect.createEl("option", { value: "currentFile", text: "Current File" });
-    targetSelect.createEl("option", { value: "dailyNote", text: "Daily Note" });
+    targetSelect.createEl("option", { value: "inbox", text: t("saveTargets").inbox });
+    targetSelect.createEl("option", { value: "currentFile", text: t("saveTargets").currentFile });
+    targetSelect.createEl("option", { value: "dailyNote", text: t("saveTargets").dailyNote });
     targetSelect.value = this.plugin.settings.saveTarget;
     targetSelect.onchange = async () => {
       const value = targetSelect.value;

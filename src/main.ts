@@ -4,6 +4,7 @@ import { TaskParser } from './taskParser';
 import { Task, SmartTaskSettings, DEFAULT_SETTINGS, TaskPriority, TaskQuery } from './types';
 import { SmartTaskSettingTab } from './settings';
 import { SmartTaskView, SMARTTASK_VIEW_TYPE } from './view';
+import { t, setLocale, detectLocale } from './i18n';
 
 export default class SmartTaskPlugin extends Plugin {
 	settings: SmartTaskSettings = DEFAULT_SETTINGS;
@@ -13,6 +14,8 @@ export default class SmartTaskPlugin extends Plugin {
 
 	async onload() {
 		await this.loadSettings();
+
+		setLocale(detectLocale());
 
 		this.taskIndex = new TaskIndex(this.app);
 		await this.taskIndex.initialize();
@@ -33,7 +36,7 @@ export default class SmartTaskPlugin extends Plugin {
 
 		this.addCommand({
 			id: 'open-view',
-			name: 'Open View',
+			name: t('commands').openView,
 			callback: () => {
 				void this.activateView();
 			},
@@ -41,7 +44,7 @@ export default class SmartTaskPlugin extends Plugin {
 
 		this.addCommand({
 			id: 'quick-create',
-			name: 'Quick Create Task',
+			name: t('commands').quickCreate,
 			callback: () => {
 				new QuickCreateModal(this.app, this).open();
 			},
@@ -49,7 +52,7 @@ export default class SmartTaskPlugin extends Plugin {
 
 		this.addCommand({
 			id: 'toggle-status',
-			name: 'Toggle Task Status',
+			name: t('commands').toggleStatus,
 			editorCallback: (editor, view) => {
 				const cursor = editor.getCursor();
 				const line = editor.getLine(cursor.line);
@@ -68,7 +71,7 @@ export default class SmartTaskPlugin extends Plugin {
 
 		this.addCommand({
 			id: 'add-subtask',
-			name: 'Add Subtask',
+			name: t('commands').addSubtask,
 			editorCallback: (editor, view) => {
 				const cursor = editor.getCursor();
 				const line = editor.getLine(cursor.line);
@@ -469,9 +472,9 @@ class QuickCreateModal extends Modal {
 
 		targetRow.createSpan({ text: 'Save to:' });
 		const targetSelect = form.createEl('select', { cls: 'smarttask-select' });
-		targetSelect.createEl('option', { value: 'inbox', text: 'Inbox' });
-		targetSelect.createEl('option', { value: 'currentFile', text: 'Current File' });
-		targetSelect.createEl('option', { value: 'dailyNote', text: 'Daily Note' });
+		targetSelect.createEl('option', { value: 'inbox', text: t('saveTargets').inbox });
+		targetSelect.createEl('option', { value: 'currentFile', text: t('saveTargets').currentFile });
+		targetSelect.createEl('option', { value: 'dailyNote', text: t('saveTargets').dailyNote });
 		targetSelect.value = this.plugin.settings.saveTarget;
 		targetSelect.onchange = async () => {
 			const value = targetSelect.value;

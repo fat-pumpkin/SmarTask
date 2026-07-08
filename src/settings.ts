@@ -1,6 +1,7 @@
 import { App, PluginSettingTab, Setting } from 'obsidian';
 import SmartTaskPlugin from './main';
 import { TaskPriority, GroupField, SortField, ViewType } from './types';
+import { t } from './i18n';
 
 export class SmartTaskSettingTab extends PluginSettingTab {
 	plugin: SmartTaskPlugin;
@@ -24,12 +25,12 @@ export class SmartTaskSettingTab extends PluginSettingTab {
 			.setHeading();
 
 		new Setting(containerEl)
-			.setName('Default Save Location')
+			.setName(t('settings').defaultSaveLocation)
 			.setDesc('Where newly created tasks should be saved')
 			.addDropdown(dropdown => dropdown
-				.addOption('inbox', 'Inbox (specified file)')
-				.addOption('currentFile', 'Current file')
-				.addOption('dailyNote', 'Daily note')
+				.addOption('inbox', t('saveTargets').inbox)
+				.addOption('currentFile', t('saveTargets').currentFile)
+				.addOption('dailyNote', t('saveTargets').dailyNote)
 				.setValue(this.plugin.settings.saveTarget)
 				.onChange(async (value) => {
 					this.plugin.settings.saveTarget = value as 'inbox' | 'currentFile' | 'dailyNote';
@@ -37,7 +38,7 @@ export class SmartTaskSettingTab extends PluginSettingTab {
 				}));
 
 		new Setting(containerEl)
-			.setName('Inbox File Path')
+			.setName(t('settings').inboxFilePath)
 			.setDesc('File path for saving tasks in inbox mode')
 			.addText(text => text
 				.setPlaceholder('SmartTask-Inbox.md')
@@ -48,7 +49,7 @@ export class SmartTaskSettingTab extends PluginSettingTab {
 				}));
 
 		new Setting(containerEl)
-			.setName('Auto-add Tags')
+			.setName(t('settings').autoAddTags)
 			.setDesc('Tags to automatically add to new tasks (comma-separated)')
 			.addText(text => text
 				.setPlaceholder('e.g., task, work')
@@ -66,13 +67,13 @@ export class SmartTaskSettingTab extends PluginSettingTab {
 			.setHeading();
 
 		new Setting(containerEl)
-			.setName('Default View')
+			.setName(t('settings').defaultView)
 			.setDesc('Default view when opening the plugin')
 			.addDropdown(dropdown => dropdown
-				.addOption('list', 'List')
-				.addOption('kanban', 'Kanban')
-				.addOption('calendar', 'Calendar')
-				.addOption('timeline', 'Timeline')
+				.addOption('list', t('tabs').list)
+				.addOption('kanban', t('tabs').kanban)
+				.addOption('calendar', t('tabs').calendar)
+				.addOption('timeline', t('tabs').timeline)
 				.setValue(this.plugin.settings.defaultView)
 				.onChange(async (value) => {
 					this.plugin.settings.defaultView = value as ViewType;
@@ -80,12 +81,12 @@ export class SmartTaskSettingTab extends PluginSettingTab {
 				}));
 
 		new Setting(containerEl)
-			.setName('Timeline Grouping')
+			.setName(t('settings').timelineGrouping)
 			.setDesc('How tasks are grouped in timeline view')
 			.addDropdown(dropdown => dropdown
-				.addOption('day', 'By day')
-				.addOption('week', 'By week')
-				.addOption('month', 'By month')
+				.addOption('day', `By ${t('dates').day}`)
+				.addOption('week', `By ${t('dates').week}`)
+				.addOption('month', `By ${t('dates').month}`)
 				.setValue(this.plugin.settings.timelineGroupBy)
 				.onChange(async (value) => {
 					this.plugin.settings.timelineGroupBy = value as 'day' | 'week' | 'month';
@@ -93,14 +94,14 @@ export class SmartTaskSettingTab extends PluginSettingTab {
 				}));
 
 		new Setting(containerEl)
-			.setName('Default Priority')
+			.setName(t('settings').defaultPriority)
 			.setDesc('Default priority for new tasks')
 			.addDropdown(dropdown => dropdown
-				.addOption(TaskPriority.Highest, '🔝 Highest')
-				.addOption(TaskPriority.High, '🔺 High')
-				.addOption(TaskPriority.Medium, '🔼 Medium')
-				.addOption(TaskPriority.Low, '🔽 Low')
-				.addOption(TaskPriority.Lowest, '⏬ Lowest')
+				.addOption(TaskPriority.Highest, `🔝 ${t('priorities').highest}`)
+				.addOption(TaskPriority.High, `🔺 ${t('priorities').high}`)
+				.addOption(TaskPriority.Medium, `🔼 ${t('priorities').medium}`)
+				.addOption(TaskPriority.Low, `🔽 ${t('priorities').low}`)
+				.addOption(TaskPriority.Lowest, `⏬ ${t('priorities').lowest}`)
 				.addOption(TaskPriority.None, '➖ None')
 				.setValue(this.plugin.settings.defaultPriority)
 				.onChange(async (value) => {
@@ -109,7 +110,7 @@ export class SmartTaskSettingTab extends PluginSettingTab {
 				}));
 
 		new Setting(containerEl)
-			.setName('Show Completed Tasks')
+			.setName(t('settings').showCompleted)
 			.setDesc('Display completed tasks in task list')
 			.addToggle(toggle => toggle
 				.setValue(this.plugin.settings.showCompleted)
@@ -119,7 +120,7 @@ export class SmartTaskSettingTab extends PluginSettingTab {
 				}));
 
 		new Setting(containerEl)
-			.setName('Show Subtasks')
+			.setName(t('settings').showSubtasks)
 			.setDesc('Expand and show subtasks in task list')
 			.addToggle(toggle => toggle
 				.setValue(this.plugin.settings.showSubtasks)
@@ -133,7 +134,7 @@ export class SmartTaskSettingTab extends PluginSettingTab {
 			.setHeading();
 
 		new Setting(containerEl)
-			.setName('Group By')
+			.setName(t('settings').groupBy)
 			.setDesc('How tasks are grouped in task list')
 			.addDropdown(dropdown => dropdown
 				.addOption(GroupField.File, 'By file')
@@ -148,7 +149,7 @@ export class SmartTaskSettingTab extends PluginSettingTab {
 				}));
 
 		new Setting(containerEl)
-			.setName('Sort By')
+			.setName(t('settings').sortBy)
 			.setDesc('Field to sort tasks by')
 			.addDropdown(dropdown => dropdown
 				.addOption(SortField.DueDate, 'Due date')

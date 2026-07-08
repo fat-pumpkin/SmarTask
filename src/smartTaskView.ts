@@ -4,6 +4,7 @@ import { Modal, Notice } from 'obsidian';
 import SmartTaskPlugin from './main';
 import { Task, TaskPriority, TaskQuery, TaskGroup, ViewType } from './types';
 import { QueryEngine } from './queryEngine';
+import { t } from './i18n';
 
 export class SmartTaskViewController {
 	private plugin: SmartTaskPlugin;
@@ -165,10 +166,10 @@ export class SmartTaskViewController {
 		const progress = total > 0 ? Math.round((done / total) * 100) : 0;
 
 		const stats = [
-			{ value: notDone, label: '待办', cls: 'pending' },
-			{ value: overdue, label: '逾期', cls: 'overdue' },
-			{ value: today, label: '今日', cls: 'today' },
-			{ value: upcoming, label: '7天内', cls: 'upcoming' },
+			{ value: notDone, label: t('stats').pending, cls: 'pending' },
+			{ value: overdue, label: t('stats').overdue, cls: 'overdue' },
+			{ value: today, label: t('stats').today, cls: 'today' },
+			{ value: upcoming, label: t('stats').upcoming, cls: 'upcoming' },
 		];
 
 		for (let i = 0; i < stats.length; i++) {
@@ -268,9 +269,9 @@ export class SmartTaskViewController {
 		dateGroup.createSpan({ cls: 'quick-tool-label', text: '📅' });
 		const dateBtns = dateGroup.createDiv({ cls: 'quick-tool-btns' });
 		const dateOptions = [
-			{ value: 'today', label: '今天', title: '今天截止' },
-			{ value: 'tomorrow', label: '明天', title: '明天截止' },
-			{ value: 'week', label: '7天', title: '下周截止' },
+			{ value: 'today', label: t('dates').today, title: `${t('dates').today}截止` },
+			{ value: 'tomorrow', label: t('dates').tomorrow, title: `${t('dates').tomorrow}截止` },
+			{ value: 'week', label: t('dates').week, title: '下周截止' },
 		];
 		for (const opt of dateOptions) {
 			const btn = dateBtns.createEl('button', {
@@ -412,9 +413,9 @@ export class SmartTaskViewController {
 		const tabsEl = this.searchRowEl.createDiv({ cls: 'filter-tabs' });
 
 		const tabs = [
-			{ id: 'not-done', label: '待办' },
-			{ id: 'done', label: '已完成' },
-			{ id: 'all', label: '全部' },
+			{ id: 'not-done', label: t('filters').pending },
+			{ id: 'done', label: t('filters').done },
+			{ id: 'all', label: t('filters').all },
 		];
 
 		for (const tab of tabs) {
@@ -439,10 +440,10 @@ export class SmartTaskViewController {
 
 			if (this.dateFilter !== 'all') {
 				const dateLabels: Record<string, string> = {
-					'overdue': '已逾期',
-					'today': '今天',
-					'week': '本周内',
-					'month': '本月内'
+					'overdue': t('dates').overdue,
+					'today': t('dates').today,
+					'week': t('dates').thisWeek,
+					'month': t('dates').thisMonth
 				};
 				const chip = filterChipsEl.createSpan({ 
 					cls: 'filter-chip date-filter-chip',
@@ -527,11 +528,11 @@ export class SmartTaskViewController {
 		
 		const dateOptions = dateSection.createDiv({ cls: 'filter-options' });
 		const dateFilters = [
-			{ value: 'all', label: '全部' },
-			{ value: 'overdue', label: '已逾期' },
-			{ value: 'today', label: '今天' },
-			{ value: 'week', label: '本周内' },
-			{ value: 'month', label: '本月内' },
+			{ value: 'all', label: t('filters').all },
+			{ value: 'overdue', label: t('dates').overdue },
+			{ value: 'today', label: t('dates').today },
+			{ value: 'week', label: t('dates').thisWeek },
+			{ value: 'month', label: t('dates').thisMonth },
 		];
 		for (const df of dateFilters) {
 			const btn = dateOptions.createEl('button', {
@@ -652,8 +653,8 @@ export class SmartTaskViewController {
 		if (allEmpty) {
 			const empty = listEl.createDiv({ cls: 'empty-state' });
 			empty.createDiv({ cls: 'empty-icon', text: '🎉' });
-			empty.createEl('p', { text: '暂无任务' });
-			empty.createEl('p', { cls: 'empty-hint', text: '在上方输入框创建你的第一个任务吧！' });
+			empty.createEl('p', { text: t('messages').noTasks });
+			empty.createEl('p', { cls: 'empty-hint', text: t('messages').addTask });
 			return;
 		}
 
@@ -1043,7 +1044,7 @@ export class SmartTaskViewController {
 		});
 		const todayBtn = navGroup.createEl('button', {
 			cls: 'timeline-nav-btn today-btn',
-			text: '今天',
+			text: t('dates').today,
 			attr: { title: '滚动到今天' }
 		});
 		const nextBtn = navGroup.createEl('button', {
@@ -1821,7 +1822,7 @@ export class SmartTaskViewController {
 
 		const todayBtn = header.createEl('button', {
 			cls: 'calendar-today-btn',
-			text: '今天'
+			text: t('dates').today
 		});
 
 		const weekdays = ['日', '一', '二', '三', '四', '五', '六'];
