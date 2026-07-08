@@ -7,7 +7,7 @@
 
 ## Demo
 
-https://github.com/fat-pumpkin/SmarTask/assets/132758600/65f07c54-1f4b-40fe-a554-5d7104739c65
+<video src="https://github.com/fat-pumpkin/SmarTask/raw/main/SmartTask-demo.mp4" controls width="100%"></video>
 
 ## Features
 
