@@ -5,6 +5,10 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Obsidian](https://img.shields.io/badge/Obsidian-1.0%2B-purple.svg)](https://obsidian.md)
 
+## 演示视频
+
+https://github.com/fat-pumpkin/SmarTask/assets/132758600/65f07c54-1f4b-40fe-a554-5d7104739c65
+
 ## 功能特性
 
 ### 多种视图
