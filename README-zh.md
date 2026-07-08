@@ -7,7 +7,11 @@
 
 ## 演示视频
 
-<video src="https://github.com/fat-pumpkin/SmarTask/raw/main/SmartTask-demo.mp4" controls width="100%"></video>
+<a href="https://github.com/fat-pumpkin/SmarTask/raw/main/SmartTask-demo.mp4" target="_blank">
+  <img src="https://img.shields.io/badge/%E8%A7%82%E7%9C%8B%E6%BC%94%E7%A4%BA-Video-blue?style=for-the-badge&logo=github" alt="观看演示">
+</a>
+
+点击上方徽章观看演示视频。
 
 ## 功能特性
 

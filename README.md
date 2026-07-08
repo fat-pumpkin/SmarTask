@@ -7,7 +7,11 @@
 
 ## Demo
 
-<video src="https://github.com/fat-pumpkin/SmarTask/raw/main/SmartTask-demo.mp4" controls width="100%"></video>
+<a href="https://github.com/fat-pumpkin/SmarTask/raw/main/SmartTask-demo.mp4" target="_blank">
+  <img src="https://img.shields.io/badge/Watch%20Demo-Video-blue?style=for-the-badge&logo=github" alt="Watch Demo">
+</a>
+
+Click the badge above to watch the demo video.
 
 ## Features
 
