@@ -2465,33 +2465,403 @@ body.theme-dark .smarttask-container {
 	color: var(--text-normal);
 }
 
-/* ===== 响应式 ===== */
-@media (max-width: 600px) {
-	.zigzag-center-line {
-		left: 20px;
+/* ===== 响应式适配 ===== */
+@media (max-width: 768px) {
+	.smarttask-header {
+		flex-wrap: wrap;
+		padding: 6px 12px;
+		gap: 8px;
 	}
 	
-	.zigzag-node {
-		left: 20px;
+	.header-stats {
+		margin-left: 0;
+		gap: 10px;
+		order: 3;
+		width: 100%;
+		justify-content: center;
 	}
 	
-	.zigzag-content {
-		width: calc(100% - 50px);
+	.stat-label {
+		font-size: 11px;
 	}
 	
-	.zigzag-group.left .zigzag-content,
-	.zigzag-group.right .zigzag-content {
-		padding-left: 50px;
-		padding-right: 0;
+	.stat-num {
+		font-size: 13px;
 	}
 	
-	.zigzag-group.left,
-	.zigzag-group.right {
-		justify-content: flex-start;
+	.header-progress-wrap {
+		width: 150px;
+	}
+	
+	.progress-bar-container {
+		height: 5px;
+	}
+	
+	.progress-percent {
+		font-size: 11px;
+		min-width: 28px;
+	}
+	
+	.view-toggle {
+		padding: 2px;
+	}
+	
+	.view-btn {
+		padding: 6px 8px;
+		font-size: 12px;
+	}
+	
+	.filter-btn {
+		padding: 6px 10px;
+		font-size: 12px;
+	}
+	
+	.search-row {
+		padding: 8px 12px;
+		gap: 8px;
+	}
+	
+	.search-input-wrapper input {
+		padding: 8px 12px 8px 32px;
+		font-size: 12px;
+	}
+	
+	.filter-panel {
+		padding: 8px 12px;
+	}
+	
+	.filter-row {
+		gap: 12px;
+	}
+	
+	.filter-section {
+		min-width: 100%;
+	}
+	
+	.kanban-view {
+		padding: 8px;
+		gap: 8px;
+	}
+	
+	.kanban-column {
+		min-width: 240px;
+		padding: 10px;
+	}
+	
+	.calendar-view {
+		padding: 8px;
+	}
+	
+	.calendar-day {
+		min-height: 60px;
+		padding: 4px;
+	}
+	
+	.calendar-day-number {
+		width: 20px;
+		height: 20px;
+		font-size: 11px;
+	}
+	
+	.task-actions {
+		opacity: 1;
+	}
+	
+	.task-item {
+		padding: 10px 12px;
+		gap: 8px;
+	}
+	
+	.task-description {
+		font-size: 13px;
+	}
+	
+	.task-meta {
+		font-size: 10px;
+		gap: 6px;
+	}
+	
+	.timeline-view {
+		padding: 8px;
+	}
+	
+	.timeline-toolbar {
+		gap: 8px;
+		margin-bottom: 12px;
+	}
+	
+	.timeline-group-btn {
+		padding: 4px 10px;
+		font-size: 11px;
+	}
+	
+	.timeline-nav-btn {
+		padding: 4px 8px;
+		font-size: 11px;
+		min-width: 28px;
+	}
+	
+	.timeline-nav-btn.today-btn {
+		padding: 4px 10px;
+	}
+	
+	.gantt-label {
+		min-width: 120px;
+		max-width: 120px;
+		font-size: 12px;
+	}
+	
+	.gantt-bars {
+		min-width: 300px;
+		height: 28px;
+	}
+	
+	.gantt-bar {
+		height: 20px;
+	}
+}
+
+@media (max-width: 480px) {
+	.smarttask-header {
+		padding: 4px 8px;
+	}
+	
+	.smarttask-title h2 {
+		font-size: 16px;
+	}
+	
+	.smarttask-icon {
+		font-size: 18px;
+	}
+	
+	.header-stats {
+		display: none;
+	}
+	
+	.header-progress-wrap {
+		width: 120px;
+	}
+	
+	.quick-create {
+		padding: 8px 12px;
+	}
+	
+	.quick-create-input {
+		padding: 10px 12px;
+		gap: 8px;
+	}
+	
+	.quick-create-input input {
+		font-size: 13px;
+	}
+	
+	.search-row {
+		padding: 6px 8px;
+	}
+	
+	.filter-tab {
+		padding: 4px 10px;
+		font-size: 12px;
+	}
+	
+	.kanban-view {
+		padding: 4px;
+		gap: 4px;
+	}
+	
+	.kanban-column {
+		min-width: 200px;
+		padding: 8px;
+	}
+	
+	.kanban-column h3 {
+		font-size: 13px;
+		margin-bottom: 10px;
+	}
+	
+	.calendar-view {
+		padding: 4px;
+	}
+	
+	.calendar-header {
+		margin-bottom: 10px;
+	}
+	
+	.calendar-nav-btn {
+		padding: 4px 8px;
+		font-size: 12px;
+	}
+	
+	.calendar-month-label {
+		font-size: 14px;
+		min-width: 100px;
+	}
+	
+	.calendar-today-btn {
+		padding: 4px 10px;
+		font-size: 11px;
+	}
+	
+	.calendar-day {
+		min-height: 48px;
+		padding: 2px;
+	}
+	
+	.calendar-day-number {
+		width: 18px;
+		height: 18px;
+		font-size: 10px;
+	}
+	
+	.calendar-weekday {
+		padding: 4px 0;
+		font-size: 11px;
+	}
+	
+	.task-item {
+		padding: 8px 10px;
+		gap: 6px;
+	}
+	
+	.task-checkbox input[type="checkbox"] {
+		width: 18px;
+		height: 18px;
+	}
+	
+	.task-description {
+		font-size: 12px;
+	}
+	
+	.task-meta {
+		font-size: 9px;
+	}
+	
+	.subtask-item {
+		padding: 4px 0;
+		font-size: 12px;
+	}
+	
+	.subtask-item input[type="checkbox"] {
+		width: 16px;
+		height: 16px;
+	}
+	
+	.action-btn {
+		padding: 4px 8px;
+		font-size: 16px;
+		min-width: 40px;
+		height: 40px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+	
+	.submit-btn {
+		padding: 8px 16px;
+		font-size: 14px;
+		min-height: 44px;
+	}
+	
+	.filter-btn {
+		padding: 8px 12px;
+		font-size: 13px;
+		min-height: 44px;
+	}
+	
+	.view-btn {
+		padding: 8px 10px;
+		font-size: 13px;
+		min-height: 44px;
+	}
+	
+	.gantt-label {
+		min-width: 80px;
+		max-width: 80px;
+		font-size: 11px;
+	}
+	
+	.gantt-bars {
+		min-width: 240px;
+	}
+	
+	.zigzag-card {
+		padding: 12px 14px;
+	}
+	
+	.zigzag-card-header {
+		margin-bottom: 8px;
+		padding-bottom: 6px;
+	}
+	
+	.zigzag-card-title {
+		font-size: 14px;
+	}
+	
+	.zigzag-task-item {
+		padding: 4px 6px;
+		gap: 6px;
+	}
+	
+	.zigzag-task-item input[type="checkbox"] {
+		width: 16px;
+		height: 16px;
+	}
+	
+	.zigzag-task-desc {
+		font-size: 12px;
 	}
 	
 	.cards-grid {
 		grid-template-columns: 1fr;
+		gap: 8px;
+	}
+	
+	.task-card {
+		padding: 0;
+	}
+	
+	.task-card-top {
+		padding: 8px 12px;
+	}
+	
+	.task-card-body {
+		padding: 10px 12px;
+	}
+	
+	.task-card-desc {
+		font-size: 13px;
+	}
+	
+	.task-card-footer {
+		padding: 6px 12px;
+	}
+	
+	.task-card-footer input[type="checkbox"] {
+		width: 18px;
+		height: 18px;
+	}
+	
+	.task-editor-modal {
+		width: 95%;
+		max-width: none;
+		margin: 10px;
+	}
+	
+	.task-editor-header {
+		padding: 12px 16px;
+	}
+	
+	.task-editor-body {
+		padding: 12px 16px;
+	}
+	
+	.task-editor-footer {
+		padding: 12px 16px;
+	}
+	
+	.wheel-picker-modal {
+		width: 90%;
+		max-width: 320px;
 	}
 }
 
