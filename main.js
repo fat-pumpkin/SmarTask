@@ -1257,8 +1257,7 @@ var SmartTaskViewController = class {
       toolbarContent.classList.toggle("expanded", toolbarExpanded);
       toolbarToggle.textContent = toolbarExpanded ? "\u2699\uFE0F \u6536\u8D77" : "\u2699\uFE0F";
     });
-    const submitBtn = toolbar.createEl("button", { cls: "submit-btn-inline", text: "\u2795" });
-    submitBtn.style.display = "none";
+    const submitBtn = toolbar.createEl("button", { cls: "submit-btn-inline hidden" });
     submitBtn.addEventListener("click", () => {
       const desc = input.value.trim();
       if (desc) {
@@ -1267,7 +1266,7 @@ var SmartTaskViewController = class {
         dueDate = "";
         priority = "";
         updateChips();
-        submitBtn.style.display = "none";
+        submitBtn.addClass("hidden");
         autoResize();
       }
     });
@@ -1281,17 +1280,21 @@ var SmartTaskViewController = class {
           dueDate = "";
           priority = "";
           updateChips();
-          submitBtn.style.display = "none";
+          submitBtn.addClass("hidden");
           autoResize();
         }
       }
     });
     const checkSubmitBtn = () => {
-      submitBtn.style.display = input.value.trim() ? "" : "none";
+      if (input.value.trim()) {
+        submitBtn.removeClass("hidden");
+      } else {
+        submitBtn.addClass("hidden");
+      }
     };
     const autoResize = () => {
       input.style.height = "auto";
-      input.style.height = input.scrollHeight + "px";
+      input.setCssStyles({ height: input.scrollHeight + "px" });
     };
     input.addEventListener("input", () => {
       checkSubmitBtn();

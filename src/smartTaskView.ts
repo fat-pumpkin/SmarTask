@@ -338,8 +338,7 @@ export class SmartTaskViewController {
 			toolbarToggle.textContent = toolbarExpanded ? '⚙️ 收起' : '⚙️';
 		});
 
-		const submitBtn = toolbar.createEl('button', { cls: 'submit-btn-inline', text: '➕' });
-		submitBtn.style.display = 'none';
+		const submitBtn = toolbar.createEl('button', { cls: 'submit-btn-inline hidden' });
 		submitBtn.addEventListener('click', () => {
 			const desc = input.value.trim();
 			if (desc) {
@@ -348,7 +347,7 @@ export class SmartTaskViewController {
 				dueDate = '';
 				priority = '';
 				updateChips();
-				submitBtn.style.display = 'none';
+				submitBtn.addClass('hidden');
 				autoResize();
 			}
 		});
@@ -363,19 +362,23 @@ export class SmartTaskViewController {
 					dueDate = '';
 					priority = '';
 					updateChips();
-					submitBtn.style.display = 'none';
+					submitBtn.addClass('hidden');
 					autoResize();
 				}
 			}
 		});
 
 		const checkSubmitBtn = () => {
-			submitBtn.style.display = input.value.trim() ? '' : 'none';
+			if (input.value.trim()) {
+				submitBtn.removeClass('hidden');
+			} else {
+				submitBtn.addClass('hidden');
+			}
 		};
 
 		const autoResize = () => {
 			input.style.height = 'auto';
-			input.style.height = input.scrollHeight + 'px';
+			input.setCssStyles({ height: input.scrollHeight + 'px' });
 		};
 
 		input.addEventListener('input', () => {
