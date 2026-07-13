@@ -1,5 +1,5 @@
 .smarttask-wrapper .hidden {
-	display: none !important;
+	display: none;
 }
 
 .smarttask-wrapper {
@@ -260,13 +260,13 @@ body.theme-dark .smarttask-container {
 	font-family: inherit;
 }
 
-.quick-create-textarea {
+.quick-create.compact .quick-create-input .quick-create-textarea {
 	flex: 1;
 	border: none;
-	background: transparent !important;
+	background: transparent;
 	outline: none;
 	font-size: 14px;
-	color: var(--text-normal) !important;
+	color: var(--text-normal);
 	-webkit-text-fill-color: var(--text-normal);
 	font-family: inherit;
 	resize: none;
@@ -2753,11 +2753,11 @@ body.theme-dark .smarttask-container {
 		height: 20px;
 	}
 	
-	.zigzag-content {
-		width: 100% !important;
-		left: 0 !important;
-		margin-left: 0 !important;
-		text-align: left !important;
+	.zigzag-timeline .zigzag-group .zigzag-content {
+		width: 100%;
+		left: 0;
+		margin-left: 0;
+		text-align: left;
 	}
 	
 	.zigzag-content::before,
