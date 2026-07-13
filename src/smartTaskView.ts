@@ -222,9 +222,9 @@ export class SmartTaskViewController {
 
 		const chipContainer = inputWrap.createDiv({ cls: 'quick-chips' });
 		
-		const input = inputWrap.createEl('input', {
-			type: 'text',
-			attr: { placeholder: '快速创建任务... (按 Enter 提交)' }
+		const input = inputWrap.createEl('textarea', {
+			cls: 'quick-create-textarea',
+			attr: { placeholder: '快速创建任务... (按 Enter 提交)', rows: '1' }
 		});
 
 		let dueDate = '';
@@ -265,7 +265,10 @@ export class SmartTaskViewController {
 
 		const toolbar = this.quickCreateEl.createDiv({ cls: 'quick-toolbar' });
 		
-		const dateGroup = toolbar.createDiv({ cls: 'quick-tool-group' });
+		const toolbarToggle = toolbar.createEl('button', { cls: 'quick-toolbar-toggle', text: '⚙️ 更多选项' });
+		const toolbarContent = toolbar.createDiv({ cls: 'quick-toolbar-content' });
+
+		const dateGroup = toolbarContent.createDiv({ cls: 'quick-tool-group' });
 		dateGroup.createSpan({ cls: 'quick-tool-label', text: '📅' });
 		const dateBtns = dateGroup.createDiv({ cls: 'quick-tool-btns' });
 		const dateOptions = [
@@ -303,7 +306,7 @@ export class SmartTaskViewController {
 			}, dueDate);
 		});
 
-		const priGroup = toolbar.createDiv({ cls: 'quick-tool-group' });
+		const priGroup = toolbarContent.createDiv({ cls: 'quick-tool-group' });
 		priGroup.createSpan({ cls: 'quick-tool-label', text: '🎯' });
 		const priBtns = priGroup.createDiv({ cls: 'quick-tool-btns' });
 		const priorities = [
@@ -327,6 +330,29 @@ export class SmartTaskViewController {
 			});
 		}
 
+		let toolbarExpanded = false;
+		toolbarToggle.addEventListener('click', (e) => {
+			e.stopPropagation();
+			toolbarExpanded = !toolbarExpanded;
+			toolbarContent.classList.toggle('expanded', toolbarExpanded);
+			toolbarToggle.textContent = toolbarExpanded ? '⚙️ 收起' : '⚙️';
+		});
+
+		const submitBtn = toolbar.createEl('button', { cls: 'submit-btn-inline', text: '➕' });
+		submitBtn.style.display = 'none';
+		submitBtn.addEventListener('click', () => {
+			const desc = input.value.trim();
+			if (desc) {
+				void this.plugin.createQuickTask(desc, dueDate || undefined, priority ? (priority as TaskPriority) : undefined);
+				input.value = '';
+				dueDate = '';
+				priority = '';
+				updateChips();
+				submitBtn.style.display = 'none';
+				autoResize();
+			}
+		});
+
 		input.addEventListener('keydown', (e: KeyboardEvent) => {
 			if (e.key === 'Enter' && !e.shiftKey) {
 				e.preventDefault();
@@ -337,35 +363,25 @@ export class SmartTaskViewController {
 					dueDate = '';
 					priority = '';
 					updateChips();
+					submitBtn.style.display = 'none';
+					autoResize();
 				}
 			}
 		});
 
-		let submitBtn: HTMLElement | null = null;
 		const checkSubmitBtn = () => {
-			if (input.value.trim() && !submitBtn) {
-				submitBtn = inputWrap.createEl('button', { cls: 'submit-btn', text: '添加' });
-				submitBtn.addEventListener('click', () => {
-					const desc = input.value.trim();
-					if (desc) {
-						void this.plugin.createQuickTask(desc, dueDate || undefined, priority ? (priority as TaskPriority) : undefined);
-						input.value = '';
-						dueDate = '';
-						priority = '';
-						updateChips();
-						if (submitBtn) {
-							submitBtn.remove();
-							submitBtn = null;
-						}
-					}
-				});
-			} else if (!input.value.trim() && submitBtn) {
-				submitBtn.remove();
-				submitBtn = null;
-			}
+			submitBtn.style.display = input.value.trim() ? '' : 'none';
 		};
 
-		input.addEventListener('input', checkSubmitBtn);
+		const autoResize = () => {
+			input.style.height = 'auto';
+			input.style.height = input.scrollHeight + 'px';
+		};
+
+		input.addEventListener('input', () => {
+			checkSubmitBtn();
+			autoResize();
+		});
 	}
 
 	private renderSearchRow(): void {
@@ -683,26 +699,30 @@ export class SmartTaskViewController {
 		const todoTasks = this.filteredTasks.filter(t => !t.completed);
 		const doneTasks = this.filteredTasks.filter(t => t.completed);
 
-		const todoCol = kanbanEl.createDiv({ cls: 'kanban-column' });
-		todoCol.createEl('h3', { text: `📋 待办 (${todoTasks.length})` });
-		const todoList = todoCol.createDiv({ cls: 'kanban-task-list' });
-		for (const task of todoTasks) {
-			this.renderTaskItem(todoList, task);
-		}
-		if (todoTasks.length === 0) {
-			const empty = todoList.createDiv({ cls: 'kanban-empty' });
-			empty.setText('暂无待办任务');
+		if (this.filterStatus !== 'done') {
+			const todoCol = kanbanEl.createDiv({ cls: 'kanban-column' });
+			todoCol.createEl('h3', { text: `📋 待办 (${todoTasks.length})` });
+			const todoList = todoCol.createDiv({ cls: 'kanban-task-list' });
+			for (const task of todoTasks) {
+				this.renderTaskItem(todoList, task);
+			}
+			if (todoTasks.length === 0) {
+				const empty = todoList.createDiv({ cls: 'kanban-empty' });
+				empty.setText('暂无待办任务');
+			}
 		}
 
-		const doneCol = kanbanEl.createDiv({ cls: 'kanban-column done' });
-		doneCol.createEl('h3', { text: `✅ 已完成 (${doneTasks.length})` });
-		const doneList = doneCol.createDiv({ cls: 'kanban-task-list' });
-		for (const task of doneTasks) {
-			this.renderTaskItem(doneList, task);
-		}
-		if (doneTasks.length === 0) {
-			const empty = doneList.createDiv({ cls: 'kanban-empty' });
-			empty.setText('暂无已完成任务');
+		if (this.filterStatus !== 'not-done') {
+			const doneCol = kanbanEl.createDiv({ cls: 'kanban-column done' });
+			doneCol.createEl('h3', { text: `✅ 已完成 (${doneTasks.length})` });
+			const doneList = doneCol.createDiv({ cls: 'kanban-task-list' });
+			for (const task of doneTasks) {
+				this.renderTaskItem(doneList, task);
+			}
+			if (doneTasks.length === 0) {
+				const empty = doneList.createDiv({ cls: 'kanban-empty' });
+				empty.setText('暂无已完成任务');
+			}
 		}
 	}
 
@@ -768,6 +788,26 @@ export class SmartTaskViewController {
 
 		meta.createSpan({ cls: 'task-file', text: `📄 ${task.filePath.split('/').pop()}` });
 
+		const metaActions = meta.createDiv({ cls: 'task-meta-actions' });
+		const editBtn = metaActions.createEl('button', {
+			cls: 'meta-action-btn',
+			text: '✏️',
+			attr: { title: '编辑任务' }
+		});
+		editBtn.addEventListener('click', (e) => {
+			e.stopPropagation();
+			this.openTaskEditor(task);
+		});
+		const addSubBtn = metaActions.createEl('button', {
+			cls: 'meta-action-btn',
+			text: '➕',
+			attr: { title: '添加子任务' }
+		});
+		addSubBtn.addEventListener('click', (e) => {
+			e.stopPropagation();
+			toggleAddSubtask();
+		});
+
 		if (this.plugin.settings.showSubtasks && hasSubtasks && expanded) {
 			const subtasksEl = content.createDiv({ cls: 'subtasks' });
 			for (const subtask of task.subtasks) {
@@ -830,25 +870,7 @@ export class SmartTaskViewController {
 			}
 		};
 
-		const actions = item.createDiv({ cls: 'task-actions' });
-		const editBtn = actions.createEl('button', {
-			cls: 'action-btn',
-			text: '✏️',
-			attr: { title: '编辑任务' }
-		});
-		editBtn.addEventListener('click', (e) => {
-			e.stopPropagation();
-			this.openTaskEditor(task);
-		});
-		const addSubBtn = actions.createEl('button', {
-			cls: 'action-btn add-subtask-btn-icon',
-			text: '➕',
-			attr: { title: '添加子任务' }
-		});
-		addSubBtn.addEventListener('click', (e) => {
-			e.stopPropagation();
-			toggleAddSubtask();
-		});
+
 	}
 
 	private isOverdue(task: Task): boolean {
@@ -1376,12 +1398,27 @@ export class SmartTaskViewController {
 				const taskContent = item.createDiv({ cls: 'zigzag-task-content' });
 				this.renderSubtasks(taskContent, task);
 				
-				const addSubBtn = item.createEl('button', {
-					cls: 'zigzag-add-subtask',
-					text: '➕ 子任务',
+				let addSubtaskEl: HTMLElement | null = null;
+
+				const zigzagMeta = item.createDiv({ cls: 'zigzag-task-meta' });
+				if (task.dueDate) {
+					zigzagMeta.createSpan({ cls: 'task-due', text: `📅 ${this.formatDate(task.dueDate)}` });
+				}
+				const zigzagMetaActions = zigzagMeta.createDiv({ cls: 'task-meta-actions' });
+				const editBtn = zigzagMetaActions.createEl('button', {
+					cls: 'meta-action-btn',
+					text: '✏️',
+					attr: { title: '编辑任务' }
+				});
+				editBtn.addEventListener('click', (e) => {
+					e.stopPropagation();
+					this.openTaskEditor(task);
+				});
+				const addSubBtn = zigzagMetaActions.createEl('button', {
+					cls: 'meta-action-btn',
+					text: '➕',
 					attr: { title: '添加子任务' }
 				});
-				let addSubtaskEl: HTMLElement | null = null;
 				addSubBtn.addEventListener('click', (e) => {
 					e.stopPropagation();
 					if (addSubtaskEl) {
@@ -1460,13 +1497,13 @@ export class SmartTaskViewController {
 				});
 				
 				const actions = cardFooter.createDiv({ cls: 'task-card-actions' });
-				const editBtn = actions.createEl('button', { text: '✏️', attr: { title: '编辑' } });
+				const editBtn = actions.createEl('button', { cls: 'meta-action-btn', text: '✏️', attr: { title: '编辑' } });
 				editBtn.addEventListener('click', (e) => {
 					e.stopPropagation();
 					this.openTaskEditor(task);
 				});
 				const addSubBtn = actions.createEl('button', {
-					cls: 'action-btn add-subtask-btn-icon',
+					cls: 'meta-action-btn',
 					text: '➕',
 					attr: { title: '添加子任务' }
 				});
@@ -1538,14 +1575,19 @@ export class SmartTaskViewController {
 				meta.createSpan({ cls: 'subtask-progress', text: `📋 ${progress.done}/${progress.total}` });
 			}
 
+			if (task.dueDate) {
+				const dueSpan = meta.createSpan({ cls: 'task-due', text: `📅 ${this.formatDate(task.dueDate)}` });
+				if (this.isOverdue(task)) dueSpan.addClass('overdue');
+			}
+
 			const subtaskContent = item.createDiv({ cls: 'timeline-subtask-content' });
 			this.renderSubtasks(subtaskContent, task);
 			
 			let addSubtaskEl: HTMLElement | null = null;
 
-			const actions = item.createDiv({ cls: 'task-actions' });
-			const editBtn = actions.createEl('button', {
-				cls: 'action-btn',
+			const metaActions = meta.createDiv({ cls: 'task-meta-actions' });
+			const editBtn = metaActions.createEl('button', {
+				cls: 'meta-action-btn',
 				text: '✏️',
 				attr: { title: '编辑任务' }
 			});
@@ -1553,8 +1595,8 @@ export class SmartTaskViewController {
 				e.stopPropagation();
 				this.openTaskEditor(task);
 			});
-			const addSubBtn = actions.createEl('button', {
-				cls: 'action-btn add-subtask-btn-icon',
+			const addSubBtn = metaActions.createEl('button', {
+				cls: 'meta-action-btn',
 				text: '➕',
 				attr: { title: '添加子任务' }
 			});

@@ -1146,9 +1146,9 @@ var SmartTaskViewController = class {
     const inputWrap = this.quickCreateEl.createDiv({ cls: "quick-create-input" });
     inputWrap.createSpan({ cls: "quick-create-icon", text: "\u2795" });
     const chipContainer = inputWrap.createDiv({ cls: "quick-chips" });
-    const input = inputWrap.createEl("input", {
-      type: "text",
-      attr: { placeholder: "\u5FEB\u901F\u521B\u5EFA\u4EFB\u52A1... (\u6309 Enter \u63D0\u4EA4)" }
+    const input = inputWrap.createEl("textarea", {
+      cls: "quick-create-textarea",
+      attr: { placeholder: "\u5FEB\u901F\u521B\u5EFA\u4EFB\u52A1... (\u6309 Enter \u63D0\u4EA4)", rows: "1" }
     });
     let dueDate = "";
     let priority = "";
@@ -1185,7 +1185,9 @@ var SmartTaskViewController = class {
       }
     };
     const toolbar = this.quickCreateEl.createDiv({ cls: "quick-toolbar" });
-    const dateGroup = toolbar.createDiv({ cls: "quick-tool-group" });
+    const toolbarToggle = toolbar.createEl("button", { cls: "quick-toolbar-toggle", text: "\u2699\uFE0F \u66F4\u591A\u9009\u9879" });
+    const toolbarContent = toolbar.createDiv({ cls: "quick-toolbar-content" });
+    const dateGroup = toolbarContent.createDiv({ cls: "quick-tool-group" });
     dateGroup.createSpan({ cls: "quick-tool-label", text: "\u{1F4C5}" });
     const dateBtns = dateGroup.createDiv({ cls: "quick-tool-btns" });
     const dateOptions = [
@@ -1224,7 +1226,7 @@ var SmartTaskViewController = class {
         input.focus();
       }, dueDate);
     });
-    const priGroup = toolbar.createDiv({ cls: "quick-tool-group" });
+    const priGroup = toolbarContent.createDiv({ cls: "quick-tool-group" });
     priGroup.createSpan({ cls: "quick-tool-label", text: "\u{1F3AF}" });
     const priBtns = priGroup.createDiv({ cls: "quick-tool-btns" });
     const priorities = [
@@ -1248,6 +1250,27 @@ var SmartTaskViewController = class {
         input.focus();
       });
     }
+    let toolbarExpanded = false;
+    toolbarToggle.addEventListener("click", (e) => {
+      e.stopPropagation();
+      toolbarExpanded = !toolbarExpanded;
+      toolbarContent.classList.toggle("expanded", toolbarExpanded);
+      toolbarToggle.textContent = toolbarExpanded ? "\u2699\uFE0F \u6536\u8D77" : "\u2699\uFE0F";
+    });
+    const submitBtn = toolbar.createEl("button", { cls: "submit-btn-inline", text: "\u2795" });
+    submitBtn.style.display = "none";
+    submitBtn.addEventListener("click", () => {
+      const desc = input.value.trim();
+      if (desc) {
+        void this.plugin.createQuickTask(desc, dueDate || void 0, priority ? priority : void 0);
+        input.value = "";
+        dueDate = "";
+        priority = "";
+        updateChips();
+        submitBtn.style.display = "none";
+        autoResize();
+      }
+    });
     input.addEventListener("keydown", (e) => {
       if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
@@ -1258,33 +1281,22 @@ var SmartTaskViewController = class {
           dueDate = "";
           priority = "";
           updateChips();
+          submitBtn.style.display = "none";
+          autoResize();
         }
       }
     });
-    let submitBtn = null;
     const checkSubmitBtn = () => {
-      if (input.value.trim() && !submitBtn) {
-        submitBtn = inputWrap.createEl("button", { cls: "submit-btn", text: "\u6DFB\u52A0" });
-        submitBtn.addEventListener("click", () => {
-          const desc = input.value.trim();
-          if (desc) {
-            void this.plugin.createQuickTask(desc, dueDate || void 0, priority ? priority : void 0);
-            input.value = "";
-            dueDate = "";
-            priority = "";
-            updateChips();
-            if (submitBtn) {
-              submitBtn.remove();
-              submitBtn = null;
-            }
-          }
-        });
-      } else if (!input.value.trim() && submitBtn) {
-        submitBtn.remove();
-        submitBtn = null;
-      }
+      submitBtn.style.display = input.value.trim() ? "" : "none";
     };
-    input.addEventListener("input", checkSubmitBtn);
+    const autoResize = () => {
+      input.style.height = "auto";
+      input.style.height = input.scrollHeight + "px";
+    };
+    input.addEventListener("input", () => {
+      checkSubmitBtn();
+      autoResize();
+    });
   }
   renderSearchRow() {
     if (this.searchRowEl) {
@@ -1568,25 +1580,29 @@ var SmartTaskViewController = class {
     const kanbanEl = container.createDiv({ cls: "kanban-view" });
     const todoTasks = this.filteredTasks.filter((t2) => !t2.completed);
     const doneTasks = this.filteredTasks.filter((t2) => t2.completed);
-    const todoCol = kanbanEl.createDiv({ cls: "kanban-column" });
-    todoCol.createEl("h3", { text: `\u{1F4CB} \u5F85\u529E (${todoTasks.length})` });
-    const todoList = todoCol.createDiv({ cls: "kanban-task-list" });
-    for (const task of todoTasks) {
-      this.renderTaskItem(todoList, task);
+    if (this.filterStatus !== "done") {
+      const todoCol = kanbanEl.createDiv({ cls: "kanban-column" });
+      todoCol.createEl("h3", { text: `\u{1F4CB} \u5F85\u529E (${todoTasks.length})` });
+      const todoList = todoCol.createDiv({ cls: "kanban-task-list" });
+      for (const task of todoTasks) {
+        this.renderTaskItem(todoList, task);
+      }
+      if (todoTasks.length === 0) {
+        const empty = todoList.createDiv({ cls: "kanban-empty" });
+        empty.setText("\u6682\u65E0\u5F85\u529E\u4EFB\u52A1");
+      }
     }
-    if (todoTasks.length === 0) {
-      const empty = todoList.createDiv({ cls: "kanban-empty" });
-      empty.setText("\u6682\u65E0\u5F85\u529E\u4EFB\u52A1");
-    }
-    const doneCol = kanbanEl.createDiv({ cls: "kanban-column done" });
-    doneCol.createEl("h3", { text: `\u2705 \u5DF2\u5B8C\u6210 (${doneTasks.length})` });
-    const doneList = doneCol.createDiv({ cls: "kanban-task-list" });
-    for (const task of doneTasks) {
-      this.renderTaskItem(doneList, task);
-    }
-    if (doneTasks.length === 0) {
-      const empty = doneList.createDiv({ cls: "kanban-empty" });
-      empty.setText("\u6682\u65E0\u5DF2\u5B8C\u6210\u4EFB\u52A1");
+    if (this.filterStatus !== "not-done") {
+      const doneCol = kanbanEl.createDiv({ cls: "kanban-column done" });
+      doneCol.createEl("h3", { text: `\u2705 \u5DF2\u5B8C\u6210 (${doneTasks.length})` });
+      const doneList = doneCol.createDiv({ cls: "kanban-task-list" });
+      for (const task of doneTasks) {
+        this.renderTaskItem(doneList, task);
+      }
+      if (doneTasks.length === 0) {
+        const empty = doneList.createDiv({ cls: "kanban-empty" });
+        empty.setText("\u6682\u65E0\u5DF2\u5B8C\u6210\u4EFB\u52A1");
+      }
     }
   }
   renderTaskItem(container, task) {
@@ -1645,6 +1661,25 @@ var SmartTaskViewController = class {
       meta.createSpan({ cls: "subtask-progress", text: `\u{1F4CB} ${progress.done}/${progress.total}` });
     }
     meta.createSpan({ cls: "task-file", text: `\u{1F4C4} ${task.filePath.split("/").pop()}` });
+    const metaActions = meta.createDiv({ cls: "task-meta-actions" });
+    const editBtn = metaActions.createEl("button", {
+      cls: "meta-action-btn",
+      text: "\u270F\uFE0F",
+      attr: { title: "\u7F16\u8F91\u4EFB\u52A1" }
+    });
+    editBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      this.openTaskEditor(task);
+    });
+    const addSubBtn = metaActions.createEl("button", {
+      cls: "meta-action-btn",
+      text: "\u2795",
+      attr: { title: "\u6DFB\u52A0\u5B50\u4EFB\u52A1" }
+    });
+    addSubBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      toggleAddSubtask();
+    });
     if (this.plugin.settings.showSubtasks && hasSubtasks && expanded) {
       const subtasksEl = content.createDiv({ cls: "subtasks" });
       for (const subtask of task.subtasks) {
@@ -1704,25 +1739,6 @@ var SmartTaskViewController = class {
         addSubtaskEl = null;
       }
     };
-    const actions = item.createDiv({ cls: "task-actions" });
-    const editBtn = actions.createEl("button", {
-      cls: "action-btn",
-      text: "\u270F\uFE0F",
-      attr: { title: "\u7F16\u8F91\u4EFB\u52A1" }
-    });
-    editBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      this.openTaskEditor(task);
-    });
-    const addSubBtn = actions.createEl("button", {
-      cls: "action-btn add-subtask-btn-icon",
-      text: "\u2795",
-      attr: { title: "\u6DFB\u52A0\u5B50\u4EFB\u52A1" }
-    });
-    addSubBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      toggleAddSubtask();
-    });
   }
   isOverdue(task) {
     if (!task.dueDate || task.completed)
@@ -2215,12 +2231,26 @@ var SmartTaskViewController = class {
         });
         const taskContent = item.createDiv({ cls: "zigzag-task-content" });
         this.renderSubtasks(taskContent, task);
-        const addSubBtn = item.createEl("button", {
-          cls: "zigzag-add-subtask",
-          text: "\u2795 \u5B50\u4EFB\u52A1",
+        let addSubtaskEl = null;
+        const zigzagMeta = item.createDiv({ cls: "zigzag-task-meta" });
+        if (task.dueDate) {
+          zigzagMeta.createSpan({ cls: "task-due", text: `\u{1F4C5} ${this.formatDate(task.dueDate)}` });
+        }
+        const zigzagMetaActions = zigzagMeta.createDiv({ cls: "task-meta-actions" });
+        const editBtn = zigzagMetaActions.createEl("button", {
+          cls: "meta-action-btn",
+          text: "\u270F\uFE0F",
+          attr: { title: "\u7F16\u8F91\u4EFB\u52A1" }
+        });
+        editBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          this.openTaskEditor(task);
+        });
+        const addSubBtn = zigzagMetaActions.createEl("button", {
+          cls: "meta-action-btn",
+          text: "\u2795",
           attr: { title: "\u6DFB\u52A0\u5B50\u4EFB\u52A1" }
         });
-        let addSubtaskEl = null;
         addSubBtn.addEventListener("click", (e) => {
           e.stopPropagation();
           if (addSubtaskEl) {
@@ -2289,13 +2319,13 @@ var SmartTaskViewController = class {
           void this.plugin.toggleTaskStatus(task, checkbox.checked);
         });
         const actions = cardFooter.createDiv({ cls: "task-card-actions" });
-        const editBtn = actions.createEl("button", { text: "\u270F\uFE0F", attr: { title: "\u7F16\u8F91" } });
+        const editBtn = actions.createEl("button", { cls: "meta-action-btn", text: "\u270F\uFE0F", attr: { title: "\u7F16\u8F91" } });
         editBtn.addEventListener("click", (e) => {
           e.stopPropagation();
           this.openTaskEditor(task);
         });
         const addSubBtn = actions.createEl("button", {
-          cls: "action-btn add-subtask-btn-icon",
+          cls: "meta-action-btn",
           text: "\u2795",
           attr: { title: "\u6DFB\u52A0\u5B50\u4EFB\u52A1" }
         });
@@ -2359,12 +2389,17 @@ var SmartTaskViewController = class {
         const progress = this.getSubtaskProgress(task);
         meta.createSpan({ cls: "subtask-progress", text: `\u{1F4CB} ${progress.done}/${progress.total}` });
       }
+      if (task.dueDate) {
+        const dueSpan = meta.createSpan({ cls: "task-due", text: `\u{1F4C5} ${this.formatDate(task.dueDate)}` });
+        if (this.isOverdue(task))
+          dueSpan.addClass("overdue");
+      }
       const subtaskContent = item.createDiv({ cls: "timeline-subtask-content" });
       this.renderSubtasks(subtaskContent, task);
       let addSubtaskEl = null;
-      const actions = item.createDiv({ cls: "task-actions" });
-      const editBtn = actions.createEl("button", {
-        cls: "action-btn",
+      const metaActions = meta.createDiv({ cls: "task-meta-actions" });
+      const editBtn = metaActions.createEl("button", {
+        cls: "meta-action-btn",
         text: "\u270F\uFE0F",
         attr: { title: "\u7F16\u8F91\u4EFB\u52A1" }
       });
@@ -2372,8 +2407,8 @@ var SmartTaskViewController = class {
         e.stopPropagation();
         this.openTaskEditor(task);
       });
-      const addSubBtn = actions.createEl("button", {
-        cls: "action-btn add-subtask-btn-icon",
+      const addSubBtn = metaActions.createEl("button", {
+        cls: "meta-action-btn",
         text: "\u2795",
         attr: { title: "\u6DFB\u52A0\u5B50\u4EFB\u52A1" }
       });
