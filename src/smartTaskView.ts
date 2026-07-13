@@ -377,7 +377,7 @@ export class SmartTaskViewController {
 		};
 
 		const autoResize = () => {
-			input.style.height = 'auto';
+			input.setCssStyles({ height: 'auto' });
 			input.setCssStyles({ height: input.scrollHeight + 'px' });
 		};
 
