@@ -1264,7 +1264,7 @@ export class SmartTaskViewController {
 
 		for (const unit of timeUnits) {
 			const headerCell = ganttHeader.createDiv({ cls: 'gantt-header-cell' });
-			headerCell.style.width = `${100 / totalUnits}%`;
+			headerCell.setCssStyles({ width: `${100 / totalUnits}%` });
 			headerCell.createSpan({ cls: 'gantt-date', text: this.formatDateShort(unit) });
 		}
 

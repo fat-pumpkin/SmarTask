@@ -2112,7 +2112,7 @@ var SmartTaskViewController = class {
     const totalUnits = timeUnits.length;
     for (const unit of timeUnits) {
       const headerCell = ganttHeader.createDiv({ cls: "gantt-header-cell" });
-      headerCell.style.width = `${100 / totalUnits}%`;
+      headerCell.setCssStyles({ width: `${100 / totalUnits}%` });
       headerCell.createSpan({ cls: "gantt-date", text: this.formatDateShort(unit) });
     }
     const rowColors = ["#ff6b6b", "#4ecdc4", "#45b7d1", "#96ceb4", "#ffeaa7", "#dfe6e9", "#a29bfe", "#fd79a8"];
