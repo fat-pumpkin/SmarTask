@@ -2186,6 +2186,24 @@
 		font-size: 10px;
 	}
 
+	.calendar-task-item {
+		font-size: 10px;
+		padding: 2px 4px;
+		gap: 3px;
+	}
+
+	.calendar-task-item .task-priority-icon {
+		font-size: 10px;
+	}
+
+	.calendar-task-item .task-desc {
+		font-size: 10px;
+	}
+
+	.calendar-more {
+		font-size: 9px;
+	}
+
 	.gantt-label {
 		min-width: 100px;
 		max-width: 100px;
@@ -2317,10 +2335,12 @@
 	.row-2 {
 		gap: 3px;
 		padding: 4px 0;
+		flex-wrap: wrap;
 	}
 
 	.row-2 .action-cell {
 		gap: 3px;
+		flex: 1 1 30%;
 	}
 
 	.row-2 .action-btn {
@@ -2421,6 +2441,25 @@
 		width: 16px;
 		height: 16px;
 		font-size: 9px;
+	}
+
+	.calendar-task-item {
+		font-size: 9px;
+		padding: 1px 3px;
+		gap: 2px;
+		border-left-width: 2px;
+	}
+
+	.calendar-task-item .task-priority-icon {
+		font-size: 9px;
+	}
+
+	.calendar-task-item .task-desc {
+		font-size: 9px;
+	}
+
+	.calendar-more {
+		font-size: 8px;
 	}
 
 	.calendar-weekday {

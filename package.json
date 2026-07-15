@@ -1,6 +1,6 @@
 {
   "name": "obsidian-smarttask",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "A high-performance, easy-to-use task management plugin for Obsidian",
   "main": "main.js",
   "scripts": {
