@@ -249,6 +249,8 @@ TaskParser.PRIORITY_MAP = {
 };
 
 // src/taskIndex.ts
+var DEBOUNCE_DELAY_MS = 1e3;
+var YIELD_INTERVAL_MS = 10;
 var TaskIndex = class {
   constructor(app) {
     this.taskCache = /* @__PURE__ */ new Map();
@@ -295,7 +297,7 @@ var TaskIndex = class {
     }
     this.debounceTimer = window.setTimeout(() => {
       void this.incrementalReindex();
-    }, 1e3);
+    }, DEBOUNCE_DELAY_MS);
   }
   async incrementalReindex() {
     if (this.isIndexing)
@@ -342,7 +344,7 @@ var TaskIndex = class {
     for (let i = 0; i < files.length; i += batchSize) {
       const batch = files.slice(i, i + batchSize);
       await Promise.all(batch.map((file) => this.indexFile(file)));
-      await new Promise((resolve) => window.setTimeout(resolve, 10));
+      await new Promise((resolve) => window.setTimeout(resolve, YIELD_INTERVAL_MS));
     }
     this.rebuildAllTasks();
     this.notifyListeners();
@@ -1040,11 +1042,13 @@ var QueryEngine = class {
 };
 
 // src/smartTaskView.ts
+var HIGHLIGHT_DURATION_MS = 2e3;
 var SmartTaskViewController = class {
   constructor(plugin, container) {
     this.mainEl = null;
     this.tasks = [];
     this.allTags = [];
+    this.highlightTimer = null;
     this.currentView = "list";
     this.timelineGroupBy = "day";
     this.timelineStyle = "classic";
@@ -1094,6 +1098,12 @@ var SmartTaskViewController = class {
       this.mainEl.remove();
     }
     this.render();
+  }
+  destroy() {
+    if (this.highlightTimer !== null) {
+      window.clearTimeout(this.highlightTimer);
+      this.highlightTimer = null;
+    }
   }
   updateTasks(tasks, allTags) {
     this.tasks = tasks;
@@ -1156,11 +1166,6 @@ var SmartTaskViewController = class {
       this.row1El.remove();
     }
     this.row1El = this.functionalModuleEl.createDiv({ cls: "row-1" });
-    if (this.row2El) {
-      this.row2El.remove();
-      this.functionalModuleEl.appendChild(this.row1El);
-      this.functionalModuleEl.appendChild(this.row2El);
-    }
     const titleArea = this.row1El.createDiv({ cls: "title-area" });
     titleArea.createSpan({ cls: "smarttask-icon", text: "\u2705" });
     titleArea.createEl("h2", { text: "SmartTask" });
@@ -1182,8 +1187,24 @@ var SmartTaskViewController = class {
       btn.addEventListener("click", () => {
         this.filterStatus = tab.id;
         this.renderRow1();
+        this.reorderFunctionalChildren();
         this.renderContent();
       });
+    }
+    this.reorderFunctionalChildren();
+  }
+  reorderFunctionalChildren() {
+    if (!this.functionalModuleEl)
+      return;
+    const order = [
+      this.row1El,
+      this.row2El,
+      this.quickCreatePanelEl,
+      this.searchPanelEl
+    ];
+    for (const el of order) {
+      if (el)
+        this.functionalModuleEl.appendChild(el);
     }
   }
   renderStatsCompact(container) {
@@ -1220,29 +1241,25 @@ var SmartTaskViewController = class {
       this.row2El.remove();
     }
     this.row2El = this.functionalModuleEl.createDiv({ cls: "row-2" });
-    if (this.row1El && this.row1El.parentElement === this.functionalModuleEl) {
-      this.row1El.remove();
-      this.functionalModuleEl.appendChild(this.row1El);
-      this.functionalModuleEl.appendChild(this.row2El);
-    }
     const actions = [
-      { id: "quickAdd", icon: "\u2795", label: "\u6DFB\u52A0", title: "\u5FEB\u901F\u521B\u5EFA" },
-      { id: "search", icon: "\u{1F50D}", label: "\u641C\u7D22", title: "\u641C\u7D22" },
-      { id: "list", icon: "\u{1F4CB}", label: "\u5217\u8868", title: "\u5217\u8868\u89C6\u56FE" },
-      { id: "kanban", icon: "\u{1F5C2}\uFE0F", label: "\u770B\u677F", title: "\u770B\u677F\u89C6\u56FE" },
-      { id: "calendar", icon: "\u{1F4C5}", label: "\u65E5\u5386", title: "\u65E5\u5386\u89C6\u56FE" },
-      { id: "timeline", icon: "\u{1F4CA}", label: "\u7EDF\u8BA1", title: "\u65F6\u95F4\u7EBF\u89C6\u56FE" }
+      { id: "quickAdd", icon: "\u2795", label: "\u6DFB\u52A0", title: "\u5FEB\u901F\u521B\u5EFA", group: "tool" },
+      { id: "search", icon: "\u{1F50D}", label: "\u641C\u7D22", title: "\u641C\u7D22", group: "tool" },
+      { id: "list", icon: "\u{1F4CB}", label: "\u5217\u8868", title: "\u5217\u8868\u89C6\u56FE", group: "view" },
+      { id: "kanban", icon: "\u{1F5C2}\uFE0F", label: "\u770B\u677F", title: "\u770B\u677F\u89C6\u56FE", group: "view" },
+      { id: "calendar", icon: "\u{1F4C5}", label: "\u65E5\u5386", title: "\u65E5\u5386\u89C6\u56FE", group: "view" },
+      { id: "timeline", icon: "\u{1F4CA}", label: "\u7EDF\u8BA1", title: "\u65F6\u95F4\u7EBF\u89C6\u56FE", group: "view" }
     ];
     for (const action of actions) {
-      const btn = this.row2El.createEl("button", {
+      const wrapper = this.row2El.createDiv({ cls: `action-cell action-${action.group}` });
+      const btn = wrapper.createEl("button", {
         cls: "action-btn",
         attr: { title: action.title }
       });
       btn.createSpan({ cls: "action-btn-icon", text: action.icon });
-      btn.createSpan({ cls: "action-btn-label", text: action.label });
+      wrapper.createSpan({ cls: "action-btn-label", text: action.label });
       if (["list", "kanban", "calendar", "timeline"].includes(action.id)) {
         if (this.currentView === action.id)
-          btn.addClass("active");
+          wrapper.addClass("active");
         btn.addEventListener("click", () => {
           this.currentView = action.id;
           this.showQuickCreate = false;
@@ -1250,11 +1267,12 @@ var SmartTaskViewController = class {
           this.renderRow2();
           this.renderQuickCreatePanel();
           this.renderSearchPanel();
+          this.reorderFunctionalChildren();
           this.renderContent();
         });
       } else if (action.id === "quickAdd") {
         if (this.showQuickCreate)
-          btn.addClass("active");
+          wrapper.addClass("active");
         btn.addEventListener("click", () => {
           this.showQuickCreate = !this.showQuickCreate;
           if (this.showQuickCreate)
@@ -1262,10 +1280,11 @@ var SmartTaskViewController = class {
           this.renderRow2();
           this.renderQuickCreatePanel();
           this.renderSearchPanel();
+          this.reorderFunctionalChildren();
         });
       } else if (action.id === "search") {
         if (this.showSearch)
-          btn.addClass("active");
+          wrapper.addClass("active");
         btn.addEventListener("click", () => {
           this.showSearch = !this.showSearch;
           if (this.showSearch)
@@ -1273,9 +1292,11 @@ var SmartTaskViewController = class {
           this.renderRow2();
           this.renderQuickCreatePanel();
           this.renderSearchPanel();
+          this.reorderFunctionalChildren();
         });
       }
     }
+    this.reorderFunctionalChildren();
     if (scrollEl) {
       scrollEl.scrollTop = savedScroll;
     }
@@ -1288,6 +1309,7 @@ var SmartTaskViewController = class {
     if (!this.showQuickCreate || !this.functionalModuleEl)
       return;
     this.quickCreatePanelEl = this.functionalModuleEl.createDiv({ cls: "expandable-panel open" });
+    this.reorderFunctionalChildren();
     const panel = this.quickCreatePanelEl.createDiv({ cls: "quick-create" });
     const inputRow = panel.createDiv({ cls: "quick-create-input-row" });
     const textarea = inputRow.createEl("textarea", {
@@ -1407,6 +1429,7 @@ var SmartTaskViewController = class {
     if (!this.showSearch || !this.functionalModuleEl)
       return;
     this.searchPanelEl = this.functionalModuleEl.createDiv({ cls: "expandable-panel open" });
+    this.reorderFunctionalChildren();
     const panel = this.searchPanelEl.createDiv({ cls: "compact-search" });
     const searchRow = panel.createDiv({ cls: "search-input-row" });
     const inputWrap = searchRow.createDiv({ cls: "search-icon-pos" });
@@ -2025,7 +2048,7 @@ var SmartTaskViewController = class {
       if (todayGroup) {
         todayGroup.el.scrollIntoView({ behavior: "smooth", block: "start" });
         todayGroup.el.addClass("highlight");
-        window.setTimeout(() => todayGroup.el.removeClass("highlight"), 2e3);
+        this.highlightTimer = window.setTimeout(() => todayGroup.el.removeClass("highlight"), HIGHLIGHT_DURATION_MS);
       } else {
         const today = QueryEngine.getToday();
         let closestGroup = groupEls[0];
@@ -2720,10 +2743,24 @@ var SmartTaskViewController = class {
         const done = dayTasks.filter((t2) => t2.completed);
         const displayTasks = [...notDone, ...done].slice(0, 3);
         for (const task of displayTasks) {
-          const taskEl = tasksContainer.createDiv({ cls: "calendar-task-dot" });
+          const taskEl = tasksContainer.createDiv({ cls: "calendar-task-item" });
           if (task.completed)
             taskEl.addClass("completed");
           taskEl.addClass(`priority-${task.priority || "none"}`);
+          const priorityIcons = {
+            "highest": "\u{1F51D}",
+            "high": "\u{1F53A}",
+            "medium": "\u{1F53C}",
+            "low": "\u{1F53D}",
+            "lowest": "\u23EC",
+            "none": "\u2022"
+          };
+          const icon = priorityIcons[task.priority || "none"] || "\u2022";
+          taskEl.createSpan({ cls: "task-priority-icon", text: icon });
+          taskEl.createSpan({
+            cls: "task-desc",
+            text: task.description
+          });
           taskEl.title = task.description;
           taskEl.addEventListener("click", (e) => {
             e.stopPropagation();
@@ -2997,7 +3034,10 @@ var SmartTaskView = class extends import_obsidian4.ItemView {
       this.unsubscribe();
       this.unsubscribe = null;
     }
-    this.controller = null;
+    if (this.controller) {
+      this.controller.destroy();
+      this.controller = null;
+    }
   }
   render() {
     const container = this.contentEl;
@@ -3011,6 +3051,7 @@ var SmartTaskView = class extends import_obsidian4.ItemView {
 };
 
 // src/main.ts
+var FOCUS_DELAY_MS = 100;
 var SmartTaskPlugin = class extends import_obsidian5.Plugin {
   constructor() {
     super(...arguments);
@@ -3366,6 +3407,7 @@ ${newLine}`,
 var QuickCreateModal = class extends import_obsidian5.Modal {
   constructor(app, plugin) {
     super(app);
+    this.focusTimer = null;
     this.plugin = plugin;
   }
   onOpen() {
@@ -3439,7 +3481,7 @@ var QuickCreateModal = class extends import_obsidian5.Modal {
         this.close();
       }
     };
-    window.setTimeout(() => descInput.focus(), 100);
+    this.focusTimer = window.setTimeout(() => descInput.focus(), FOCUS_DELAY_MS);
     descInput.addEventListener("keydown", (e) => {
       if (e.key === "Enter") {
         createBtn.click();
@@ -3450,6 +3492,10 @@ var QuickCreateModal = class extends import_obsidian5.Modal {
     });
   }
   onClose() {
+    if (this.focusTimer !== null) {
+      window.clearTimeout(this.focusTimer);
+      this.focusTimer = null;
+    }
     const { contentEl } = this;
     contentEl.empty();
   }

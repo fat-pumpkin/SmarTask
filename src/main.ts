@@ -7,6 +7,8 @@ import { SmartTaskView, SMARTTASK_VIEW_TYPE } from './view';
 import { t, setLocale, detectLocale } from './i18n';
 import { QueryEngine } from './queryEngine';
 
+const FOCUS_DELAY_MS = 100;
+
 export default class SmartTaskPlugin extends Plugin {
 	settings: SmartTaskSettings = DEFAULT_SETTINGS;
 	private taskIndex: TaskIndex | null = null;
@@ -415,6 +417,7 @@ export default class SmartTaskPlugin extends Plugin {
 
 class QuickCreateModal extends Modal {
 	plugin: SmartTaskPlugin;
+	private focusTimer: number | null = null;
 
 	constructor(app: App, plugin: SmartTaskPlugin) {
 		super(app);
@@ -508,7 +511,7 @@ class QuickCreateModal extends Modal {
 			}
 		};
 
-		window.setTimeout(() => descInput.focus(), 100);
+		this.focusTimer = window.setTimeout(() => descInput.focus(), FOCUS_DELAY_MS);
 
 		descInput.addEventListener('keydown', (e) => {
 			if (e.key === 'Enter') {
@@ -521,6 +524,10 @@ class QuickCreateModal extends Modal {
 	}
 
 	onClose() {
+		if (this.focusTimer !== null) {
+			window.clearTimeout(this.focusTimer);
+			this.focusTimer = null;
+		}
 		const { contentEl } = this;
 		contentEl.empty();
 	}

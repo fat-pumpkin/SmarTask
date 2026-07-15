@@ -6,24 +6,37 @@ import { Task, TaskPriority, TaskQuery, TaskGroup, ViewType } from './types';
 import { QueryEngine } from './queryEngine';
 import { t } from './i18n';
 
+const HIGHLIGHT_DURATION_MS = 2000;
+
 export class SmartTaskViewController {
 	private plugin: SmartTaskPlugin;
 	private container: HTMLElement;
 	private mainEl: HTMLElement | null = null;
 	private tasks: Task[] = [];
 	private allTags: string[] = [];
+	private highlightTimer: number | null = null;
 	
 	private currentView: ViewType = 'list';
 	private timelineGroupBy: 'day' | 'week' | 'month' = 'day';
 	private timelineStyle: 'classic' | 'gantt' | 'zigzag' | 'cards' = 'classic';
-	private showFilterPanel = false;
+	private showQuickCreate = false;
+	private showSearch = false;
 	private searchQuery = '';
 	private filterStatus: 'all' | 'done' | 'not-done' = 'not-done';
 	private filterPriorities: TaskPriority[] = [];
 	private filterTags: string[] = [];
 	private dateFilter: 'all' | 'overdue' | 'today' | 'week' | 'month' = 'all';
 	private expandedTasks: Set<string> = new Set();
-	
+
+	// 新布局 DOM 元素
+	private functionalModuleEl: HTMLElement | null = null;
+	private row1El: HTMLElement | null = null;
+	private row2El: HTMLElement | null = null;
+	private quickCreatePanelEl: HTMLElement | null = null;
+	private searchPanelEl: HTMLElement | null = null;
+	private displayModuleEl: HTMLElement | null = null;
+
+	// 旧布局 DOM 元素（兼容过渡）
 	private headerEl: HTMLElement | null = null;
 	private quickCreateEl: HTMLElement | null = null;
 	private searchRowEl: HTMLElement | null = null;
@@ -41,12 +54,16 @@ export class SmartTaskViewController {
 	}
 
 	render(): void {
+
 		this.mainEl = this.container.createDiv({ cls: 'smarttask-container' });
-		this.headerEl = this.mainEl.createDiv({ cls: 'smarttask-header' });
-		this.renderHeaderContent();
-		this.renderQuickCreate();
-		this.renderSearchRow();
-		this.renderFilterPanel();
+
+		this.functionalModuleEl = this.mainEl.createDiv({ cls: 'functional-module' });
+		this.renderRow1();
+		this.renderRow2();
+		this.renderQuickCreatePanel();
+		this.renderSearchPanel();
+
+		this.displayModuleEl = this.mainEl.createDiv({ cls: 'display-module' });
 		this.renderContent();
 	}
 
@@ -57,10 +74,18 @@ export class SmartTaskViewController {
 		this.render();
 	}
 
+	destroy(): void {
+		if (this.highlightTimer !== null) {
+			window.clearTimeout(this.highlightTimer);
+			this.highlightTimer = null;
+		}
+	}
+
 	updateTasks(tasks: Task[], allTags: string[]): void {
 		this.tasks = tasks;
 		this.allTags = allTags;
-		this.renderHeader();
+		this.renderRow1();
+		this.renderRow2();
 		this.renderContent();
 	}
 
@@ -122,41 +147,61 @@ export class SmartTaskViewController {
 			this.searchQuery.length > 0;
 	}
 
-	private renderHeader(): void {
-		if (!this.headerEl) return;
-		this.headerEl.empty();
-		this.renderHeaderContent();
+	// ========== 新布局：功能模块 ==========
+
+	private renderRow1(): void {
+		if (!this.functionalModuleEl) return;
+
+		if (this.row1El) {
+			this.row1El.remove();
+		}
+
+		this.row1El = this.functionalModuleEl.createDiv({ cls: 'row-1' });
+
+		const titleArea = this.row1El.createDiv({ cls: 'title-area' });
+		titleArea.createSpan({ cls: 'smarttask-icon', text: '✅' });
+		titleArea.createEl('h2', { text: 'SmartTask' });
+
+		const statsRow = this.row1El.createDiv({ cls: 'stats-row' });
+		this.renderStatsCompact(statsRow);
+
+		const filterTabs = this.row1El.createDiv({ cls: 'filter-tabs' });
+		const tabs = [
+			{ id: 'not-done', label: t('filters').pending },
+			{ id: 'done', label: t('filters').done },
+			{ id: 'all', label: t('filters').all },
+		];
+		for (const tab of tabs) {
+			const btn = filterTabs.createEl('button', {
+				cls: 'filter-tab',
+				text: tab.label
+			});
+			if (this.filterStatus === tab.id) btn.addClass('active');
+			btn.addEventListener('click', () => {
+				this.filterStatus = tab.id as 'all' | 'done' | 'not-done';
+				this.renderRow1();
+				this.reorderFunctionalChildren();
+				this.renderContent();
+			});
+		}
+
+		this.reorderFunctionalChildren();
 	}
 
-	private renderHeaderContent(): void {
-		if (!this.headerEl) return;
-		
-		const titleEl = this.headerEl.createDiv({ cls: 'smarttask-title' });
-		titleEl.createSpan({ cls: 'smarttask-icon', text: '✅' });
-		titleEl.createEl('h2', { text: 'SmartTask' });
-
-		const statsEl = this.headerEl.createDiv({ cls: 'header-stats' });
-		this.renderStatsInHeader(statsEl);
-
-		const actionsEl = this.headerEl.createDiv({ cls: 'header-actions' });
-		
-		const filterBtn = actionsEl.createEl('button', {
-			cls: 'filter-btn',
-			text: '🔍',
-			attr: { title: '筛选' }
-		});
-		if (this.showFilterPanel) filterBtn.addClass('active');
-		if (this.hasActiveFilters) filterBtn.addClass('has-filters');
-		filterBtn.addEventListener('click', () => {
-			this.showFilterPanel = !this.showFilterPanel;
-			this.renderHeader();
-			this.renderFilterPanel();
-		});
-
-		this.renderViewToggle(actionsEl);
+	private reorderFunctionalChildren(): void {
+		if (!this.functionalModuleEl) return;
+		const order: (HTMLElement | null)[] = [
+			this.row1El,
+			this.row2El,
+			this.quickCreatePanelEl,
+			this.searchPanelEl,
+		];
+		for (const el of order) {
+			if (el) this.functionalModuleEl.appendChild(el);
+		}
 	}
 
-	private renderStatsInHeader(container: HTMLElement): void {
+	private renderStatsCompact(container: HTMLElement): void {
 		const total = this.tasks.length;
 		const done = this.tasks.filter(t => t.completed).length;
 		const notDone = total - done;
@@ -166,483 +211,377 @@ export class SmartTaskViewController {
 		const progress = total > 0 ? Math.round((done / total) * 100) : 0;
 
 		const stats = [
-			{ value: notDone, label: t('stats').pending, cls: 'pending' },
-			{ value: overdue, label: t('stats').overdue, cls: 'overdue' },
-			{ value: today, label: t('stats').today, cls: 'today' },
-			{ value: upcoming, label: t('stats').upcoming, cls: 'upcoming' },
+			{ value: notDone, label: '待办', cls: 'pending' },
+			{ value: overdue, label: '逾期', cls: 'overdue' },
+			{ value: today, label: '今天', cls: 'today' },
+			{ value: upcoming, label: '近期', cls: 'upcoming' },
 		];
 
-		for (let i = 0; i < stats.length; i++) {
-			const s = stats[i];
+		for (const s of stats) {
 			const item = container.createDiv({ cls: `stat-item ${s.cls}` });
 			item.createSpan({ cls: 'stat-label', text: s.label });
 			item.createSpan({ cls: 'stat-num', text: s.value.toString() });
 		}
 
-		const progressWrap = container.createDiv({ cls: 'header-progress-wrap' });
-		const progressBar = progressWrap.createDiv({ cls: 'progress-bar-container' });
-		progressBar.createDiv({ cls: 'progress-bar-fill', attr: { style: `width: ${progress}%` } });
-		progressWrap.createSpan({ cls: 'progress-percent', text: `${progress}%` });
+		// 迷你进度条
+		const progressMini = container.createDiv({ cls: 'progress-mini' });
+		const bar = progressMini.createDiv({ cls: 'bar' });
+		const fill = bar.createDiv({ cls: 'fill' });
+		fill.setCssStyles({ width: `${progress}%` });
+		progressMini.createSpan({ cls: 'pct', text: `${progress}%` });
 	}
 
-	private renderViewToggle(container: HTMLElement): void {
-		const toggleEl = container.createDiv({ cls: 'view-toggle' });
+	private renderRow2(): void {
+		if (!this.functionalModuleEl) return;
 
-		const views = [
-			{ id: 'list', icon: '📋', title: '列表视图' },
-			{ id: 'kanban', icon: '🗂️', title: '看板视图' },
-			{ id: 'calendar', icon: '📅', title: '日历视图' },
-			{ id: 'timeline', icon: '📊', title: '时间线视图' },
+		const scrollEl = this.displayModuleEl;
+		const savedScroll = scrollEl ? scrollEl.scrollTop : 0;
+
+		if (this.row2El) {
+			this.row2El.remove();
+		}
+
+		this.row2El = this.functionalModuleEl.createDiv({ cls: 'row-2' });
+
+		const actions = [
+			{ id: 'quickAdd', icon: '➕', label: '添加', title: '快速创建', group: 'tool' },
+			{ id: 'search', icon: '🔍', label: '搜索', title: '搜索', group: 'tool' },
+			{ id: 'list', icon: '📋', label: '列表', title: '列表视图', group: 'view' },
+			{ id: 'kanban', icon: '🗂️', label: '看板', title: '看板视图', group: 'view' },
+			{ id: 'calendar', icon: '📅', label: '日历', title: '日历视图', group: 'view' },
+			{ id: 'timeline', icon: '📊', label: '统计', title: '时间线视图', group: 'view' },
 		];
 
-		for (const view of views) {
-			const btn = toggleEl.createEl('button', {
-				cls: 'view-btn',
-				text: view.icon,
-				attr: { title: view.title }
+		for (const action of actions) {
+			const wrapper = this.row2El.createDiv({ cls: `action-cell action-${action.group}` });
+			const btn = wrapper.createEl('button', {
+				cls: 'action-btn',
+				attr: { title: action.title }
 			});
-			if (this.currentView === view.id) btn.addClass('active');
-			btn.addEventListener('click', () => {
-				this.currentView = view.id as ViewType;
-				this.renderHeader();
-				this.renderContent();
-			});
+			btn.createSpan({ cls: 'action-btn-icon', text: action.icon });
+			wrapper.createSpan({ cls: 'action-btn-label', text: action.label });
+
+			// 视图按钮高亮当前视图
+			if (['list', 'kanban', 'calendar', 'timeline'].includes(action.id)) {
+				if (this.currentView === action.id) wrapper.addClass('active');
+				btn.addEventListener('click', () => {
+					this.currentView = action.id as ViewType;
+					// 关闭展开面板
+					this.showQuickCreate = false;
+					this.showSearch = false;
+					this.renderRow2();
+					this.renderQuickCreatePanel();
+					this.renderSearchPanel();
+					this.reorderFunctionalChildren();
+					this.renderContent();
+				});
+			} else if (action.id === 'quickAdd') {
+				if (this.showQuickCreate) wrapper.addClass('active');
+				btn.addEventListener('click', () => {
+					this.showQuickCreate = !this.showQuickCreate;
+					if (this.showQuickCreate) this.showSearch = false;
+					this.renderRow2();
+					this.renderQuickCreatePanel();
+					this.renderSearchPanel();
+					this.reorderFunctionalChildren();
+				});
+			} else if (action.id === 'search') {
+				if (this.showSearch) wrapper.addClass('active');
+				btn.addEventListener('click', () => {
+					this.showSearch = !this.showSearch;
+					if (this.showSearch) this.showQuickCreate = false;
+					this.renderRow2();
+					this.renderQuickCreatePanel();
+					this.renderSearchPanel();
+					this.reorderFunctionalChildren();
+				});
+			}
+		}
+
+		this.reorderFunctionalChildren();
+
+		if (scrollEl) {
+			scrollEl.scrollTop = savedScroll;
 		}
 	}
 
-	private renderQuickCreate(): void {
-		if (this.quickCreateEl) {
-			this.quickCreateEl.remove();
-			this.quickCreateEl = null;
+	private renderQuickCreatePanel(): void {
+		if (this.quickCreatePanelEl) {
+			this.quickCreatePanelEl.remove();
+			this.quickCreatePanelEl = null;
 		}
-		this.quickCreateEl = this.mainEl!.createDiv({ cls: 'quick-create compact' });
+		if (!this.showQuickCreate || !this.functionalModuleEl) return;
 
-		const inputWrap = this.quickCreateEl.createDiv({ cls: 'quick-create-input' });
-		inputWrap.createSpan({ cls: 'quick-create-icon', text: '➕' });
+		this.quickCreatePanelEl = this.functionalModuleEl.createDiv({ cls: 'expandable-panel open' });
+		this.reorderFunctionalChildren();
+		const panel = this.quickCreatePanelEl.createDiv({ cls: 'quick-create' });
 
-		const chipContainer = inputWrap.createDiv({ cls: 'quick-chips' });
-		
-		const input = inputWrap.createEl('textarea', {
+		const inputRow = panel.createDiv({ cls: 'quick-create-input-row' });
+
+		const textarea = inputRow.createEl('textarea', {
 			cls: 'quick-create-textarea',
-			attr: { placeholder: '快速创建任务... (按 Enter 提交)', rows: '1' }
+			attr: { placeholder: '输入任务描述...', rows: '1' }
 		});
 
-		let dueDate = '';
-		let priority = '';
+		const addBtn = inputRow.createEl('button', { cls: 'add-btn', text: '添加' });
 
-		const updateChips = () => {
-			chipContainer.innerHTML = '';
-			if (dueDate) {
-				const chip = chipContainer.createSpan({ cls: 'quick-chip date-chip' });
-				chip.createSpan({ text: `📅 ${dueDate}` });
-				const removeBtn = chip.createEl('button', { text: '✕', cls: 'quick-chip-remove' });
-				removeBtn.addEventListener('click', (e) => {
-					e.stopPropagation();
-					dueDate = '';
-					updateChips();
-					input.focus();
-				});
-			}
-			if (priority) {
-				const priLabels: Record<string, string> = {
-					'highest': '🔝',
-					'high': '🔺',
-					'medium': '🔼',
-					'low': '🔽',
-					'lowest': '⏬'
-				};
-				const chip = chipContainer.createSpan({ cls: `quick-chip priority-chip ${priority}` });
-				chip.createSpan({ text: priLabels[priority] || priority });
-				const removeBtn = chip.createEl('button', { text: '✕', cls: 'quick-chip-remove' });
-				removeBtn.addEventListener('click', (e) => {
-					e.stopPropagation();
-					priority = '';
-					updateChips();
-					input.focus();
-				});
-			}
-		};
+		const optionsRow = panel.createDiv({ cls: 'quick-create-options' });
 
-		const toolbar = this.quickCreateEl.createDiv({ cls: 'quick-toolbar' });
-		
-		const toolbarToggle = toolbar.createEl('button', { cls: 'quick-toolbar-toggle', text: '⚙️ 更多选项' });
-		const toolbarContent = toolbar.createDiv({ cls: 'quick-toolbar-content' });
-
-		const dateGroup = toolbarContent.createDiv({ cls: 'quick-tool-group' });
-		dateGroup.createSpan({ cls: 'quick-tool-label', text: '📅' });
-		const dateBtns = dateGroup.createDiv({ cls: 'quick-tool-btns' });
-		const dateOptions = [
-			{ value: 'today', label: t('dates').today, title: `${t('dates').today}截止` },
-			{ value: 'tomorrow', label: t('dates').tomorrow, title: `${t('dates').tomorrow}截止` },
-			{ value: 'week', label: t('dates').week, title: '下周截止' },
+		const dateSelect = optionsRow.createEl('select', { cls: 'quick-create-date' });
+		const dateOpts = [
+			{ value: '', label: '📅 无日期' },
+			{ value: 'today', label: '📅 今天' },
+			{ value: 'tomorrow', label: '📅 明天' },
+			{ value: 'custom', label: '📅 自定义时间' },
 		];
-		for (const opt of dateOptions) {
-			const btn = dateBtns.createEl('button', {
-				cls: 'quick-tool-btn',
-				text: opt.label,
-				attr: { title: opt.title }
-			});
-			btn.addEventListener('click', (e) => {
-				e.stopPropagation();
-				let d = new Date();
-				if (opt.value === 'tomorrow') d.setDate(d.getDate() + 1);
-				if (opt.value === 'week') d.setDate(d.getDate() + 7);
-				dueDate = d.toISOString().split('T')[0];
-				updateChips();
-				input.focus();
-			});
-		}
-		const dateInputBtn = dateBtns.createEl('button', {
-			cls: 'quick-tool-btn',
-			text: '📅 自定义',
-			attr: { title: '自定义截止日期' }
-		});
-		dateInputBtn.addEventListener('click', (e) => {
-			e.stopPropagation();
-			this.showWheelDatePicker((date) => {
-				dueDate = date;
-				updateChips();
-				input.focus();
-			}, dueDate);
-		});
-
-		const priGroup = toolbarContent.createDiv({ cls: 'quick-tool-group' });
-		priGroup.createSpan({ cls: 'quick-tool-label', text: '🎯' });
-		const priBtns = priGroup.createDiv({ cls: 'quick-tool-btns' });
-		const priorities = [
-			{ value: 'highest', label: '🔝', title: '最高优先级' },
-			{ value: 'high', label: '🔺', title: '高优先级' },
-			{ value: 'medium', label: '🔼', title: '中优先级' },
-			{ value: 'low', label: '🔽', title: '低优先级' },
-		];
-		for (const p of priorities) {
-			const btn = priBtns.createEl('button', {
-				cls: `quick-tool-btn priority-${p.value}`,
-				text: p.label,
-				attr: { title: p.title }
-			});
-			if (priority === p.value) btn.addClass('active');
-			btn.addEventListener('click', (e) => {
-				e.stopPropagation();
-				priority = priority === p.value ? '' : p.value;
-				updateChips();
-				input.focus();
-			});
+		for (const opt of dateOpts) {
+			dateSelect.createEl('option', { text: opt.label, value: opt.value });
 		}
 
-		let toolbarExpanded = false;
-		toolbarToggle.addEventListener('click', (e) => {
-			e.stopPropagation();
-			toolbarExpanded = !toolbarExpanded;
-			toolbarContent.classList.toggle('expanded', toolbarExpanded);
-			toolbarToggle.textContent = toolbarExpanded ? '⚙️ 收起' : '⚙️';
+		const customDateInput = optionsRow.createEl('input', {
+			type: 'date',
+			cls: 'quick-create-custom-date',
 		});
 
-		const submitBtn = toolbar.createEl('button', { cls: 'submit-btn-inline hidden' });
-		submitBtn.addEventListener('click', () => {
-			const desc = input.value.trim();
-			if (desc) {
-				void this.plugin.createQuickTask(desc, dueDate || undefined, priority ? (priority as TaskPriority) : undefined);
-				input.value = '';
-				dueDate = '';
-				priority = '';
-				updateChips();
-				submitBtn.addClass('hidden');
-				autoResize();
-			}
-		});
-
-		input.addEventListener('keydown', (e: KeyboardEvent) => {
-			if (e.key === 'Enter' && !e.shiftKey) {
-				e.preventDefault();
-				const desc = input.value.trim();
-				if (desc) {
-					void this.plugin.createQuickTask(desc, dueDate || undefined, priority ? (priority as TaskPriority) : undefined);
-					input.value = '';
-					dueDate = '';
-					priority = '';
-					updateChips();
-					submitBtn.addClass('hidden');
-					autoResize();
+		let customDate = '';
+		const updateDateLabel = () => {
+			if (customDate) {
+				const d = new Date(customDate);
+				const label = `${d.getMonth() + 1}/${d.getDate()}`;
+				for (let i = 0; i < dateSelect.options.length; i++) {
+					if (dateSelect.options[i].value === 'custom') {
+						dateSelect.options[i].textContent = `📅 ${label}`;
+						break;
+					}
+				}
+			} else {
+				for (let i = 0; i < dateSelect.options.length; i++) {
+					if (dateSelect.options[i].value === 'custom') {
+						dateSelect.options[i].textContent = '📅 自定义时间';
+						break;
+					}
 				}
 			}
+		};
+
+		dateSelect.addEventListener('change', () => {
+			if (dateSelect.value === 'custom') {
+				customDateInput.setCssStyles({ position: '', width: '', height: '', opacity: '', pointerEvents: '' });
+				customDateInput.focus();
+				try {
+					(customDateInput as HTMLInputElement).showPicker();
+				} catch {
+					// fallback: user clicks the date input manually
+				}
+			} else {
+				customDate = '';
+				updateDateLabel();
+				customDateInput.setCssStyles({ position: 'absolute', width: '0', height: '0', opacity: '0', pointerEvents: 'none' });
+			}
 		});
 
-		const checkSubmitBtn = () => {
-			if (input.value.trim()) {
-				submitBtn.removeClass('hidden');
-			} else {
-				submitBtn.addClass('hidden');
+		customDateInput.addEventListener('change', () => {
+			customDate = customDateInput.value;
+			updateDateLabel();
+		});
+
+		const priSelect = optionsRow.createEl('select', { cls: 'quick-create-priority' });
+		const priOpts = [
+			{ value: '', label: '⭐ 无优先级' },
+			{ value: 'highest', label: '🔝 最高' },
+			{ value: 'high', label: '🔺 高' },
+			{ value: 'medium', label: '🔼 中' },
+			{ value: 'low', label: '🔽 低' },
+			{ value: 'lowest', label: '⏬ 最低' },
+		];
+		for (const opt of priOpts) {
+			priSelect.createEl('option', { text: opt.label, value: opt.value });
+		}
+
+		const doSubmit = () => {
+			const desc = textarea.value.trim();
+			if (desc) {
+				let dueDate: string | undefined;
+				const dateVal = dateSelect.value;
+				if (dateVal === 'custom') {
+					dueDate = customDate || undefined;
+				} else if (dateVal) {
+					const d = new Date();
+					if (dateVal === 'tomorrow') d.setDate(d.getDate() + 1);
+					dueDate = d.toISOString().split('T')[0];
+				}
+				const priVal = priSelect.value;
+				const priority = priVal ? priVal as TaskPriority : undefined;
+				void this.plugin.createQuickTask(desc, dueDate, priority);
+				textarea.value = '';
+				dateSelect.value = '';
+				customDateInput.value = '';
+				customDate = '';
+				updateDateLabel();
+				priSelect.value = '';
+				autoResize();
+				textarea.focus();
 			}
 		};
 
+		addBtn.addEventListener('click', doSubmit);
+
+		textarea.addEventListener('keydown', (e: KeyboardEvent) => {
+			if (e.key === 'Enter' && !e.shiftKey) {
+				e.preventDefault();
+				doSubmit();
+			}
+		});
+
 		const autoResize = () => {
-			input.setCssStyles({ height: 'auto' });
-			input.setCssStyles({ height: input.scrollHeight + 'px' });
+			textarea.setCssStyles({ height: 'auto' });
+			textarea.setCssStyles({ height: textarea.scrollHeight + 'px' });
 		};
 
-		input.addEventListener('input', () => {
-			checkSubmitBtn();
-			autoResize();
-		});
+		textarea.addEventListener('input', autoResize);
 	}
 
-	private renderSearchRow(): void {
-		if (this.searchRowEl) {
-			this.searchRowEl.remove();
-			this.searchRowEl = null;
+	private renderSearchPanel(): void {
+		if (this.searchPanelEl) {
+			this.searchPanelEl.remove();
+			this.searchPanelEl = null;
 		}
-		this.searchRowEl = this.mainEl!.createDiv({ cls: 'search-row' });
+		if (!this.showSearch || !this.functionalModuleEl) return;
 
-		const searchWrap = this.searchRowEl.createDiv({ cls: 'search-input-wrapper' });
-		searchWrap.createSpan({ cls: 'search-icon', text: '🔍' });
-		
-		const searchInput = searchWrap.createEl('input', {
+		this.searchPanelEl = this.functionalModuleEl.createDiv({ cls: 'expandable-panel open' });
+		this.reorderFunctionalChildren();
+
+		const panel = this.searchPanelEl.createDiv({ cls: 'compact-search' });
+
+		// 搜索输入行
+		const searchRow = panel.createDiv({ cls: 'search-input-row' });
+		const inputWrap = searchRow.createDiv({ cls: 'search-icon-pos' });
+		inputWrap.createSpan({ cls: 'search-icon', text: '🔍' });
+		const searchInput = inputWrap.createEl('input', {
 			type: 'text',
 			attr: { placeholder: '搜索任务...' }
 		});
 		searchInput.value = this.searchQuery;
 
-		let clearBtn: HTMLElement | null = null;
-		const updateClearBtn = () => {
-			if (this.searchQuery && !clearBtn) {
-				clearBtn = searchWrap.createEl('button', { cls: 'clear-btn', text: '✕' });
-				clearBtn.addEventListener('click', () => {
-					this.searchQuery = '';
-					searchInput.value = '';
-					if (clearBtn) {
-						clearBtn.remove();
-						clearBtn = null;
-					}
-					this.renderContent();
-				});
-			} else if (!this.searchQuery && clearBtn) {
-				clearBtn.remove();
-				clearBtn = null;
-			}
-		};
-		updateClearBtn();
-
 		searchInput.addEventListener('input', (e: Event) => {
 			this.searchQuery = (e.target as HTMLInputElement).value;
-			updateClearBtn();
 			this.renderContent();
 		});
 
-		const tabsEl = this.searchRowEl.createDiv({ cls: 'filter-tabs' });
 
-		const tabs = [
-			{ id: 'not-done', label: t('filters').pending },
-			{ id: 'done', label: t('filters').done },
-			{ id: 'all', label: t('filters').all },
+		// 筛选条件行
+		const filtersEl = panel.createDiv({ cls: 'filter-chips' });
+
+		// 日期筛选
+		const dateSelect = filtersEl.createEl('select');
+		const dateOpts = [
+			{ value: 'all', label: '📅 全部日期' },
+			{ value: 'overdue', label: '逾期' },
+			{ value: 'today', label: '今天' },
+			{ value: 'week', label: '本周' },
+			{ value: 'month', label: '本月' },
 		];
-
-		for (const tab of tabs) {
-			const btn = tabsEl.createEl('button', {
-				cls: 'filter-tab',
-				text: tab.label
-			});
-			if (this.filterStatus === tab.id) btn.addClass('active');
-			btn.addEventListener('click', () => {
-				this.filterStatus = tab.id as 'all' | 'done' | 'not-done';
-				this.renderSearchRow();
-				this.renderContent();
-			});
+		for (const opt of dateOpts) {
+			const option = dateSelect.createEl('option', { text: opt.label, value: opt.value });
+			if (this.dateFilter === opt.value) option.selected = true;
 		}
+		dateSelect.addEventListener('change', () => {
+			this.dateFilter = dateSelect.value as 'all' | 'overdue' | 'today' | 'week' | 'month';
+			this.renderSearchPanel();
+			this.renderRow1();
+			this.renderContent();
+		});
 
-		const hasActiveFilters = this.filterPriorities.length > 0 || 
-			this.filterTags.length > 0 || 
-			this.dateFilter !== 'all';
-		
-		if (hasActiveFilters) {
-			const filterChipsEl = this.searchRowEl.createDiv({ cls: 'active-filter-chips' });
+		// 优先级筛选
+		const priSelect = filtersEl.createEl('select');
+		const priOpts: { value: string; label: string }[] = [
+			{ value: '', label: '🎯 全部优先级' },
+			{ value: 'highest', label: '🔝 最高' },
+			{ value: 'high', label: '🔺 高' },
+			{ value: 'medium', label: '🔼 中' },
+			{ value: 'low', label: '🔽 低' },
+			{ value: 'lowest', label: '⏬ 最低' },
+		];
+		for (const opt of priOpts) {
+			const option = priSelect.createEl('option', { text: opt.label, value: opt.value });
+			if (opt.value && this.filterPriorities.includes(opt.value as TaskPriority)) {
+				option.selected = true;
+			}
+		}
+		priSelect.addEventListener('change', () => {
+			const val = priSelect.value;
+			if (val) {
+				this.filterPriorities = [val as TaskPriority];
+			} else {
+				this.filterPriorities = [];
+			}
+			this.renderSearchPanel();
+			this.renderRow1();
+			this.renderContent();
+		});
 
+		// 标签输入
+		const tagInput = filtersEl.createEl('input', {
+			type: 'text',
+			attr: { placeholder: '# 标签' }
+		});
+		tagInput.addEventListener('keydown', (e) => {
+			if (e.key === 'Enter') {
+				const val = (e.target as HTMLInputElement).value.trim().replace(/^#/, '');
+				if (val && !this.filterTags.includes(val)) {
+					this.filterTags = [...this.filterTags, val];
+					(e.target as HTMLInputElement).value = '';
+					this.renderSearchPanel();
+					this.renderRow1();
+					this.renderContent();
+				}
+			}
+		});
+
+		// 已选 chips
+		if (this.filterTags.length > 0 || this.dateFilter !== 'all' || this.filterPriorities.length > 0) {
 			if (this.dateFilter !== 'all') {
 				const dateLabels: Record<string, string> = {
-					'overdue': t('dates').overdue,
-					'today': t('dates').today,
-					'week': t('dates').thisWeek,
-					'month': t('dates').thisMonth
+					'overdue': '逾期', 'today': '今天', 'week': '本周', 'month': '本月'
 				};
-				const chip = filterChipsEl.createSpan({ 
-					cls: 'filter-chip date-filter-chip',
-					text: `📅 ${dateLabels[this.dateFilter] || this.dateFilter}` 
-				});
-				chip.createSpan({ cls: 'filter-chip-remove', text: '✕' });
-				chip.addEventListener('click', () => {
+				const chip = filtersEl.createSpan({ cls: 'compact-chip active' });
+				chip.createSpan({ text: `📅 ${dateLabels[this.dateFilter] || this.dateFilter}` });
+				const removeBtn = chip.createEl('span', { cls: 'remove', text: '✕' });
+				removeBtn.addEventListener('click', () => {
 					this.dateFilter = 'all';
-					this.renderSearchRow();
+					this.renderSearchPanel();
+					this.renderRow1();
 					this.renderContent();
 				});
 			}
 
 			for (const p of this.filterPriorities) {
-				const priorityLabels: Record<string, string> = {
-					'highest': '🔝 最高',
-					'high': '🔺 高',
-					'medium': '🔼 中',
-					'low': '🔽 低',
-					'lowest': '⏬ 最低'
+				const priLabels: Record<string, string> = {
+					'highest': '🔝 最高', 'high': '🔺 高', 'medium': '🔼 中', 'low': '🔽 低', 'lowest': '⏬ 最低'
 				};
-				const chip = filterChipsEl.createSpan({ 
-					cls: 'filter-chip priority-filter-chip',
-					text: priorityLabels[p] || p 
-				});
-				chip.createSpan({ cls: 'filter-chip-remove', text: '✕' });
-				chip.addEventListener('click', () => {
+				const chip = filtersEl.createSpan({ cls: 'compact-chip active' });
+				chip.createSpan({ text: priLabels[p] || p });
+				const removeBtn = chip.createEl('span', { cls: 'remove', text: '✕' });
+				removeBtn.addEventListener('click', () => {
 					this.filterPriorities = this.filterPriorities.filter(x => x !== p);
-					this.renderSearchRow();
+					this.renderSearchPanel();
+					this.renderRow1();
 					this.renderContent();
 				});
 			}
 
 			for (const tag of this.filterTags) {
-				const chip = filterChipsEl.createSpan({ 
-					cls: 'filter-chip tag-filter-chip',
-					text: `#${tag}` 
-				});
-				chip.createSpan({ cls: 'filter-chip-remove', text: '✕' });
-				chip.addEventListener('click', () => {
+				const chip = filtersEl.createSpan({ cls: 'compact-chip active' });
+				chip.createSpan({ text: `#${tag}` });
+				const removeBtn = chip.createEl('span', { cls: 'remove', text: '✕' });
+				removeBtn.addEventListener('click', () => {
 					this.filterTags = this.filterTags.filter(t => t !== tag);
-					this.renderSearchRow();
-					this.renderContent();
-				});
-			}
-
-			if (hasActiveFilters) {
-				const clearAll = filterChipsEl.createSpan({ 
-					cls: 'filter-chip clear-all-chip',
-					text: '清除全部' 
-				});
-				clearAll.addEventListener('click', () => {
-					this.filterPriorities = [];
-					this.filterTags = [];
-					this.dateFilter = 'all';
-					this.renderSearchRow();
+					this.renderSearchPanel();
+					this.renderRow1();
 					this.renderContent();
 				});
 			}
 		}
-	}
-
-	private renderFilterPanel(): void {
-		if (this.filterPanelEl) {
-			this.filterPanelEl.remove();
-			this.filterPanelEl = null;
-		}
-
-		if (!this.showFilterPanel) return;
-
-		this.filterPanelEl = this.mainEl!.createDiv({ cls: 'filter-panel' });
-		if (this.searchRowEl && this.searchRowEl.parentElement === this.mainEl) {
-			this.searchRowEl.after(this.filterPanelEl);
-		} else if (this.contentEl && this.contentEl.parentElement === this.mainEl) {
-			this.contentEl.before(this.filterPanelEl);
-		}
-
-		const filterRow = this.filterPanelEl.createDiv({ cls: 'filter-row' });
-
-		const dateSection = filterRow.createDiv({ cls: 'filter-section' });
-		dateSection.createSpan({ cls: 'filter-title', text: '📅 日期' });
-		
-		const dateOptions = dateSection.createDiv({ cls: 'filter-options' });
-		const dateFilters = [
-			{ value: 'all', label: t('filters').all },
-			{ value: 'overdue', label: t('dates').overdue },
-			{ value: 'today', label: t('dates').today },
-			{ value: 'week', label: t('dates').thisWeek },
-			{ value: 'month', label: t('dates').thisMonth },
-		];
-		for (const df of dateFilters) {
-			const btn = dateOptions.createEl('button', {
-				cls: 'date-btn',
-				text: df.label
-			});
-			if (this.dateFilter === df.value) btn.addClass('active');
-			btn.addEventListener('click', () => {
-				this.dateFilter = df.value as 'all' | 'overdue' | 'today' | 'week' | 'month';
-				this.renderFilterPanel();
-				this.renderHeader();
-				this.renderContent();
-			});
-		}
-
-		const priSection = filterRow.createDiv({ cls: 'filter-section' });
-		priSection.createSpan({ cls: 'filter-title', text: '🎯 优先级' });
-		
-		const priOptions = priSection.createDiv({ cls: 'filter-options' });
-		const priorities = [
-			{ value: 'highest', label: '🔝 最高', color: 'error' },
-			{ value: 'high', label: '🔺 高', color: 'accent' },
-			{ value: 'medium', label: '🔼 中', color: 'warning' },
-			{ value: 'low', label: '🔽 低', color: 'muted' },
-			{ value: 'lowest', label: '⏬ 最低', color: 'faint' },
-		];
-		for (const p of priorities) {
-			const btn = priOptions.createEl('button', {
-				cls: 'priority-chip',
-				text: p.label,
-				attr: { 'data-color': p.color }
-			});
-			const priorityValue = p.value as TaskPriority;
-			if (this.filterPriorities.includes(priorityValue)) btn.addClass('active');
-			btn.addEventListener('click', () => {
-				if (this.filterPriorities.includes(priorityValue)) {
-					this.filterPriorities = this.filterPriorities.filter(x => x !== priorityValue);
-				} else {
-					this.filterPriorities = [...this.filterPriorities, priorityValue];
-				}
-				this.renderFilterPanel();
-				this.renderHeader();
-				this.renderContent();
-			});
-		}
-
-		const tagSection = filterRow.createDiv({ cls: 'filter-section tag-section' });
-		tagSection.createSpan({ cls: 'filter-title', text: '🏷️ 标签' });
-		
-		const tagInputWrapper = tagSection.createDiv({ cls: 'tag-input-wrapper' });
-		const selectedTagsEl = tagInputWrapper.createDiv({ cls: 'selected-tags' });
-		for (const tag of this.filterTags) {
-			const tagEl = selectedTagsEl.createSpan({ cls: 'selected-tag', text: `#${tag}` });
-			const removeBtn = tagEl.createEl('button', { cls: 'remove-tag', text: '✕' });
-			removeBtn.addEventListener('click', (e) => {
-				e.stopPropagation();
-				this.filterTags = this.filterTags.filter(t => t !== tag);
-				this.renderFilterPanel();
-				this.renderHeader();
-				this.renderContent();
-			});
-		}
-
-		const tagInput = tagInputWrapper.createEl('input', {
-			type: 'text',
-			attr: { placeholder: '输入标签，回车添加...' }
-		});
-		tagInput.addEventListener('keydown', (e) => {
-			if (e.key === 'Enter') {
-				const value = (e.target as HTMLInputElement).value.trim().replace(/^#/, '');
-				if (value && !this.filterTags.includes(value)) {
-					this.filterTags = [...this.filterTags, value];
-					this.renderFilterPanel();
-					this.renderHeader();
-					this.renderContent();
-				}
-			}
-		});
-
-		const actions = this.filterPanelEl.createDiv({ cls: 'filter-actions' });
-		const resetBtn = actions.createEl('button', { cls: 'reset-btn', text: '🔄 重置筛选' });
-		resetBtn.addEventListener('click', () => {
-			this.filterPriorities = [];
-			this.filterTags = [];
-			this.dateFilter = 'all';
-			this.searchQuery = '';
-			this.renderFilterPanel();
-			this.renderHeader();
-			this.renderSearchRow();
-			this.renderContent();
-		});
 	}
 
 	private renderContent(): void {
@@ -651,7 +590,8 @@ export class SmartTaskViewController {
 			this.contentEl = null;
 		}
 
-		this.contentEl = this.mainEl!.createDiv({ cls: 'smarttask-content' });
+		if (!this.displayModuleEl) return;
+		this.contentEl = this.displayModuleEl.createDiv({ cls: 'smarttask-content' });
 
 		if (this.currentView === 'list') {
 			this.renderTaskList(this.contentEl, this.groupedTasks);
@@ -769,11 +709,11 @@ export class SmartTaskViewController {
 		});
 
 		const main = content.createDiv({ cls: 'task-main' });
-		main.createSpan({
+		const priSpan = main.createSpan({
 			cls: 'task-priority',
 			text: this.getPriorityIcon(task.priority),
-			attr: { style: `color: ${this.getPriorityColor(task.priority)}` }
 		});
+		priSpan.setCssStyles({ color: this.getPriorityColor(task.priority) });
 		const descSpan = main.createSpan({ cls: 'task-description' });
 		this.renderDescriptionWithLinks(descSpan, task);
 
@@ -1017,9 +957,9 @@ export class SmartTaskViewController {
 					} else {
 						this.filterTags = this.filterTags.filter(t => t !== tagName);
 					}
-					this.showFilterPanel = true;
-					this.renderFilterPanel();
-					this.renderHeader();
+					this.showSearch = true;
+					this.renderSearchPanel();
+					this.renderRow1();
 					this.renderContent();
 				});
 			}
@@ -1058,60 +998,53 @@ export class SmartTaskViewController {
 	private renderTimelineView(container: HTMLElement): void {
 		const timelineEl = container.createDiv({ cls: `timeline-view style-${this.timelineStyle}` });
 
-		const toolbar = timelineEl.createDiv({ cls: 'timeline-toolbar' });
-		
-		const leftGroup = toolbar.createDiv({ cls: 'timeline-toolbar-left' });
-		const navGroup = leftGroup.createDiv({ cls: 'timeline-nav-group' });
+		const toolbar = timelineEl.createDiv({ cls: 'timeline-toolbar-compact' });
+
+		const navGroup = toolbar.createDiv({ cls: 'timeline-nav-group' });
 		const prevBtn = navGroup.createEl('button', {
 			cls: 'timeline-nav-btn',
 			text: '◀',
-			attr: { title: '上一时间段' }
+		});
+		navGroup.createSpan({ cls: 'timeline-nav-label', text: this.getTimelineNavLabel() });
+		const nextBtn = navGroup.createEl('button', {
+			cls: 'timeline-nav-btn',
+			text: '▶',
 		});
 		const todayBtn = navGroup.createEl('button', {
 			cls: 'timeline-nav-btn today-btn',
 			text: t('dates').today,
-			attr: { title: '滚动到今天' }
-		});
-		const nextBtn = navGroup.createEl('button', {
-			cls: 'timeline-nav-btn',
-			text: '▶',
-			attr: { title: '下一时间段' }
 		});
 
-		const rightGroup = toolbar.createDiv({ cls: 'timeline-toolbar-right' });
+		const chipsGroup = toolbar.createDiv({ cls: 'timeline-chips-row' });
 		const groupOptions = [
-			{ value: 'day', label: '按日' },
+			{ value: 'day', label: '按天' },
 			{ value: 'week', label: '按周' },
 			{ value: 'month', label: '按月' },
 		];
-		const groupToggle = rightGroup.createDiv({ cls: 'timeline-group-toggle' });
 		for (const opt of groupOptions) {
-			const btn = groupToggle.createEl('button', {
-				cls: 'timeline-group-btn',
-				text: opt.label
+			const chip = chipsGroup.createEl('button', {
+				cls: 'timeline-chip',
+				text: opt.label,
 			});
-			if (this.timelineGroupBy === opt.value) btn.addClass('active');
-			btn.addEventListener('click', () => {
+			if (this.timelineGroupBy === opt.value) chip.addClass('active');
+			chip.addEventListener('click', () => {
 				this.timelineGroupBy = opt.value as 'day' | 'week' | 'month';
 				this.renderContent();
 			});
 		}
-
 		const styleOptions = [
-			{ value: 'classic', icon: '📋', label: '经典' },
-			{ value: 'gantt', icon: '📊', label: '甘特' },
-			{ value: 'zigzag', icon: '⚡', label: '交错' },
-			{ value: 'cards', icon: '🃏', label: '卡片' },
+			{ value: 'classic', label: '经典' },
+			{ value: 'gantt', label: '甘特' },
+			{ value: 'zigzag', label: '交错' },
+			{ value: 'cards', label: '卡片' },
 		];
-		const styleToggle = rightGroup.createDiv({ cls: 'timeline-style-toggle' });
 		for (const opt of styleOptions) {
-			const btn = styleToggle.createEl('button', {
-				cls: 'timeline-style-btn',
-				text: opt.icon,
-				attr: { title: opt.label + '样式' }
+			const chip = chipsGroup.createEl('button', {
+				cls: 'timeline-chip',
+				text: opt.label,
 			});
-			if (this.timelineStyle === opt.value) btn.addClass('active');
-			btn.addEventListener('click', () => {
+			if (this.timelineStyle === opt.value) chip.addClass('active');
+			chip.addEventListener('click', () => {
 				this.timelineStyle = opt.value as 'classic' | 'gantt' | 'zigzag' | 'cards';
 				this.plugin.settings.timelineStyle = opt.value as 'classic' | 'gantt' | 'zigzag' | 'cards';
 				void this.plugin.saveSettings();
@@ -1140,6 +1073,12 @@ export class SmartTaskViewController {
 		}
 	}
 
+	private getTimelineNavLabel(): string {
+		const today = new Date();
+		const weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+		return `${today.getMonth() + 1}/${today.getDate()} ${weekdays[today.getDay()]}`;
+	}
+
 	private renderClassicTimeline(timelineEl: HTMLElement, groups: { key: string; name: string; tasks: Task[] }[], prevBtn: HTMLElement, todayBtn: HTMLElement, nextBtn: HTMLElement): void {
 		const timelineContent = timelineEl.createDiv({ cls: 'timeline-content classic-content' });
 		const groupEls: { key: string; el: HTMLElement }[] = [];
@@ -1154,7 +1093,15 @@ export class SmartTaskViewController {
 
 			const groupHeader = groupEl.createDiv({ cls: 'timeline-group-header classic-group-header' });
 			groupHeader.createSpan({ cls: 'timeline-dot classic-dot' });
-			groupHeader.createSpan({ cls: 'timeline-group-title', text: group.name });
+			const isToday = group.key === QueryEngine.getToday();
+			const isOverdueGroup = group.key < QueryEngine.getToday();
+			if (isToday) {
+				groupHeader.createSpan({ cls: 'timeline-group-title today-title', text: group.name });
+			} else if (isOverdueGroup) {
+				groupHeader.createSpan({ cls: 'timeline-group-title overdue-title', text: group.name });
+			} else {
+				groupHeader.createSpan({ cls: 'timeline-group-title', text: group.name });
+			}
 			groupHeader.createSpan({ cls: 'timeline-group-count', text: `${group.tasks.length} 个任务` });
 
 			const tasksEl = groupEl.createDiv({ cls: 'timeline-tasks classic-tasks' });
@@ -1167,7 +1114,7 @@ export class SmartTaskViewController {
 			if (todayGroup) {
 				todayGroup.el.scrollIntoView({ behavior: 'smooth', block: 'start' });
 				todayGroup.el.addClass('highlight');
-				window.setTimeout(() => todayGroup.el.removeClass('highlight'), 2000);
+				this.highlightTimer = window.setTimeout(() => todayGroup.el.removeClass('highlight'), HIGHLIGHT_DURATION_MS);
 			} else {
 				const today = QueryEngine.getToday();
 				let closestGroup = groupEls[0];
@@ -1562,11 +1509,11 @@ export class SmartTaskViewController {
 				});
 			}
 			
-			main.createSpan({
+			const priSpan = main.createSpan({
 				cls: 'task-priority',
 				text: this.getPriorityIcon(task.priority),
-				attr: { style: `color: ${this.getPriorityColor(task.priority)}` }
 			});
+			priSpan.setCssStyles({ color: this.getPriorityColor(task.priority) });
 			const descSpan = main.createSpan({ cls: 'task-description' });
 			this.renderDescriptionWithLinks(descSpan, task);
 
@@ -1952,18 +1899,29 @@ export class SmartTaskViewController {
 				const notDone = dayTasks.filter(t => !t.completed);
 				const done = dayTasks.filter(t => t.completed);
 				const displayTasks = [...notDone, ...done].slice(0, 3);
-				
+
 				for (const task of displayTasks) {
-					const taskEl = tasksContainer.createDiv({ cls: 'calendar-task-dot' });
+					const taskEl = tasksContainer.createDiv({ cls: 'calendar-task-item' });
 					if (task.completed) taskEl.addClass('completed');
-					if (task.priority === TaskPriority.Highest || task.priority === TaskPriority.High) taskEl.addClass('high-priority');
+					taskEl.addClass(`priority-${task.priority || 'none'}`);
+
+					const priorityIcons: Record<string, string> = {
+						'highest': '🔝', 'high': '🔺', 'medium': '🔼',
+						'low': '🔽', 'lowest': '⏬', 'none': '•'
+					};
+					const icon = priorityIcons[task.priority || 'none'] || '•';
+					taskEl.createSpan({ cls: 'task-priority-icon', text: icon });
+					taskEl.createSpan({
+						cls: 'task-desc',
+						text: task.description
+					});
 					taskEl.title = task.description;
 					taskEl.addEventListener('click', (e) => {
 						e.stopPropagation();
 						this.plugin.openTaskFile(task.filePath, task.lineNumber);
 					});
 				}
-				
+
 				if (dayTasks.length > 3) {
 					tasksContainer.createDiv({
 						cls: 'calendar-more',

@@ -41,7 +41,10 @@ export class SmartTaskView extends ItemView {
 			this.unsubscribe();
 			this.unsubscribe = null;
 		}
-		this.controller = null;
+		if (this.controller) {
+			this.controller.destroy();
+			this.controller = null;
+		}
 	}
 
 	private render(): void {

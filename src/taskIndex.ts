@@ -2,6 +2,9 @@ import { App, TFile, Vault } from 'obsidian';
 import { Task } from './types';
 import { TaskParser } from './taskParser';
 
+const DEBOUNCE_DELAY_MS = 1000;
+const YIELD_INTERVAL_MS = 10;
+
 export class TaskIndex {
 	private app: App;
 	private vault: Vault;
@@ -57,7 +60,7 @@ export class TaskIndex {
 		}
 		this.debounceTimer = window.setTimeout(() => {
 			void this.incrementalReindex();
-		}, 1000);
+		}, DEBOUNCE_DELAY_MS);
 	}
 
 	private async incrementalReindex(): Promise<void> {
@@ -113,7 +116,7 @@ export class TaskIndex {
 		for (let i = 0; i < files.length; i += batchSize) {
 			const batch = files.slice(i, i + batchSize);
 			await Promise.all(batch.map(file => this.indexFile(file)));
-			await new Promise(resolve => window.setTimeout(resolve, 10));
+			await new Promise(resolve => window.setTimeout(resolve, YIELD_INTERVAL_MS));
 		}
 
 		this.rebuildAllTasks();
