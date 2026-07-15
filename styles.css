@@ -297,6 +297,7 @@
 
 .quick-create .quick-create-textarea {
 	flex: 1;
+	min-width: 0;
 	background: var(--background-primary);
 	border: 1px solid var(--background-modifier-border);
 	border-radius: 10px;
@@ -2360,22 +2361,35 @@
 		padding: 6px 2px 2px;
 	}
 
+	.quick-create-input-row {
+		gap: 4px;
+	}
+
 	.quick-create .quick-create-textarea {
-		font-size: 12px;
+		font-size: 13px;
 		padding: 6px 8px;
-		min-height: 32px;
+		min-height: 36px;
+		min-width: 0;
 	}
 
 	.quick-create .add-btn {
-		padding: 6px 10px;
-		font-size: 12px;
-		min-height: 32px;
+		padding: 0 12px;
+		font-size: 13px;
+		min-height: 36px;
+		height: 36px;
+		border-radius: 8px;
+		flex-shrink: 0;
+	}
+
+	.quick-create-options {
+		gap: 4px;
 	}
 
 	.quick-create-date,
-	.quick-create-priority {
-		font-size: 10px;
-		padding: 3px 6px;
+	.quick-create-priority,
+	.quick-create-custom-date {
+		font-size: 11px;
+		padding: 4px 6px;
 	}
 
 	.search-icon-pos input {
