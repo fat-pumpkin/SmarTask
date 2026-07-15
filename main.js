@@ -39,7 +39,6 @@ var DEFAULT_SETTINGS = {
   defaultView: "list",
   defaultPriority: "medium" /* Medium */,
   indexingEnabled: true,
-  indexInterval: 5e3,
   showSubtasks: true,
   groupBy: "file" /* File */,
   sortBy: "dueDate" /* DueDate */,
@@ -534,17 +533,56 @@ var en = {
     addSubtask: "Add Subtask"
   },
   settings: {
+    headingTaskConfiguration: "Task Configuration",
+    headingTaskSaving: "\u{1F4E5} Task Saving",
+    headingTaskDisplay: "\u{1F3AF} Task Display",
+    headingSortingGrouping: "\u{1F50D} Sorting & Grouping",
+    headingPerformance: "\u26A1 Performance",
+    headingKeyboardShortcuts: "\u2328\uFE0F Keyboard Shortcuts",
+    headingAbout: "About",
     defaultSaveLocation: "Default Save Location",
+    saveLocationDesc: "Where newly created tasks should be saved",
     inboxFilePath: "Inbox File Path",
+    inboxFilePathDesc: "File path for saving tasks in inbox mode",
+    inboxFilePlaceholder: "SmartTask-Inbox.md",
     autoAddTags: "Auto-add Tags",
+    autoAddTagsDesc: "Tags to automatically add to new tasks (comma-separated)",
+    autoAddTagsPlaceholder: "e.g., task, work",
     defaultView: "Default View",
-    defaultPriority: "Default Priority",
-    showCompleted: "Show Completed Tasks",
+    defaultViewDesc: "Default view when opening the plugin",
     timelineGrouping: "Timeline Grouping",
-    timelineStyle: "Timeline Style",
+    timelineGroupingDesc: "How tasks are grouped in timeline view",
+    defaultPriority: "Default Priority",
+    defaultPriorityDesc: "Default priority for new tasks",
+    showCompleted: "Show Completed Tasks",
+    showCompletedDesc: "Display completed tasks in task list",
     showSubtasks: "Show Subtasks",
+    showSubtasksDesc: "Expand and show subtasks in task list",
+    timelineStyle: "Timeline Style",
     groupBy: "Group By",
-    sortBy: "Sort By"
+    groupByDesc: "How tasks are grouped in task list",
+    byFile: "By file",
+    byPriority: "By priority",
+    byDueDate: "By due date",
+    byTag: "By tag",
+    noGrouping: "No grouping",
+    sortBy: "Sort By",
+    sortByDesc: "Field to sort tasks by",
+    dueDate: "Due date",
+    priority: "Priority",
+    description: "Description",
+    createdDate: "Created date",
+    sortOrder: "Sort Order",
+    sortOrderDesc: "Sort order for task list",
+    ascending: "Ascending",
+    descending: "Descending",
+    enableIndexing: "Enable Indexing",
+    enableIndexingDesc: "Enable task indexing for better query performance (recommended)",
+    none: "None",
+    aboutDescription: "High-performance task management plugin for Obsidian",
+    shortcutQuickCreate: "Quick create task",
+    shortcutToggleStatus: "Toggle task status",
+    shortcutAddSubtask: "Add subtask"
   }
 };
 
@@ -613,17 +651,56 @@ var zh = {
     addSubtask: "\u6DFB\u52A0\u5B50\u4EFB\u52A1"
   },
   settings: {
+    headingTaskConfiguration: "\u4EFB\u52A1\u914D\u7F6E",
+    headingTaskSaving: "\u{1F4E5} \u4EFB\u52A1\u4FDD\u5B58",
+    headingTaskDisplay: "\u{1F3AF} \u4EFB\u52A1\u663E\u793A",
+    headingSortingGrouping: "\u{1F50D} \u6392\u5E8F\u4E0E\u5206\u7EC4",
+    headingPerformance: "\u26A1 \u6027\u80FD",
+    headingKeyboardShortcuts: "\u2328\uFE0F \u5FEB\u6377\u952E",
+    headingAbout: "\u5173\u4E8E",
     defaultSaveLocation: "\u9ED8\u8BA4\u4FDD\u5B58\u4F4D\u7F6E",
+    saveLocationDesc: "\u65B0\u521B\u5EFA\u4EFB\u52A1\u7684\u4FDD\u5B58\u4F4D\u7F6E",
     inboxFilePath: "\u6536\u4EF6\u7BB1\u6587\u4EF6\u8DEF\u5F84",
+    inboxFilePathDesc: "\u6536\u4EF6\u7BB1\u6A21\u5F0F\u4E0B\u4FDD\u5B58\u4EFB\u52A1\u7684\u6587\u4EF6\u8DEF\u5F84",
+    inboxFilePlaceholder: "SmartTask-Inbox.md",
     autoAddTags: "\u81EA\u52A8\u6DFB\u52A0\u6807\u7B7E",
+    autoAddTagsDesc: "\u81EA\u52A8\u6DFB\u52A0\u5230\u65B0\u4EFB\u52A1\u7684\u6807\u7B7E\uFF08\u9017\u53F7\u5206\u9694\uFF09",
+    autoAddTagsPlaceholder: "\u4F8B\u5982\uFF1Atask, work",
     defaultView: "\u9ED8\u8BA4\u89C6\u56FE",
-    defaultPriority: "\u9ED8\u8BA4\u4F18\u5148\u7EA7",
-    showCompleted: "\u663E\u793A\u5DF2\u5B8C\u6210\u4EFB\u52A1",
+    defaultViewDesc: "\u6253\u5F00\u63D2\u4EF6\u65F6\u7684\u9ED8\u8BA4\u89C6\u56FE",
     timelineGrouping: "\u65F6\u95F4\u7EBF\u5206\u7EC4",
-    timelineStyle: "\u65F6\u95F4\u7EBF\u6837\u5F0F",
+    timelineGroupingDesc: "\u65F6\u95F4\u7EBF\u89C6\u56FE\u4E2D\u4EFB\u52A1\u7684\u5206\u7EC4\u65B9\u5F0F",
+    defaultPriority: "\u9ED8\u8BA4\u4F18\u5148\u7EA7",
+    defaultPriorityDesc: "\u65B0\u4EFB\u52A1\u7684\u9ED8\u8BA4\u4F18\u5148\u7EA7",
+    showCompleted: "\u663E\u793A\u5DF2\u5B8C\u6210\u4EFB\u52A1",
+    showCompletedDesc: "\u5728\u4EFB\u52A1\u5217\u8868\u4E2D\u663E\u793A\u5DF2\u5B8C\u6210\u4EFB\u52A1",
     showSubtasks: "\u663E\u793A\u5B50\u4EFB\u52A1",
+    showSubtasksDesc: "\u5C55\u5F00\u5E76\u663E\u793A\u4EFB\u52A1\u5217\u8868\u4E2D\u7684\u5B50\u4EFB\u52A1",
+    timelineStyle: "\u65F6\u95F4\u7EBF\u6837\u5F0F",
     groupBy: "\u5206\u7EC4\u65B9\u5F0F",
-    sortBy: "\u6392\u5E8F\u65B9\u5F0F"
+    groupByDesc: "\u4EFB\u52A1\u5217\u8868\u4E2D\u7684\u5206\u7EC4\u65B9\u5F0F",
+    byFile: "\u6309\u6587\u4EF6",
+    byPriority: "\u6309\u4F18\u5148\u7EA7",
+    byDueDate: "\u6309\u622A\u6B62\u65E5\u671F",
+    byTag: "\u6309\u6807\u7B7E",
+    noGrouping: "\u4E0D\u5206\u7EC4",
+    sortBy: "\u6392\u5E8F\u65B9\u5F0F",
+    sortByDesc: "\u4EFB\u52A1\u6392\u5E8F\u5B57\u6BB5",
+    dueDate: "\u622A\u6B62\u65E5\u671F",
+    priority: "\u4F18\u5148\u7EA7",
+    description: "\u63CF\u8FF0",
+    createdDate: "\u521B\u5EFA\u65E5\u671F",
+    sortOrder: "\u6392\u5E8F\u987A\u5E8F",
+    sortOrderDesc: "\u4EFB\u52A1\u5217\u8868\u7684\u6392\u5E8F\u987A\u5E8F",
+    ascending: "\u5347\u5E8F",
+    descending: "\u964D\u5E8F",
+    enableIndexing: "\u542F\u7528\u7D22\u5F15",
+    enableIndexingDesc: "\u542F\u7528\u4EFB\u52A1\u7D22\u5F15\u4EE5\u63D0\u5347\u67E5\u8BE2\u6027\u80FD\uFF08\u63A8\u8350\uFF09",
+    none: "\u65E0",
+    aboutDescription: "\u9AD8\u6027\u80FD\u7684 Obsidian \u4EFB\u52A1\u7BA1\u7406\u63D2\u4EF6",
+    shortcutQuickCreate: "\u5FEB\u901F\u521B\u5EFA\u4EFB\u52A1",
+    shortcutToggleStatus: "\u5207\u6362\u4EFB\u52A1\u72B6\u6001",
+    shortcutAddSubtask: "\u6DFB\u52A0\u5B50\u4EFB\u52A1"
   }
 };
 
@@ -655,75 +732,77 @@ var SmartTaskSettingTab = class extends import_obsidian2.PluginSettingTab {
   }
   display() {
     const { containerEl } = this;
+    const s = t("settings");
     containerEl.empty();
-    new import_obsidian2.Setting(containerEl).setName("Task Configuration").setHeading();
-    new import_obsidian2.Setting(containerEl).setName("\u{1F4E5} Task Saving").setHeading();
-    new import_obsidian2.Setting(containerEl).setName(t("settings").defaultSaveLocation).setDesc("Where newly created tasks should be saved").addDropdown((dropdown) => dropdown.addOption("inbox", t("saveTargets").inbox).addOption("currentFile", t("saveTargets").currentFile).addOption("dailyNote", t("saveTargets").dailyNote).setValue(this.plugin.settings.saveTarget).onChange(async (value) => {
+    new import_obsidian2.Setting(containerEl).setName(s.headingTaskConfiguration).setHeading();
+    new import_obsidian2.Setting(containerEl).setName(s.headingTaskSaving).setHeading();
+    new import_obsidian2.Setting(containerEl).setName(s.defaultSaveLocation).setDesc(s.saveLocationDesc).addDropdown((dropdown) => dropdown.addOption("inbox", t("saveTargets").inbox).addOption("currentFile", t("saveTargets").currentFile).addOption("dailyNote", t("saveTargets").dailyNote).setValue(this.plugin.settings.saveTarget).onChange(async (value) => {
       this.plugin.settings.saveTarget = value;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian2.Setting(containerEl).setName(t("settings").inboxFilePath).setDesc("File path for saving tasks in inbox mode").addText((text) => text.setPlaceholder("SmartTask-Inbox.md").setValue(this.plugin.settings.inboxFilePath).onChange(async (value) => {
+    new import_obsidian2.Setting(containerEl).setName(s.inboxFilePath).setDesc(s.inboxFilePathDesc).addText((text) => text.setPlaceholder(s.inboxFilePlaceholder).setValue(this.plugin.settings.inboxFilePath).onChange(async (value) => {
       this.plugin.settings.inboxFilePath = value || "SmartTask-Inbox.md";
       await this.plugin.saveSettings();
     }));
-    new import_obsidian2.Setting(containerEl).setName(t("settings").autoAddTags).setDesc("Tags to automatically add to new tasks (comma-separated)").addText((text) => text.setPlaceholder("e.g., task, work").setValue(this.plugin.settings.autoAddTags.join(", ")).onChange(async (value) => {
-      this.plugin.settings.autoAddTags = value.split(",").map((t2) => t2.trim()).filter((t2) => t2.length > 0);
+    new import_obsidian2.Setting(containerEl).setName(s.autoAddTags).setDesc(s.autoAddTagsDesc).addText((text) => text.setPlaceholder(s.autoAddTagsPlaceholder).setValue(this.plugin.settings.autoAddTags.join(", ")).onChange(async (value) => {
+      this.plugin.settings.autoAddTags = value.split(",").map((tag) => tag.trim()).filter((tag) => tag.length > 0);
       await this.plugin.saveSettings();
     }));
-    new import_obsidian2.Setting(containerEl).setName("\u{1F3AF} Task Display").setHeading();
-    new import_obsidian2.Setting(containerEl).setName(t("settings").defaultView).setDesc("Default view when opening the plugin").addDropdown((dropdown) => dropdown.addOption("list", t("tabs").list).addOption("kanban", t("tabs").kanban).addOption("calendar", t("tabs").calendar).addOption("timeline", t("tabs").timeline).setValue(this.plugin.settings.defaultView).onChange(async (value) => {
+    new import_obsidian2.Setting(containerEl).setName(s.headingTaskDisplay).setHeading();
+    new import_obsidian2.Setting(containerEl).setName(s.defaultView).setDesc(s.defaultViewDesc).addDropdown((dropdown) => dropdown.addOption("list", t("tabs").list).addOption("kanban", t("tabs").kanban).addOption("calendar", t("tabs").calendar).addOption("timeline", t("tabs").timeline).setValue(this.plugin.settings.defaultView).onChange(async (value) => {
       this.plugin.settings.defaultView = value;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian2.Setting(containerEl).setName(t("settings").timelineGrouping).setDesc("How tasks are grouped in timeline view").addDropdown((dropdown) => dropdown.addOption("day", `By ${t("dates").day}`).addOption("week", `By ${t("dates").week}`).addOption("month", `By ${t("dates").month}`).setValue(this.plugin.settings.timelineGroupBy).onChange(async (value) => {
+    new import_obsidian2.Setting(containerEl).setName(s.timelineGrouping).setDesc(s.timelineGroupingDesc).addDropdown((dropdown) => dropdown.addOption("day", t("dates").day).addOption("week", t("dates").week).addOption("month", t("dates").month).setValue(this.plugin.settings.timelineGroupBy).onChange(async (value) => {
       this.plugin.settings.timelineGroupBy = value;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian2.Setting(containerEl).setName(t("settings").defaultPriority).setDesc("Default priority for new tasks").addDropdown((dropdown) => dropdown.addOption("highest" /* Highest */, `\u{1F51D} ${t("priorities").highest}`).addOption("high" /* High */, `\u{1F53A} ${t("priorities").high}`).addOption("medium" /* Medium */, `\u{1F53C} ${t("priorities").medium}`).addOption("low" /* Low */, `\u{1F53D} ${t("priorities").low}`).addOption("lowest" /* Lowest */, `\u23EC ${t("priorities").lowest}`).addOption("none" /* None */, "\u2796 None").setValue(this.plugin.settings.defaultPriority).onChange(async (value) => {
+    new import_obsidian2.Setting(containerEl).setName(s.defaultPriority).setDesc(s.defaultPriorityDesc).addDropdown((dropdown) => dropdown.addOption("highest" /* Highest */, `\u{1F51D} ${t("priorities").highest}`).addOption("high" /* High */, `\u{1F53A} ${t("priorities").high}`).addOption("medium" /* Medium */, `\u{1F53C} ${t("priorities").medium}`).addOption("low" /* Low */, `\u{1F53D} ${t("priorities").low}`).addOption("lowest" /* Lowest */, `\u23EC ${t("priorities").lowest}`).addOption("none" /* None */, `\u2796 ${s.none}`).setValue(this.plugin.settings.defaultPriority).onChange(async (value) => {
       this.plugin.settings.defaultPriority = value;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian2.Setting(containerEl).setName(t("settings").showCompleted).setDesc("Display completed tasks in task list").addToggle((toggle) => toggle.setValue(this.plugin.settings.showCompleted).onChange(async (value) => {
+    new import_obsidian2.Setting(containerEl).setName(s.showCompleted).setDesc(s.showCompletedDesc).addToggle((toggle) => toggle.setValue(this.plugin.settings.showCompleted).onChange(async (value) => {
       this.plugin.settings.showCompleted = value;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian2.Setting(containerEl).setName(t("settings").showSubtasks).setDesc("Expand and show subtasks in task list").addToggle((toggle) => toggle.setValue(this.plugin.settings.showSubtasks).onChange(async (value) => {
+    new import_obsidian2.Setting(containerEl).setName(s.showSubtasks).setDesc(s.showSubtasksDesc).addToggle((toggle) => toggle.setValue(this.plugin.settings.showSubtasks).onChange(async (value) => {
       this.plugin.settings.showSubtasks = value;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian2.Setting(containerEl).setName("\u{1F50D} Sorting & Grouping").setHeading();
-    new import_obsidian2.Setting(containerEl).setName(t("settings").groupBy).setDesc("How tasks are grouped in task list").addDropdown((dropdown) => dropdown.addOption("file" /* File */, "By file").addOption("priority" /* Priority */, "By priority").addOption("dueDate" /* DueDate */, "By due date").addOption("tag" /* Tag */, "By tag").addOption("none" /* None */, "No grouping").setValue(this.plugin.settings.groupBy).onChange(async (value) => {
+    new import_obsidian2.Setting(containerEl).setName(s.headingSortingGrouping).setHeading();
+    new import_obsidian2.Setting(containerEl).setName(s.groupBy).setDesc(s.groupByDesc).addDropdown((dropdown) => dropdown.addOption("file" /* File */, s.byFile).addOption("priority" /* Priority */, s.byPriority).addOption("dueDate" /* DueDate */, s.byDueDate).addOption("tag" /* Tag */, s.byTag).addOption("none" /* None */, s.noGrouping).setValue(this.plugin.settings.groupBy).onChange(async (value) => {
       this.plugin.settings.groupBy = value;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian2.Setting(containerEl).setName(t("settings").sortBy).setDesc("Field to sort tasks by").addDropdown((dropdown) => dropdown.addOption("dueDate" /* DueDate */, "Due date").addOption("priority" /* Priority */, "Priority").addOption("description" /* Description */, "Description").addOption("createdDate" /* CreatedDate */, "Created date").setValue(this.plugin.settings.sortBy).onChange(async (value) => {
+    new import_obsidian2.Setting(containerEl).setName(s.sortBy).setDesc(s.sortByDesc).addDropdown((dropdown) => dropdown.addOption("dueDate" /* DueDate */, s.dueDate).addOption("priority" /* Priority */, s.priority).addOption("description" /* Description */, s.description).addOption("createdDate" /* CreatedDate */, s.createdDate).setValue(this.plugin.settings.sortBy).onChange(async (value) => {
       this.plugin.settings.sortBy = value;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian2.Setting(containerEl).setName("Sort Order").setDesc("Sort order for task list").addDropdown((dropdown) => dropdown.addOption("asc", "Ascending").addOption("desc", "Descending").setValue(this.plugin.settings.sortOrder).onChange(async (value) => {
+    new import_obsidian2.Setting(containerEl).setName(s.sortOrder).setDesc(s.sortOrderDesc).addDropdown((dropdown) => dropdown.addOption("asc", s.ascending).addOption("desc", s.descending).setValue(this.plugin.settings.sortOrder).onChange(async (value) => {
       this.plugin.settings.sortOrder = value;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian2.Setting(containerEl).setName("\u26A1 Performance").setHeading();
-    new import_obsidian2.Setting(containerEl).setName("Enable Indexing").setDesc("Enable task indexing for better query performance (recommended)").addToggle((toggle) => toggle.setValue(this.plugin.settings.indexingEnabled).onChange(async (value) => {
+    new import_obsidian2.Setting(containerEl).setName(s.headingPerformance).setHeading();
+    new import_obsidian2.Setting(containerEl).setName(s.enableIndexing).setDesc(s.enableIndexingDesc).addToggle((toggle) => toggle.setValue(this.plugin.settings.indexingEnabled).onChange(async (value) => {
       this.plugin.settings.indexingEnabled = value;
       await this.plugin.saveSettings();
+      await this.plugin.setIndexingEnabled(value);
     }));
-    new import_obsidian2.Setting(containerEl).setName("\u2328\uFE0F Keyboard Shortcuts").setHeading();
+    new import_obsidian2.Setting(containerEl).setName(s.headingKeyboardShortcuts).setHeading();
     const shortcuts = containerEl.createEl("div", { cls: "shortcut-hint" });
     const shortcutItems = [
-      { keys: "Ctrl+Shift+T", desc: "Quick create task" },
-      { keys: "Ctrl+Enter", desc: "Toggle task status" },
-      { keys: "Ctrl+Shift+Enter", desc: "Add subtask" }
+      { keys: "Ctrl+Shift+T", desc: s.shortcutQuickCreate },
+      { keys: "Ctrl+Enter", desc: s.shortcutToggleStatus },
+      { keys: "Ctrl+Shift+Enter", desc: s.shortcutAddSubtask }
     ];
     for (const item of shortcutItems) {
       const p = shortcuts.createEl("p");
       p.createEl("code", { text: item.keys });
       p.appendText(` \u2014 ${item.desc}`);
     }
-    new import_obsidian2.Setting(containerEl).setName("About").setHeading();
+    new import_obsidian2.Setting(containerEl).setName(s.headingAbout).setHeading();
     containerEl.createEl("p", {
-      text: `SmartTask v1.1.0 \u2014 High-performance task management plugin for Obsidian`
+      text: `SmartTask v${this.plugin.manifest.version} \u2014 ${s.aboutDescription}`
     });
   }
 };
@@ -969,13 +1048,22 @@ var SmartTaskViewController = class {
     this.currentView = "list";
     this.timelineGroupBy = "day";
     this.timelineStyle = "classic";
-    this.showFilterPanel = false;
+    this.showQuickCreate = false;
+    this.showSearch = false;
     this.searchQuery = "";
     this.filterStatus = "not-done";
     this.filterPriorities = [];
     this.filterTags = [];
     this.dateFilter = "all";
     this.expandedTasks = /* @__PURE__ */ new Set();
+    // 新布局 DOM 元素
+    this.functionalModuleEl = null;
+    this.row1El = null;
+    this.row2El = null;
+    this.quickCreatePanelEl = null;
+    this.searchPanelEl = null;
+    this.displayModuleEl = null;
+    // 旧布局 DOM 元素（兼容过渡）
     this.headerEl = null;
     this.quickCreateEl = null;
     this.searchRowEl = null;
@@ -993,11 +1081,12 @@ var SmartTaskViewController = class {
   }
   render() {
     this.mainEl = this.container.createDiv({ cls: "smarttask-container" });
-    this.headerEl = this.mainEl.createDiv({ cls: "smarttask-header" });
-    this.renderHeaderContent();
-    this.renderQuickCreate();
-    this.renderSearchRow();
-    this.renderFilterPanel();
+    this.functionalModuleEl = this.mainEl.createDiv({ cls: "functional-module" });
+    this.renderRow1();
+    this.renderRow2();
+    this.renderQuickCreatePanel();
+    this.renderSearchPanel();
+    this.displayModuleEl = this.mainEl.createDiv({ cls: "display-module" });
     this.renderContent();
   }
   refresh() {
@@ -1009,7 +1098,8 @@ var SmartTaskViewController = class {
   updateTasks(tasks, allTags) {
     this.tasks = tasks;
     this.allTags = allTags;
-    this.renderHeader();
+    this.renderRow1();
+    this.renderRow2();
     this.renderContent();
   }
   get filteredTasks() {
@@ -1058,38 +1148,45 @@ var SmartTaskViewController = class {
   get hasActiveFilters() {
     return this.filterPriorities.length > 0 || this.filterTags.length > 0 || this.dateFilter !== "all" || this.searchQuery.length > 0;
   }
-  renderHeader() {
-    if (!this.headerEl)
+  // ========== 新布局：功能模块 ==========
+  renderRow1() {
+    if (!this.functionalModuleEl)
       return;
-    this.headerEl.empty();
-    this.renderHeaderContent();
+    if (this.row1El) {
+      this.row1El.remove();
+    }
+    this.row1El = this.functionalModuleEl.createDiv({ cls: "row-1" });
+    if (this.row2El) {
+      this.row2El.remove();
+      this.functionalModuleEl.appendChild(this.row1El);
+      this.functionalModuleEl.appendChild(this.row2El);
+    }
+    const titleArea = this.row1El.createDiv({ cls: "title-area" });
+    titleArea.createSpan({ cls: "smarttask-icon", text: "\u2705" });
+    titleArea.createEl("h2", { text: "SmartTask" });
+    const statsRow = this.row1El.createDiv({ cls: "stats-row" });
+    this.renderStatsCompact(statsRow);
+    const filterTabs = this.row1El.createDiv({ cls: "filter-tabs" });
+    const tabs = [
+      { id: "not-done", label: t("filters").pending },
+      { id: "done", label: t("filters").done },
+      { id: "all", label: t("filters").all }
+    ];
+    for (const tab of tabs) {
+      const btn = filterTabs.createEl("button", {
+        cls: "filter-tab",
+        text: tab.label
+      });
+      if (this.filterStatus === tab.id)
+        btn.addClass("active");
+      btn.addEventListener("click", () => {
+        this.filterStatus = tab.id;
+        this.renderRow1();
+        this.renderContent();
+      });
+    }
   }
-  renderHeaderContent() {
-    if (!this.headerEl)
-      return;
-    const titleEl = this.headerEl.createDiv({ cls: "smarttask-title" });
-    titleEl.createSpan({ cls: "smarttask-icon", text: "\u2705" });
-    titleEl.createEl("h2", { text: "SmartTask" });
-    const statsEl = this.headerEl.createDiv({ cls: "header-stats" });
-    this.renderStatsInHeader(statsEl);
-    const actionsEl = this.headerEl.createDiv({ cls: "header-actions" });
-    const filterBtn = actionsEl.createEl("button", {
-      cls: "filter-btn",
-      text: "\u{1F50D}",
-      attr: { title: "\u7B5B\u9009" }
-    });
-    if (this.showFilterPanel)
-      filterBtn.addClass("active");
-    if (this.hasActiveFilters)
-      filterBtn.addClass("has-filters");
-    filterBtn.addEventListener("click", () => {
-      this.showFilterPanel = !this.showFilterPanel;
-      this.renderHeader();
-      this.renderFilterPanel();
-    });
-    this.renderViewToggle(actionsEl);
-  }
-  renderStatsInHeader(container) {
+  renderStatsCompact(container) {
     const total = this.tasks.length;
     const done = this.tasks.filter((t2) => t2.completed).length;
     const notDone = total - done;
@@ -1098,449 +1195,350 @@ var SmartTaskViewController = class {
     const upcoming = QueryEngine.getUpcomingTasks(this.tasks, 7).length;
     const progress = total > 0 ? Math.round(done / total * 100) : 0;
     const stats = [
-      { value: notDone, label: t("stats").pending, cls: "pending" },
-      { value: overdue, label: t("stats").overdue, cls: "overdue" },
-      { value: today, label: t("stats").today, cls: "today" },
-      { value: upcoming, label: t("stats").upcoming, cls: "upcoming" }
+      { value: notDone, label: "\u5F85\u529E", cls: "pending" },
+      { value: overdue, label: "\u903E\u671F", cls: "overdue" },
+      { value: today, label: "\u4ECA\u5929", cls: "today" },
+      { value: upcoming, label: "\u8FD1\u671F", cls: "upcoming" }
     ];
-    for (let i = 0; i < stats.length; i++) {
-      const s = stats[i];
+    for (const s of stats) {
       const item = container.createDiv({ cls: `stat-item ${s.cls}` });
       item.createSpan({ cls: "stat-label", text: s.label });
       item.createSpan({ cls: "stat-num", text: s.value.toString() });
     }
-    const progressWrap = container.createDiv({ cls: "header-progress-wrap" });
-    const progressBar = progressWrap.createDiv({ cls: "progress-bar-container" });
-    progressBar.createDiv({ cls: "progress-bar-fill", attr: { style: `width: ${progress}%` } });
-    progressWrap.createSpan({ cls: "progress-percent", text: `${progress}%` });
+    const progressMini = container.createDiv({ cls: "progress-mini" });
+    const bar = progressMini.createDiv({ cls: "bar" });
+    const fill = bar.createDiv({ cls: "fill" });
+    fill.setCssStyles({ width: `${progress}%` });
+    progressMini.createSpan({ cls: "pct", text: `${progress}%` });
   }
-  renderViewToggle(container) {
-    const toggleEl = container.createDiv({ cls: "view-toggle" });
-    const views = [
-      { id: "list", icon: "\u{1F4CB}", title: "\u5217\u8868\u89C6\u56FE" },
-      { id: "kanban", icon: "\u{1F5C2}\uFE0F", title: "\u770B\u677F\u89C6\u56FE" },
-      { id: "calendar", icon: "\u{1F4C5}", title: "\u65E5\u5386\u89C6\u56FE" },
-      { id: "timeline", icon: "\u{1F4CA}", title: "\u65F6\u95F4\u7EBF\u89C6\u56FE" }
+  renderRow2() {
+    if (!this.functionalModuleEl)
+      return;
+    const scrollEl = this.displayModuleEl;
+    const savedScroll = scrollEl ? scrollEl.scrollTop : 0;
+    if (this.row2El) {
+      this.row2El.remove();
+    }
+    this.row2El = this.functionalModuleEl.createDiv({ cls: "row-2" });
+    if (this.row1El && this.row1El.parentElement === this.functionalModuleEl) {
+      this.row1El.remove();
+      this.functionalModuleEl.appendChild(this.row1El);
+      this.functionalModuleEl.appendChild(this.row2El);
+    }
+    const actions = [
+      { id: "quickAdd", icon: "\u2795", label: "\u6DFB\u52A0", title: "\u5FEB\u901F\u521B\u5EFA" },
+      { id: "search", icon: "\u{1F50D}", label: "\u641C\u7D22", title: "\u641C\u7D22" },
+      { id: "list", icon: "\u{1F4CB}", label: "\u5217\u8868", title: "\u5217\u8868\u89C6\u56FE" },
+      { id: "kanban", icon: "\u{1F5C2}\uFE0F", label: "\u770B\u677F", title: "\u770B\u677F\u89C6\u56FE" },
+      { id: "calendar", icon: "\u{1F4C5}", label: "\u65E5\u5386", title: "\u65E5\u5386\u89C6\u56FE" },
+      { id: "timeline", icon: "\u{1F4CA}", label: "\u7EDF\u8BA1", title: "\u65F6\u95F4\u7EBF\u89C6\u56FE" }
     ];
-    for (const view of views) {
-      const btn = toggleEl.createEl("button", {
-        cls: "view-btn",
-        text: view.icon,
-        attr: { title: view.title }
+    for (const action of actions) {
+      const btn = this.row2El.createEl("button", {
+        cls: "action-btn",
+        attr: { title: action.title }
       });
-      if (this.currentView === view.id)
-        btn.addClass("active");
-      btn.addEventListener("click", () => {
-        this.currentView = view.id;
-        this.renderHeader();
-        this.renderContent();
-      });
+      btn.createSpan({ cls: "action-btn-icon", text: action.icon });
+      btn.createSpan({ cls: "action-btn-label", text: action.label });
+      if (["list", "kanban", "calendar", "timeline"].includes(action.id)) {
+        if (this.currentView === action.id)
+          btn.addClass("active");
+        btn.addEventListener("click", () => {
+          this.currentView = action.id;
+          this.showQuickCreate = false;
+          this.showSearch = false;
+          this.renderRow2();
+          this.renderQuickCreatePanel();
+          this.renderSearchPanel();
+          this.renderContent();
+        });
+      } else if (action.id === "quickAdd") {
+        if (this.showQuickCreate)
+          btn.addClass("active");
+        btn.addEventListener("click", () => {
+          this.showQuickCreate = !this.showQuickCreate;
+          if (this.showQuickCreate)
+            this.showSearch = false;
+          this.renderRow2();
+          this.renderQuickCreatePanel();
+          this.renderSearchPanel();
+        });
+      } else if (action.id === "search") {
+        if (this.showSearch)
+          btn.addClass("active");
+        btn.addEventListener("click", () => {
+          this.showSearch = !this.showSearch;
+          if (this.showSearch)
+            this.showQuickCreate = false;
+          this.renderRow2();
+          this.renderQuickCreatePanel();
+          this.renderSearchPanel();
+        });
+      }
+    }
+    if (scrollEl) {
+      scrollEl.scrollTop = savedScroll;
     }
   }
-  renderQuickCreate() {
-    if (this.quickCreateEl) {
-      this.quickCreateEl.remove();
-      this.quickCreateEl = null;
+  renderQuickCreatePanel() {
+    if (this.quickCreatePanelEl) {
+      this.quickCreatePanelEl.remove();
+      this.quickCreatePanelEl = null;
     }
-    this.quickCreateEl = this.mainEl.createDiv({ cls: "quick-create compact" });
-    const inputWrap = this.quickCreateEl.createDiv({ cls: "quick-create-input" });
-    inputWrap.createSpan({ cls: "quick-create-icon", text: "\u2795" });
-    const chipContainer = inputWrap.createDiv({ cls: "quick-chips" });
-    const input = inputWrap.createEl("textarea", {
+    if (!this.showQuickCreate || !this.functionalModuleEl)
+      return;
+    this.quickCreatePanelEl = this.functionalModuleEl.createDiv({ cls: "expandable-panel open" });
+    const panel = this.quickCreatePanelEl.createDiv({ cls: "quick-create" });
+    const inputRow = panel.createDiv({ cls: "quick-create-input-row" });
+    const textarea = inputRow.createEl("textarea", {
       cls: "quick-create-textarea",
-      attr: { placeholder: "\u5FEB\u901F\u521B\u5EFA\u4EFB\u52A1... (\u6309 Enter \u63D0\u4EA4)", rows: "1" }
+      attr: { placeholder: "\u8F93\u5165\u4EFB\u52A1\u63CF\u8FF0...", rows: "1" }
     });
-    let dueDate = "";
-    let priority = "";
-    const updateChips = () => {
-      chipContainer.innerHTML = "";
-      if (dueDate) {
-        const chip = chipContainer.createSpan({ cls: "quick-chip date-chip" });
-        chip.createSpan({ text: `\u{1F4C5} ${dueDate}` });
-        const removeBtn = chip.createEl("button", { text: "\u2715", cls: "quick-chip-remove" });
-        removeBtn.addEventListener("click", (e) => {
-          e.stopPropagation();
-          dueDate = "";
-          updateChips();
-          input.focus();
-        });
-      }
-      if (priority) {
-        const priLabels = {
-          "highest": "\u{1F51D}",
-          "high": "\u{1F53A}",
-          "medium": "\u{1F53C}",
-          "low": "\u{1F53D}",
-          "lowest": "\u23EC"
-        };
-        const chip = chipContainer.createSpan({ cls: `quick-chip priority-chip ${priority}` });
-        chip.createSpan({ text: priLabels[priority] || priority });
-        const removeBtn = chip.createEl("button", { text: "\u2715", cls: "quick-chip-remove" });
-        removeBtn.addEventListener("click", (e) => {
-          e.stopPropagation();
-          priority = "";
-          updateChips();
-          input.focus();
-        });
-      }
-    };
-    const toolbar = this.quickCreateEl.createDiv({ cls: "quick-toolbar" });
-    const toolbarToggle = toolbar.createEl("button", { cls: "quick-toolbar-toggle", text: "\u2699\uFE0F \u66F4\u591A\u9009\u9879" });
-    const toolbarContent = toolbar.createDiv({ cls: "quick-toolbar-content" });
-    const dateGroup = toolbarContent.createDiv({ cls: "quick-tool-group" });
-    dateGroup.createSpan({ cls: "quick-tool-label", text: "\u{1F4C5}" });
-    const dateBtns = dateGroup.createDiv({ cls: "quick-tool-btns" });
-    const dateOptions = [
-      { value: "today", label: t("dates").today, title: `${t("dates").today}\u622A\u6B62` },
-      { value: "tomorrow", label: t("dates").tomorrow, title: `${t("dates").tomorrow}\u622A\u6B62` },
-      { value: "week", label: t("dates").week, title: "\u4E0B\u5468\u622A\u6B62" }
+    const addBtn = inputRow.createEl("button", { cls: "add-btn", text: "\u6DFB\u52A0" });
+    const optionsRow = panel.createDiv({ cls: "quick-create-options" });
+    const dateSelect = optionsRow.createEl("select", { cls: "quick-create-date" });
+    const dateOpts = [
+      { value: "", label: "\u{1F4C5} \u65E0\u65E5\u671F" },
+      { value: "today", label: "\u{1F4C5} \u4ECA\u5929" },
+      { value: "tomorrow", label: "\u{1F4C5} \u660E\u5929" },
+      { value: "custom", label: "\u{1F4C5} \u81EA\u5B9A\u4E49\u65F6\u95F4" }
     ];
-    for (const opt of dateOptions) {
-      const btn = dateBtns.createEl("button", {
-        cls: "quick-tool-btn",
-        text: opt.label,
-        attr: { title: opt.title }
-      });
-      btn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        let d = /* @__PURE__ */ new Date();
-        if (opt.value === "tomorrow")
-          d.setDate(d.getDate() + 1);
-        if (opt.value === "week")
-          d.setDate(d.getDate() + 7);
-        dueDate = d.toISOString().split("T")[0];
-        updateChips();
-        input.focus();
-      });
+    for (const opt of dateOpts) {
+      dateSelect.createEl("option", { text: opt.label, value: opt.value });
     }
-    const dateInputBtn = dateBtns.createEl("button", {
-      cls: "quick-tool-btn",
-      text: "\u{1F4C5} \u81EA\u5B9A\u4E49",
-      attr: { title: "\u81EA\u5B9A\u4E49\u622A\u6B62\u65E5\u671F" }
+    const customDateInput = optionsRow.createEl("input", {
+      type: "date",
+      cls: "quick-create-custom-date"
     });
-    dateInputBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      this.showWheelDatePicker((date) => {
-        dueDate = date;
-        updateChips();
-        input.focus();
-      }, dueDate);
-    });
-    const priGroup = toolbarContent.createDiv({ cls: "quick-tool-group" });
-    priGroup.createSpan({ cls: "quick-tool-label", text: "\u{1F3AF}" });
-    const priBtns = priGroup.createDiv({ cls: "quick-tool-btns" });
-    const priorities = [
-      { value: "highest", label: "\u{1F51D}", title: "\u6700\u9AD8\u4F18\u5148\u7EA7" },
-      { value: "high", label: "\u{1F53A}", title: "\u9AD8\u4F18\u5148\u7EA7" },
-      { value: "medium", label: "\u{1F53C}", title: "\u4E2D\u4F18\u5148\u7EA7" },
-      { value: "low", label: "\u{1F53D}", title: "\u4F4E\u4F18\u5148\u7EA7" }
-    ];
-    for (const p of priorities) {
-      const btn = priBtns.createEl("button", {
-        cls: `quick-tool-btn priority-${p.value}`,
-        text: p.label,
-        attr: { title: p.title }
-      });
-      if (priority === p.value)
-        btn.addClass("active");
-      btn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        priority = priority === p.value ? "" : p.value;
-        updateChips();
-        input.focus();
-      });
-    }
-    let toolbarExpanded = false;
-    toolbarToggle.addEventListener("click", (e) => {
-      e.stopPropagation();
-      toolbarExpanded = !toolbarExpanded;
-      toolbarContent.classList.toggle("expanded", toolbarExpanded);
-      toolbarToggle.textContent = toolbarExpanded ? "\u2699\uFE0F \u6536\u8D77" : "\u2699\uFE0F";
-    });
-    const submitBtn = toolbar.createEl("button", { cls: "submit-btn-inline hidden" });
-    submitBtn.addEventListener("click", () => {
-      const desc = input.value.trim();
-      if (desc) {
-        void this.plugin.createQuickTask(desc, dueDate || void 0, priority ? priority : void 0);
-        input.value = "";
-        dueDate = "";
-        priority = "";
-        updateChips();
-        submitBtn.addClass("hidden");
-        autoResize();
-      }
-    });
-    input.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" && !e.shiftKey) {
-        e.preventDefault();
-        const desc = input.value.trim();
-        if (desc) {
-          void this.plugin.createQuickTask(desc, dueDate || void 0, priority ? priority : void 0);
-          input.value = "";
-          dueDate = "";
-          priority = "";
-          updateChips();
-          submitBtn.addClass("hidden");
-          autoResize();
+    let customDate = "";
+    const updateDateLabel = () => {
+      if (customDate) {
+        const d = new Date(customDate);
+        const label = `${d.getMonth() + 1}/${d.getDate()}`;
+        for (let i = 0; i < dateSelect.options.length; i++) {
+          if (dateSelect.options[i].value === "custom") {
+            dateSelect.options[i].textContent = `\u{1F4C5} ${label}`;
+            break;
+          }
+        }
+      } else {
+        for (let i = 0; i < dateSelect.options.length; i++) {
+          if (dateSelect.options[i].value === "custom") {
+            dateSelect.options[i].textContent = "\u{1F4C5} \u81EA\u5B9A\u4E49\u65F6\u95F4";
+            break;
+          }
         }
       }
-    });
-    const checkSubmitBtn = () => {
-      if (input.value.trim()) {
-        submitBtn.removeClass("hidden");
+    };
+    dateSelect.addEventListener("change", () => {
+      if (dateSelect.value === "custom") {
+        customDateInput.setCssStyles({ position: "", width: "", height: "", opacity: "", pointerEvents: "" });
+        customDateInput.focus();
+        try {
+          customDateInput.showPicker();
+        } catch (e) {
+        }
       } else {
-        submitBtn.addClass("hidden");
+        customDate = "";
+        updateDateLabel();
+        customDateInput.setCssStyles({ position: "absolute", width: "0", height: "0", opacity: "0", pointerEvents: "none" });
+      }
+    });
+    customDateInput.addEventListener("change", () => {
+      customDate = customDateInput.value;
+      updateDateLabel();
+    });
+    const priSelect = optionsRow.createEl("select", { cls: "quick-create-priority" });
+    const priOpts = [
+      { value: "", label: "\u2B50 \u65E0\u4F18\u5148\u7EA7" },
+      { value: "highest", label: "\u{1F51D} \u6700\u9AD8" },
+      { value: "high", label: "\u{1F53A} \u9AD8" },
+      { value: "medium", label: "\u{1F53C} \u4E2D" },
+      { value: "low", label: "\u{1F53D} \u4F4E" },
+      { value: "lowest", label: "\u23EC \u6700\u4F4E" }
+    ];
+    for (const opt of priOpts) {
+      priSelect.createEl("option", { text: opt.label, value: opt.value });
+    }
+    const doSubmit = () => {
+      const desc = textarea.value.trim();
+      if (desc) {
+        let dueDate;
+        const dateVal = dateSelect.value;
+        if (dateVal === "custom") {
+          dueDate = customDate || void 0;
+        } else if (dateVal) {
+          const d = /* @__PURE__ */ new Date();
+          if (dateVal === "tomorrow")
+            d.setDate(d.getDate() + 1);
+          dueDate = d.toISOString().split("T")[0];
+        }
+        const priVal = priSelect.value;
+        const priority = priVal ? priVal : void 0;
+        void this.plugin.createQuickTask(desc, dueDate, priority);
+        textarea.value = "";
+        dateSelect.value = "";
+        customDateInput.value = "";
+        customDate = "";
+        updateDateLabel();
+        priSelect.value = "";
+        autoResize();
+        textarea.focus();
       }
     };
-    const autoResize = () => {
-      input.setCssStyles({ height: "auto" });
-      input.setCssStyles({ height: input.scrollHeight + "px" });
-    };
-    input.addEventListener("input", () => {
-      checkSubmitBtn();
-      autoResize();
+    addBtn.addEventListener("click", doSubmit);
+    textarea.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        doSubmit();
+      }
     });
+    const autoResize = () => {
+      textarea.setCssStyles({ height: "auto" });
+      textarea.setCssStyles({ height: textarea.scrollHeight + "px" });
+    };
+    textarea.addEventListener("input", autoResize);
   }
-  renderSearchRow() {
-    if (this.searchRowEl) {
-      this.searchRowEl.remove();
-      this.searchRowEl = null;
+  renderSearchPanel() {
+    if (this.searchPanelEl) {
+      this.searchPanelEl.remove();
+      this.searchPanelEl = null;
     }
-    this.searchRowEl = this.mainEl.createDiv({ cls: "search-row" });
-    const searchWrap = this.searchRowEl.createDiv({ cls: "search-input-wrapper" });
-    searchWrap.createSpan({ cls: "search-icon", text: "\u{1F50D}" });
-    const searchInput = searchWrap.createEl("input", {
+    if (!this.showSearch || !this.functionalModuleEl)
+      return;
+    this.searchPanelEl = this.functionalModuleEl.createDiv({ cls: "expandable-panel open" });
+    const panel = this.searchPanelEl.createDiv({ cls: "compact-search" });
+    const searchRow = panel.createDiv({ cls: "search-input-row" });
+    const inputWrap = searchRow.createDiv({ cls: "search-icon-pos" });
+    inputWrap.createSpan({ cls: "search-icon", text: "\u{1F50D}" });
+    const searchInput = inputWrap.createEl("input", {
       type: "text",
       attr: { placeholder: "\u641C\u7D22\u4EFB\u52A1..." }
     });
     searchInput.value = this.searchQuery;
-    let clearBtn = null;
-    const updateClearBtn = () => {
-      if (this.searchQuery && !clearBtn) {
-        clearBtn = searchWrap.createEl("button", { cls: "clear-btn", text: "\u2715" });
-        clearBtn.addEventListener("click", () => {
-          this.searchQuery = "";
-          searchInput.value = "";
-          if (clearBtn) {
-            clearBtn.remove();
-            clearBtn = null;
-          }
-          this.renderContent();
-        });
-      } else if (!this.searchQuery && clearBtn) {
-        clearBtn.remove();
-        clearBtn = null;
-      }
-    };
-    updateClearBtn();
     searchInput.addEventListener("input", (e) => {
       this.searchQuery = e.target.value;
-      updateClearBtn();
       this.renderContent();
     });
-    const tabsEl = this.searchRowEl.createDiv({ cls: "filter-tabs" });
-    const tabs = [
-      { id: "not-done", label: t("filters").pending },
-      { id: "done", label: t("filters").done },
-      { id: "all", label: t("filters").all }
+    const filtersEl = panel.createDiv({ cls: "filter-chips" });
+    const dateSelect = filtersEl.createEl("select");
+    const dateOpts = [
+      { value: "all", label: "\u{1F4C5} \u5168\u90E8\u65E5\u671F" },
+      { value: "overdue", label: "\u903E\u671F" },
+      { value: "today", label: "\u4ECA\u5929" },
+      { value: "week", label: "\u672C\u5468" },
+      { value: "month", label: "\u672C\u6708" }
     ];
-    for (const tab of tabs) {
-      const btn = tabsEl.createEl("button", {
-        cls: "filter-tab",
-        text: tab.label
-      });
-      if (this.filterStatus === tab.id)
-        btn.addClass("active");
-      btn.addEventListener("click", () => {
-        this.filterStatus = tab.id;
-        this.renderSearchRow();
-        this.renderContent();
-      });
+    for (const opt of dateOpts) {
+      const option = dateSelect.createEl("option", { text: opt.label, value: opt.value });
+      if (this.dateFilter === opt.value)
+        option.selected = true;
     }
-    const hasActiveFilters = this.filterPriorities.length > 0 || this.filterTags.length > 0 || this.dateFilter !== "all";
-    if (hasActiveFilters) {
-      const filterChipsEl = this.searchRowEl.createDiv({ cls: "active-filter-chips" });
+    dateSelect.addEventListener("change", () => {
+      this.dateFilter = dateSelect.value;
+      this.renderSearchPanel();
+      this.renderRow1();
+      this.renderContent();
+    });
+    const priSelect = filtersEl.createEl("select");
+    const priOpts = [
+      { value: "", label: "\u{1F3AF} \u5168\u90E8\u4F18\u5148\u7EA7" },
+      { value: "highest", label: "\u{1F51D} \u6700\u9AD8" },
+      { value: "high", label: "\u{1F53A} \u9AD8" },
+      { value: "medium", label: "\u{1F53C} \u4E2D" },
+      { value: "low", label: "\u{1F53D} \u4F4E" },
+      { value: "lowest", label: "\u23EC \u6700\u4F4E" }
+    ];
+    for (const opt of priOpts) {
+      const option = priSelect.createEl("option", { text: opt.label, value: opt.value });
+      if (opt.value && this.filterPriorities.includes(opt.value)) {
+        option.selected = true;
+      }
+    }
+    priSelect.addEventListener("change", () => {
+      const val = priSelect.value;
+      if (val) {
+        this.filterPriorities = [val];
+      } else {
+        this.filterPriorities = [];
+      }
+      this.renderSearchPanel();
+      this.renderRow1();
+      this.renderContent();
+    });
+    const tagInput = filtersEl.createEl("input", {
+      type: "text",
+      attr: { placeholder: "# \u6807\u7B7E" }
+    });
+    tagInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        const val = e.target.value.trim().replace(/^#/, "");
+        if (val && !this.filterTags.includes(val)) {
+          this.filterTags = [...this.filterTags, val];
+          e.target.value = "";
+          this.renderSearchPanel();
+          this.renderRow1();
+          this.renderContent();
+        }
+      }
+    });
+    if (this.filterTags.length > 0 || this.dateFilter !== "all" || this.filterPriorities.length > 0) {
       if (this.dateFilter !== "all") {
         const dateLabels = {
-          "overdue": t("dates").overdue,
-          "today": t("dates").today,
-          "week": t("dates").thisWeek,
-          "month": t("dates").thisMonth
+          "overdue": "\u903E\u671F",
+          "today": "\u4ECA\u5929",
+          "week": "\u672C\u5468",
+          "month": "\u672C\u6708"
         };
-        const chip = filterChipsEl.createSpan({
-          cls: "filter-chip date-filter-chip",
-          text: `\u{1F4C5} ${dateLabels[this.dateFilter] || this.dateFilter}`
-        });
-        chip.createSpan({ cls: "filter-chip-remove", text: "\u2715" });
-        chip.addEventListener("click", () => {
+        const chip = filtersEl.createSpan({ cls: "compact-chip active" });
+        chip.createSpan({ text: `\u{1F4C5} ${dateLabels[this.dateFilter] || this.dateFilter}` });
+        const removeBtn = chip.createEl("span", { cls: "remove", text: "\u2715" });
+        removeBtn.addEventListener("click", () => {
           this.dateFilter = "all";
-          this.renderSearchRow();
+          this.renderSearchPanel();
+          this.renderRow1();
           this.renderContent();
         });
       }
       for (const p of this.filterPriorities) {
-        const priorityLabels = {
+        const priLabels = {
           "highest": "\u{1F51D} \u6700\u9AD8",
           "high": "\u{1F53A} \u9AD8",
           "medium": "\u{1F53C} \u4E2D",
           "low": "\u{1F53D} \u4F4E",
           "lowest": "\u23EC \u6700\u4F4E"
         };
-        const chip = filterChipsEl.createSpan({
-          cls: "filter-chip priority-filter-chip",
-          text: priorityLabels[p] || p
-        });
-        chip.createSpan({ cls: "filter-chip-remove", text: "\u2715" });
-        chip.addEventListener("click", () => {
+        const chip = filtersEl.createSpan({ cls: "compact-chip active" });
+        chip.createSpan({ text: priLabels[p] || p });
+        const removeBtn = chip.createEl("span", { cls: "remove", text: "\u2715" });
+        removeBtn.addEventListener("click", () => {
           this.filterPriorities = this.filterPriorities.filter((x) => x !== p);
-          this.renderSearchRow();
+          this.renderSearchPanel();
+          this.renderRow1();
           this.renderContent();
         });
       }
       for (const tag of this.filterTags) {
-        const chip = filterChipsEl.createSpan({
-          cls: "filter-chip tag-filter-chip",
-          text: `#${tag}`
-        });
-        chip.createSpan({ cls: "filter-chip-remove", text: "\u2715" });
-        chip.addEventListener("click", () => {
+        const chip = filtersEl.createSpan({ cls: "compact-chip active" });
+        chip.createSpan({ text: `#${tag}` });
+        const removeBtn = chip.createEl("span", { cls: "remove", text: "\u2715" });
+        removeBtn.addEventListener("click", () => {
           this.filterTags = this.filterTags.filter((t2) => t2 !== tag);
-          this.renderSearchRow();
-          this.renderContent();
-        });
-      }
-      if (hasActiveFilters) {
-        const clearAll = filterChipsEl.createSpan({
-          cls: "filter-chip clear-all-chip",
-          text: "\u6E05\u9664\u5168\u90E8"
-        });
-        clearAll.addEventListener("click", () => {
-          this.filterPriorities = [];
-          this.filterTags = [];
-          this.dateFilter = "all";
-          this.renderSearchRow();
+          this.renderSearchPanel();
+          this.renderRow1();
           this.renderContent();
         });
       }
     }
-  }
-  renderFilterPanel() {
-    if (this.filterPanelEl) {
-      this.filterPanelEl.remove();
-      this.filterPanelEl = null;
-    }
-    if (!this.showFilterPanel)
-      return;
-    this.filterPanelEl = this.mainEl.createDiv({ cls: "filter-panel" });
-    if (this.searchRowEl && this.searchRowEl.parentElement === this.mainEl) {
-      this.searchRowEl.after(this.filterPanelEl);
-    } else if (this.contentEl && this.contentEl.parentElement === this.mainEl) {
-      this.contentEl.before(this.filterPanelEl);
-    }
-    const filterRow = this.filterPanelEl.createDiv({ cls: "filter-row" });
-    const dateSection = filterRow.createDiv({ cls: "filter-section" });
-    dateSection.createSpan({ cls: "filter-title", text: "\u{1F4C5} \u65E5\u671F" });
-    const dateOptions = dateSection.createDiv({ cls: "filter-options" });
-    const dateFilters = [
-      { value: "all", label: t("filters").all },
-      { value: "overdue", label: t("dates").overdue },
-      { value: "today", label: t("dates").today },
-      { value: "week", label: t("dates").thisWeek },
-      { value: "month", label: t("dates").thisMonth }
-    ];
-    for (const df of dateFilters) {
-      const btn = dateOptions.createEl("button", {
-        cls: "date-btn",
-        text: df.label
-      });
-      if (this.dateFilter === df.value)
-        btn.addClass("active");
-      btn.addEventListener("click", () => {
-        this.dateFilter = df.value;
-        this.renderFilterPanel();
-        this.renderHeader();
-        this.renderContent();
-      });
-    }
-    const priSection = filterRow.createDiv({ cls: "filter-section" });
-    priSection.createSpan({ cls: "filter-title", text: "\u{1F3AF} \u4F18\u5148\u7EA7" });
-    const priOptions = priSection.createDiv({ cls: "filter-options" });
-    const priorities = [
-      { value: "highest", label: "\u{1F51D} \u6700\u9AD8", color: "error" },
-      { value: "high", label: "\u{1F53A} \u9AD8", color: "accent" },
-      { value: "medium", label: "\u{1F53C} \u4E2D", color: "warning" },
-      { value: "low", label: "\u{1F53D} \u4F4E", color: "muted" },
-      { value: "lowest", label: "\u23EC \u6700\u4F4E", color: "faint" }
-    ];
-    for (const p of priorities) {
-      const btn = priOptions.createEl("button", {
-        cls: "priority-chip",
-        text: p.label,
-        attr: { "data-color": p.color }
-      });
-      const priorityValue = p.value;
-      if (this.filterPriorities.includes(priorityValue))
-        btn.addClass("active");
-      btn.addEventListener("click", () => {
-        if (this.filterPriorities.includes(priorityValue)) {
-          this.filterPriorities = this.filterPriorities.filter((x) => x !== priorityValue);
-        } else {
-          this.filterPriorities = [...this.filterPriorities, priorityValue];
-        }
-        this.renderFilterPanel();
-        this.renderHeader();
-        this.renderContent();
-      });
-    }
-    const tagSection = filterRow.createDiv({ cls: "filter-section tag-section" });
-    tagSection.createSpan({ cls: "filter-title", text: "\u{1F3F7}\uFE0F \u6807\u7B7E" });
-    const tagInputWrapper = tagSection.createDiv({ cls: "tag-input-wrapper" });
-    const selectedTagsEl = tagInputWrapper.createDiv({ cls: "selected-tags" });
-    for (const tag of this.filterTags) {
-      const tagEl = selectedTagsEl.createSpan({ cls: "selected-tag", text: `#${tag}` });
-      const removeBtn = tagEl.createEl("button", { cls: "remove-tag", text: "\u2715" });
-      removeBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        this.filterTags = this.filterTags.filter((t2) => t2 !== tag);
-        this.renderFilterPanel();
-        this.renderHeader();
-        this.renderContent();
-      });
-    }
-    const tagInput = tagInputWrapper.createEl("input", {
-      type: "text",
-      attr: { placeholder: "\u8F93\u5165\u6807\u7B7E\uFF0C\u56DE\u8F66\u6DFB\u52A0..." }
-    });
-    tagInput.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") {
-        const value = e.target.value.trim().replace(/^#/, "");
-        if (value && !this.filterTags.includes(value)) {
-          this.filterTags = [...this.filterTags, value];
-          this.renderFilterPanel();
-          this.renderHeader();
-          this.renderContent();
-        }
-      }
-    });
-    const actions = this.filterPanelEl.createDiv({ cls: "filter-actions" });
-    const resetBtn = actions.createEl("button", { cls: "reset-btn", text: "\u{1F504} \u91CD\u7F6E\u7B5B\u9009" });
-    resetBtn.addEventListener("click", () => {
-      this.filterPriorities = [];
-      this.filterTags = [];
-      this.dateFilter = "all";
-      this.searchQuery = "";
-      this.renderFilterPanel();
-      this.renderHeader();
-      this.renderSearchRow();
-      this.renderContent();
-    });
   }
   renderContent() {
     if (this.contentEl) {
       this.contentEl.remove();
       this.contentEl = null;
     }
-    this.contentEl = this.mainEl.createDiv({ cls: "smarttask-content" });
+    if (!this.displayModuleEl)
+      return;
+    this.contentEl = this.displayModuleEl.createDiv({ cls: "smarttask-content" });
     if (this.currentView === "list") {
       this.renderTaskList(this.contentEl, this.groupedTasks);
     } else if (this.currentView === "kanban") {
@@ -1646,11 +1644,11 @@ var SmartTaskViewController = class {
       this.plugin.openTaskFile(task.filePath, task.lineNumber);
     });
     const main = content.createDiv({ cls: "task-main" });
-    main.createSpan({
+    const priSpan = main.createSpan({
       cls: "task-priority",
-      text: this.getPriorityIcon(task.priority),
-      attr: { style: `color: ${this.getPriorityColor(task.priority)}` }
+      text: this.getPriorityIcon(task.priority)
     });
+    priSpan.setCssStyles({ color: this.getPriorityColor(task.priority) });
     const descSpan = main.createSpan({ cls: "task-description" });
     this.renderDescriptionWithLinks(descSpan, task);
     const meta = content.createDiv({ cls: "task-meta" });
@@ -1887,9 +1885,9 @@ var SmartTaskViewController = class {
           } else {
             this.filterTags = this.filterTags.filter((t2) => t2 !== tagName);
           }
-          this.showFilterPanel = true;
-          this.renderFilterPanel();
-          this.renderHeader();
+          this.showSearch = true;
+          this.renderSearchPanel();
+          this.renderRow1();
           this.renderContent();
         });
       }
@@ -1920,59 +1918,53 @@ var SmartTaskViewController = class {
   }
   renderTimelineView(container) {
     const timelineEl = container.createDiv({ cls: `timeline-view style-${this.timelineStyle}` });
-    const toolbar = timelineEl.createDiv({ cls: "timeline-toolbar" });
-    const leftGroup = toolbar.createDiv({ cls: "timeline-toolbar-left" });
-    const navGroup = leftGroup.createDiv({ cls: "timeline-nav-group" });
+    const toolbar = timelineEl.createDiv({ cls: "timeline-toolbar-compact" });
+    const navGroup = toolbar.createDiv({ cls: "timeline-nav-group" });
     const prevBtn = navGroup.createEl("button", {
       cls: "timeline-nav-btn",
-      text: "\u25C0",
-      attr: { title: "\u4E0A\u4E00\u65F6\u95F4\u6BB5" }
+      text: "\u25C0"
+    });
+    navGroup.createSpan({ cls: "timeline-nav-label", text: this.getTimelineNavLabel() });
+    const nextBtn = navGroup.createEl("button", {
+      cls: "timeline-nav-btn",
+      text: "\u25B6"
     });
     const todayBtn = navGroup.createEl("button", {
       cls: "timeline-nav-btn today-btn",
-      text: t("dates").today,
-      attr: { title: "\u6EDA\u52A8\u5230\u4ECA\u5929" }
+      text: t("dates").today
     });
-    const nextBtn = navGroup.createEl("button", {
-      cls: "timeline-nav-btn",
-      text: "\u25B6",
-      attr: { title: "\u4E0B\u4E00\u65F6\u95F4\u6BB5" }
-    });
-    const rightGroup = toolbar.createDiv({ cls: "timeline-toolbar-right" });
+    const chipsGroup = toolbar.createDiv({ cls: "timeline-chips-row" });
     const groupOptions = [
-      { value: "day", label: "\u6309\u65E5" },
+      { value: "day", label: "\u6309\u5929" },
       { value: "week", label: "\u6309\u5468" },
       { value: "month", label: "\u6309\u6708" }
     ];
-    const groupToggle = rightGroup.createDiv({ cls: "timeline-group-toggle" });
     for (const opt of groupOptions) {
-      const btn = groupToggle.createEl("button", {
-        cls: "timeline-group-btn",
+      const chip = chipsGroup.createEl("button", {
+        cls: "timeline-chip",
         text: opt.label
       });
       if (this.timelineGroupBy === opt.value)
-        btn.addClass("active");
-      btn.addEventListener("click", () => {
+        chip.addClass("active");
+      chip.addEventListener("click", () => {
         this.timelineGroupBy = opt.value;
         this.renderContent();
       });
     }
     const styleOptions = [
-      { value: "classic", icon: "\u{1F4CB}", label: "\u7ECF\u5178" },
-      { value: "gantt", icon: "\u{1F4CA}", label: "\u7518\u7279" },
-      { value: "zigzag", icon: "\u26A1", label: "\u4EA4\u9519" },
-      { value: "cards", icon: "\u{1F0CF}", label: "\u5361\u7247" }
+      { value: "classic", label: "\u7ECF\u5178" },
+      { value: "gantt", label: "\u7518\u7279" },
+      { value: "zigzag", label: "\u4EA4\u9519" },
+      { value: "cards", label: "\u5361\u7247" }
     ];
-    const styleToggle = rightGroup.createDiv({ cls: "timeline-style-toggle" });
     for (const opt of styleOptions) {
-      const btn = styleToggle.createEl("button", {
-        cls: "timeline-style-btn",
-        text: opt.icon,
-        attr: { title: opt.label + "\u6837\u5F0F" }
+      const chip = chipsGroup.createEl("button", {
+        cls: "timeline-chip",
+        text: opt.label
       });
       if (this.timelineStyle === opt.value)
-        btn.addClass("active");
-      btn.addEventListener("click", () => {
+        chip.addClass("active");
+      chip.addEventListener("click", () => {
         this.timelineStyle = opt.value;
         this.plugin.settings.timelineStyle = opt.value;
         void this.plugin.saveSettings();
@@ -1997,6 +1989,11 @@ var SmartTaskViewController = class {
       this.renderCardsTimeline(timelineEl, groups);
     }
   }
+  getTimelineNavLabel() {
+    const today = /* @__PURE__ */ new Date();
+    const weekdays = ["\u5468\u65E5", "\u5468\u4E00", "\u5468\u4E8C", "\u5468\u4E09", "\u5468\u56DB", "\u5468\u4E94", "\u5468\u516D"];
+    return `${today.getMonth() + 1}/${today.getDate()} ${weekdays[today.getDay()]}`;
+  }
   renderClassicTimeline(timelineEl, groups, prevBtn, todayBtn, nextBtn) {
     const timelineContent = timelineEl.createDiv({ cls: "timeline-content classic-content" });
     const groupEls = [];
@@ -2009,7 +2006,15 @@ var SmartTaskViewController = class {
       groupEls.push({ key: group.key, el: groupEl });
       const groupHeader = groupEl.createDiv({ cls: "timeline-group-header classic-group-header" });
       groupHeader.createSpan({ cls: "timeline-dot classic-dot" });
-      groupHeader.createSpan({ cls: "timeline-group-title", text: group.name });
+      const isToday = group.key === QueryEngine.getToday();
+      const isOverdueGroup = group.key < QueryEngine.getToday();
+      if (isToday) {
+        groupHeader.createSpan({ cls: "timeline-group-title today-title", text: group.name });
+      } else if (isOverdueGroup) {
+        groupHeader.createSpan({ cls: "timeline-group-title overdue-title", text: group.name });
+      } else {
+        groupHeader.createSpan({ cls: "timeline-group-title", text: group.name });
+      }
       groupHeader.createSpan({ cls: "timeline-group-count", text: `${group.tasks.length} \u4E2A\u4EFB\u52A1` });
       const tasksEl = groupEl.createDiv({ cls: "timeline-tasks classic-tasks" });
       this.renderTimelineTaskList(tasksEl, group.tasks);
@@ -2379,11 +2384,11 @@ var SmartTaskViewController = class {
           this.refresh();
         });
       }
-      main.createSpan({
+      const priSpan = main.createSpan({
         cls: "task-priority",
-        text: this.getPriorityIcon(task.priority),
-        attr: { style: `color: ${this.getPriorityColor(task.priority)}` }
+        text: this.getPriorityIcon(task.priority)
       });
+      priSpan.setCssStyles({ color: this.getPriorityColor(task.priority) });
       const descSpan = main.createSpan({ cls: "task-description" });
       this.renderDescriptionWithLinks(descSpan, task);
       const meta = content.createDiv({ cls: "task-meta" });
@@ -2718,8 +2723,7 @@ var SmartTaskViewController = class {
           const taskEl = tasksContainer.createDiv({ cls: "calendar-task-dot" });
           if (task.completed)
             taskEl.addClass("completed");
-          if (task.priority === "highest" /* Highest */ || task.priority === "high" /* High */)
-            taskEl.addClass("high-priority");
+          taskEl.addClass(`priority-${task.priority || "none"}`);
           taskEl.title = task.description;
           taskEl.addEventListener("click", (e) => {
             e.stopPropagation();
@@ -3018,12 +3022,11 @@ var SmartTaskPlugin = class extends import_obsidian5.Plugin {
   async onload() {
     await this.loadSettings();
     setLocale(detectLocale());
-    this.taskIndex = new TaskIndex(this.app);
-    await this.taskIndex.initialize();
-    this.taskIndex.onChange(() => {
-      this.notifyTasksChange();
-      this.updateStatusBar();
-    });
+    if (this.settings.indexingEnabled) {
+      await this.initTaskIndex();
+    } else {
+      this.taskIndex = null;
+    }
     this.registerView(
       SMARTTASK_VIEW_TYPE,
       (leaf) => new SmartTaskView(leaf, this)
@@ -3088,7 +3091,6 @@ ${newLine}`,
     this.addSettingTab(new SmartTaskSettingTab(this.app, this));
     this.statusBarItem = this.addStatusBarItem();
     this.updateStatusBar();
-    console.log("SmartTask plugin loaded");
   }
   onunload() {
     if (this.taskIndex) {
@@ -3096,7 +3098,6 @@ ${newLine}`,
       this.taskIndex = null;
     }
     this.tasksChangeListeners.clear();
-    console.log("SmartTask plugin unloaded");
   }
   async loadSettings() {
     const saved = await this.loadData();
@@ -3105,6 +3106,26 @@ ${newLine}`,
   async saveSettings() {
     await this.saveData(this.settings);
     this.updateAllViews();
+  }
+  async initTaskIndex() {
+    this.taskIndex = new TaskIndex(this.app);
+    await this.taskIndex.initialize();
+    this.taskIndex.onChange(() => {
+      this.notifyTasksChange();
+      this.updateStatusBar();
+    });
+  }
+  async setIndexingEnabled(enabled) {
+    if (enabled && !this.taskIndex) {
+      await this.initTaskIndex();
+      this.notifyTasksChange();
+      this.updateStatusBar();
+    } else if (!enabled && this.taskIndex) {
+      this.taskIndex.destroy();
+      this.taskIndex = null;
+      this.notifyTasksChange();
+      this.updateStatusBar();
+    }
   }
   async activateView() {
     const { workspace } = this.app;
@@ -3131,42 +3152,7 @@ ${newLine}`,
     return this.taskIndex.getAllTasks();
   }
   queryTasks(query) {
-    const allTasks = this.getTasks();
-    let results = [...allTasks];
-    if (query.status === "done") {
-      results = results.filter((t2) => t2.completed);
-    } else if (query.status === "not-done") {
-      results = results.filter((t2) => !t2.completed);
-    }
-    if (query.dueDate) {
-      results = results.filter((t2) => {
-        if (!t2.dueDate)
-          return false;
-        const due = t2.dueDate;
-        if (query.dueDate.before && due >= query.dueDate.before)
-          return false;
-        if (query.dueDate.after && due <= query.dueDate.after)
-          return false;
-        if (query.dueDate.equals && due !== query.dueDate.equals)
-          return false;
-        return true;
-      });
-    }
-    if (query.priority && query.priority.length > 0) {
-      results = results.filter((t2) => query.priority.includes(t2.priority));
-    }
-    if (query.tags && query.tags.length > 0) {
-      results = results.filter(
-        (t2) => query.tags.some((tag) => t2.tags.includes(tag))
-      );
-    }
-    if (query.searchText) {
-      const searchLower = query.searchText.toLowerCase();
-      results = results.filter(
-        (t2) => t2.description.toLowerCase().includes(searchLower)
-      );
-    }
-    return results;
+    return QueryEngine.query(this.getTasks(), query);
   }
   async toggleTaskStatus(task, completed) {
     if (!this.taskIndex)
@@ -3192,9 +3178,18 @@ ${newLine}`,
         new import_obsidian5.Notice("\u65E0\u6CD5\u786E\u5B9A\u4FDD\u5B58\u4F4D\u7F6E");
         return;
       }
-      let taskLine = "";
-      const baseIndent = parentTask ? "  " : "";
-      taskLine = `${baseIndent}- [ ] ${description}`;
+      const content = await this.app.vault.read(targetFile);
+      const lines = content.split("\n");
+      let baseIndent = "";
+      let parentIndent = "";
+      if (parentTask) {
+        const parentLineIdx = parentTask.lineNumber - 1;
+        const parentLine = parentLineIdx >= 0 && parentLineIdx < lines.length ? lines[parentLineIdx] : "";
+        const parentIndentMatch = parentLine.match(/^(\s*)/);
+        parentIndent = parentIndentMatch ? parentIndentMatch[1] : "";
+        baseIndent = parentIndent + "  ";
+      }
+      let taskLine = `${baseIndent}- [ ] ${description}`;
       const effectivePriority = priority != null ? priority : this.settings.defaultPriority !== "none" /* None */ ? this.settings.defaultPriority : void 0;
       if (effectivePriority) {
         switch (effectivePriority) {
@@ -3221,13 +3216,21 @@ ${newLine}`,
       const startDate = (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
       taskLine += ` \u{1F6EB} ${startDate}`;
       if (this.settings.autoAddTags && this.settings.autoAddTags.length > 0) {
-        const tagsStr = this.settings.autoAddTags.map((t2) => `#${t2}`).join(" ");
+        const tagsStr = this.settings.autoAddTags.map((tag) => `#${tag}`).join(" ");
         taskLine += ` ${tagsStr}`;
       }
-      const content = await this.app.vault.read(targetFile);
-      const lines = content.split("\n");
       if (parentTask) {
-        const insertIndex = parentTask.lineNumber;
+        let insertIndex = parentTask.lineNumber;
+        while (insertIndex < lines.length) {
+          const line = lines[insertIndex];
+          const lineIndentMatch = line.match(/^(\s*)/);
+          const lineIndent = lineIndentMatch ? lineIndentMatch[1] : "";
+          if (line.trim() === "" || lineIndent.length > parentIndent.length) {
+            insertIndex++;
+          } else {
+            break;
+          }
+        }
         lines.splice(insertIndex, 0, taskLine);
       } else {
         while (lines.length > 0 && lines[lines.length - 1].trim() === "") {

@@ -5,6 +5,7 @@ import { Task, SmartTaskSettings, DEFAULT_SETTINGS, TaskPriority, TaskQuery } fr
 import { SmartTaskSettingTab } from './settings';
 import { SmartTaskView, SMARTTASK_VIEW_TYPE } from './view';
 import { t, setLocale, detectLocale } from './i18n';
+import { QueryEngine } from './queryEngine';
 
 export default class SmartTaskPlugin extends Plugin {
 	settings: SmartTaskSettings = DEFAULT_SETTINGS;
@@ -17,13 +18,11 @@ export default class SmartTaskPlugin extends Plugin {
 
 		setLocale(detectLocale());
 
-		this.taskIndex = new TaskIndex(this.app);
-		await this.taskIndex.initialize();
-
-		this.taskIndex.onChange(() => {
-			this.notifyTasksChange();
-			this.updateStatusBar();
-		});
+		if (this.settings.indexingEnabled) {
+			await this.initTaskIndex();
+		} else {
+			this.taskIndex = null;
+		}
 
 		this.registerView(
 			SMARTTASK_VIEW_TYPE,
@@ -94,7 +93,6 @@ export default class SmartTaskPlugin extends Plugin {
 		this.statusBarItem = this.addStatusBarItem();
 		this.updateStatusBar();
 
-		console.log('SmartTask plugin loaded');
 	}
 
 	onunload() {
@@ -103,7 +101,7 @@ export default class SmartTaskPlugin extends Plugin {
 			this.taskIndex = null;
 		}
 		this.tasksChangeListeners.clear();
-		console.log('SmartTask plugin unloaded');
+
 	}
 
 	async loadSettings() {
@@ -114,6 +112,28 @@ export default class SmartTaskPlugin extends Plugin {
 	async saveSettings() {
 		await this.saveData(this.settings);
 		this.updateAllViews();
+	}
+
+	private async initTaskIndex(): Promise<void> {
+		this.taskIndex = new TaskIndex(this.app);
+		await this.taskIndex.initialize();
+		this.taskIndex.onChange(() => {
+			this.notifyTasksChange();
+			this.updateStatusBar();
+		});
+	}
+
+	async setIndexingEnabled(enabled: boolean): Promise<void> {
+		if (enabled && !this.taskIndex) {
+			await this.initTaskIndex();
+			this.notifyTasksChange();
+			this.updateStatusBar();
+		} else if (!enabled && this.taskIndex) {
+			this.taskIndex.destroy();
+			this.taskIndex = null;
+			this.notifyTasksChange();
+			this.updateStatusBar();
+		}
 	}
 
 	private async activateView() {
@@ -146,44 +166,7 @@ export default class SmartTaskPlugin extends Plugin {
 	}
 
 	queryTasks(query: TaskQuery): Task[] {
-		const allTasks = this.getTasks();
-		let results = [...allTasks];
-
-		if (query.status === 'done') {
-			results = results.filter(t => t.completed);
-		} else if (query.status === 'not-done') {
-			results = results.filter(t => !t.completed);
-		}
-
-		if (query.dueDate) {
-			results = results.filter(t => {
-				if (!t.dueDate) return false;
-				const due = t.dueDate;
-				if (query.dueDate!.before && due >= query.dueDate!.before) return false;
-				if (query.dueDate!.after && due <= query.dueDate!.after) return false;
-				if (query.dueDate!.equals && due !== query.dueDate!.equals) return false;
-				return true;
-			});
-		}
-
-		if (query.priority && query.priority.length > 0) {
-			results = results.filter(t => query.priority!.includes(t.priority));
-		}
-
-		if (query.tags && query.tags.length > 0) {
-			results = results.filter(t =>
-				query.tags!.some(tag => t.tags.includes(tag))
-			);
-		}
-
-		if (query.searchText) {
-			const searchLower = query.searchText.toLowerCase();
-			results = results.filter(t =>
-				t.description.toLowerCase().includes(searchLower)
-			);
-		}
-
-		return results;
+		return QueryEngine.query(this.getTasks(), query);
 	}
 
 	async toggleTaskStatus(task: Task, completed: boolean): Promise<void> {
@@ -213,9 +196,20 @@ export default class SmartTaskPlugin extends Plugin {
 				return;
 			}
 
-			let taskLine = '';
-			const baseIndent = parentTask ? '  ' : '';
-			taskLine = `${baseIndent}- [ ] ${description}`;
+			const content = await this.app.vault.read(targetFile);
+			const lines = content.split('\n');
+
+			let baseIndent = '';
+			let parentIndent = '';
+			if (parentTask) {
+				const parentLineIdx = parentTask.lineNumber - 1;
+				const parentLine = parentLineIdx >= 0 && parentLineIdx < lines.length ? lines[parentLineIdx] : '';
+				const parentIndentMatch = parentLine.match(/^(\s*)/);
+				parentIndent = parentIndentMatch ? parentIndentMatch[1] : '';
+				baseIndent = parentIndent + '  ';
+			}
+
+			let taskLine = `${baseIndent}- [ ] ${description}`;
 
 			const effectivePriority = priority ?? (this.settings.defaultPriority !== TaskPriority.None ? this.settings.defaultPriority : undefined);
 			if (effectivePriority) {
@@ -246,15 +240,23 @@ export default class SmartTaskPlugin extends Plugin {
 			taskLine += ` 🛫 ${startDate}`;
 
 			if (this.settings.autoAddTags && this.settings.autoAddTags.length > 0) {
-				const tagsStr = this.settings.autoAddTags.map(t => `#${t}`).join(' ');
+				const tagsStr = this.settings.autoAddTags.map(tag => `#${tag}`).join(' ');
 				taskLine += ` ${tagsStr}`;
 			}
 
-			const content = await this.app.vault.read(targetFile);
-			const lines = content.split('\n');
-
 			if (parentTask) {
-				const insertIndex = parentTask.lineNumber;
+				// 插入到父任务子树末尾：跳过缩进更深或空行的连续行
+				let insertIndex = parentTask.lineNumber;
+				while (insertIndex < lines.length) {
+					const line = lines[insertIndex];
+					const lineIndentMatch = line.match(/^(\s*)/);
+					const lineIndent = lineIndentMatch ? lineIndentMatch[1] : '';
+					if (line.trim() === '' || lineIndent.length > parentIndent.length) {
+						insertIndex++;
+					} else {
+						break;
+					}
+				}
 				lines.splice(insertIndex, 0, taskLine);
 			} else {
 				while (lines.length > 0 && lines[lines.length - 1].trim() === '') {

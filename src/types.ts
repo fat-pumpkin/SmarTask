@@ -83,7 +83,6 @@ export interface SmartTaskSettings {
 	defaultView: ViewType;
 	defaultPriority: TaskPriority;
 	indexingEnabled: boolean;
-	indexInterval: number;
 	showSubtasks: boolean;
 	groupBy: GroupField;
 	sortBy: SortField;
@@ -105,7 +104,6 @@ export const DEFAULT_SETTINGS: SmartTaskSettings = {
 	defaultView: 'list',
 	defaultPriority: TaskPriority.Medium,
 	indexingEnabled: true,
-	indexInterval: 5000,
 	showSubtasks: true,
 	groupBy: GroupField.File,
 	sortBy: SortField.DueDate,
