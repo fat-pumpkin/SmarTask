@@ -1,5 +1,24 @@
 # Changelog
 
+## [2.0.0] - 2026-07-15
+
+### ✨ 优化
+
+- 功能区 Row2 按钮标签外置并排显示，按钮统一方形尺寸，等宽分布占满整行
+- 功能区 Row1 统计项（待办/逾期/今日/近期/进度条）调大尺寸，加阴影边框与 hover 效果，醒目直观
+- 日历视图任务条加大尺寸并显示任务描述，强化优先级色块区分（左边框 + 背景色 + 优先级图标）
+- 设置页全部文案迁移到 i18n（en/zh），About 版本号改为动态读取 manifest.version
+- queryTasks 委托 QueryEngine.query，消除重复筛选逻辑
+- onload 尊重 indexingEnabled 配置，支持设置页热切换索引开关
+- 修复子任务插入：基于父任务原始缩进计算子缩进，插入到父任务子树末尾
+- 修复添加任务后输入框跳到页面顶部的 DOM 重排 bug
+
+### 🐛 修复（Obsidian 社区审核违规）
+
+- 修复 QuickCreateModal 与 SmartTaskViewController 中 setTimeout 未清理问题
+- 6 处硬编码 hex 颜色改为 CSS 变量（var(--priority-*) / var(--text-error)）
+- 4 处 setTimeout magic number 提取为具名常量
+
 ## [1.0.6] - 2026-07-14
 
 ### 🔧 维护
