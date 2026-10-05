@@ -14,7 +14,7 @@
 ### Multiple Views
 
 - **List View**: Classic task list with grouping, sorting, and collapsible sections
-- **Kanban View**: Column-based display by priority or status with smooth drag-and-drop
+- **Kanban View**: Column-based display by priority or status; drag tasks between "Todo" and "Done" columns to toggle completion (HTML5 drag-and-drop, keyboard accessible)
 - **Calendar View**: Date-based task distribution for intuitive schedule visualization
 - **Timeline View**: Four styles available:
   - Zigzag Timeline: Alternating left-right card layout
@@ -57,7 +57,9 @@
 
 - Incremental indexing based on file mtime + size
 - Batch processing (10ms yield) to prevent UI blocking
-- Virtual scrolling and debounced updates for large vaults
+- Debounced search input (150ms) to reduce re-render churn
+- Cached `getAllTags()` results, invalidated on task changes
+- Filter-tab switching uses local class toggles (preserves scroll position)
 
 ## Installation
 
@@ -146,45 +148,46 @@ Timeline view supports four styles: Classic, Zigzag, Card, and Gantt.
 
 ```
 ├── src/
-│   ├── main.ts           # Plugin entry point
-│   ├── view.ts           # View registration
-│   ├── smartTaskView.ts  # View rendering logic
-│   ├── settings.ts       # Settings panel
-│   ├── types.ts          # Type definitions
-│   ├── taskParser.ts     # Task parser
-│   ├── taskIndex.ts      # Task indexing engine
-│   └── queryEngine.ts    # Query engine
-├── main.js               # Build output
-├── styles.css            # Stylesheet
-├── manifest.json         # Plugin manifest
-└── esbuild.config.mjs    # Build configuration
+│   ├── main.ts              # Plugin entry point
+│   ├── view.ts              # View registration
+│   ├── smartTaskView.ts     # View rendering logic
+│   ├── settings.ts          # Settings panel
+│   ├── types.ts             # Type definitions
+│   ├── taskParser.ts        # Task parser
+│   ├── taskIndex.ts         # Task indexing engine
+│   ├── queryEngine.ts       # Query engine
+│   ├── quickCreateHelpers.ts # Shared QuickCreate option builders
+│   └── i18n/                # Internationalization (en / zh / index)
+├── main.js                  # Build output
+├── styles.css               # Stylesheet
+├── manifest.json            # Plugin manifest
+├── versions.json            # Plugin version → minAppVersion map
+└── esbuild.config.mjs       # Build configuration
 ```
+
+## Obsidian Community Plugin Compliance
+
+This plugin follows the [Obsidian community plugin review guidelines](https://docs.obsidian.md/Plugins/Releasing/Submit+your+plugin):
+
+- **License**: MIT (see [LICENSE](LICENSE))
+- **No network requests**: The plugin operates fully offline; it does not make any external HTTP calls or phone home. All task data stays in your vault.
+- **No telemetry / analytics**: No usage tracking, no error reporting, no remote logging.
+- **No global `app` instance**: All API access goes through the injected `App` / `Plugin` context.
+- **Minimal console output**: `console.*` calls are limited to error paths only (no verbose logging in normal operation).
+- **Manifest `id`**: lowercase, no spaces (`smarttask`), matches the community plugin listing.
+- **Code organization**: source files live under `src/` with focused responsibilities (parser, index, query engine, view, settings, i18n).
+- **Semantic versioning**: `versions.json` maps each plugin version to the minimum required Obsidian app version.
 
 ## Changelog
 
-### 1.0.2
-- **Added**: Stats and progress bar displayed in header row for quick overview
-- **Added**: Tag input mode in filter panel (instead of enum list) for better tag management
-- **Added**: Enhanced search functionality supporting description, file path, tags, and subtasks
-- **Fixed**: Tag display consistency across all views (list, kanban, timeline zigzag, gantt)
-- **Fixed**: Wiki link rendering consistency across all views
-- **Fixed**: Progress bar layout - progress bar on left, percentage on right
-- **Removed**: Unused Svelte component files for cleaner codebase
+See [CHANGELOG.md](CHANGELOG.md) for the full history.
 
-### 1.0.1
-- **Fixed**: Gantt chart style clarity - improved bar visibility with enhanced colors, borders, and labels
-- **Fixed**: Removed unused variables and imports for better code quality
-- **Fixed**: Replaced `confirm()` with Obsidian Modal for better UX
-- **Fixed**: Regex escape character issues
+### 2.0.1
 
-### 1.0.0
-- Initial release
-- Multiple views: List, Kanban, Calendar, Timeline
-- Quick task creation with inline chips
-- Subtask support with unlimited nesting
-- Smart query & filter system
-- Obsidian native features integration
-- Performance optimization with incremental indexing
+- **Added**: Custom checkbox with completion animation, skeleton loading states, CSS tooltips, empty-state illustration, kanban HTML5 drag-and-drop (todo ⇄ done), keyboard navigation (↑/↓/Space/E/Esc), debounced search, `getAllTags()` caching, a11y attributes (`role`/`aria-label`/`tabindex`).
+- **Improved**: Row2 button labels, calendar task bars, i18n migration of settings + remaining hardcoded strings, `setIcon()` for lucide icons, `--priority-*` CSS variables, local filter-tab re-render, shared QuickCreate helper.
+- **Fixed**: 13+ i18n regressions, subtask indent calculation, DOM reflow on task add, uncleaned timers, 6 hardcoded hex colors, responsive breakpoints at 768px/480px.
+- **Docs**: README calibrated (removed "virtual scrolling" claim), added Obsidian compliance section.
 
 ## Version Release
 

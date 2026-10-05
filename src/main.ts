@@ -6,6 +6,8 @@ import { SmartTaskSettingTab } from './settings';
 import { SmartTaskView, SMARTTASK_VIEW_TYPE } from './view';
 import { t, setLocale, detectLocale } from './i18n';
 import { QueryEngine } from './queryEngine';
+import { buildPriorityOptions, buildQuickDateButtons } from './quickCreateHelpers';
+import { formatLocalDate } from './dateUtils';
 
 const FOCUS_DELAY_MS = 100;
 
@@ -14,6 +16,7 @@ export default class SmartTaskPlugin extends Plugin {
 	private taskIndex: TaskIndex | null = null;
 	private tasksChangeListeners: Set<() => void> = new Set();
 	private statusBarItem: HTMLElement | null = null;
+	private indexReady = false;
 
 	async onload() {
 		await this.loadSettings();
@@ -65,7 +68,7 @@ export default class SmartTaskPlugin extends Plugin {
 						(match, prefix) => `${prefix} [${newStatus ? 'x' : ' '}]`
 					);
 					editor.setLine(cursor.line, newLine);
-					new Notice(newStatus ? 'Task completed 🎉' : 'Task restored');
+					new Notice(newStatus ? t('notices').taskCompleted : t('notices').taskRestored);
 				}
 			},
 		});
@@ -117,22 +120,29 @@ export default class SmartTaskPlugin extends Plugin {
 	}
 
 	private async initTaskIndex(): Promise<void> {
+		this.indexReady = false;
 		this.taskIndex = new TaskIndex(this.app);
 		await this.taskIndex.initialize();
+		this.indexReady = true;
 		this.taskIndex.onChange(() => {
 			this.notifyTasksChange();
 			this.updateStatusBar();
 		});
+		this.notifyTasksChange();
+	}
+
+	isIndexReady(): boolean {
+		return this.indexReady;
 	}
 
 	async setIndexingEnabled(enabled: boolean): Promise<void> {
 		if (enabled && !this.taskIndex) {
 			await this.initTaskIndex();
-			this.notifyTasksChange();
 			this.updateStatusBar();
 		} else if (!enabled && this.taskIndex) {
 			this.taskIndex.destroy();
 			this.taskIndex = null;
+			this.indexReady = false;
 			this.notifyTasksChange();
 			this.updateStatusBar();
 		}
@@ -158,7 +168,7 @@ export default class SmartTaskPlugin extends Plugin {
 		const tasks = this.getTasks();
 		const notDone = tasks.filter(t => !t.completed).length;
 		if (this.statusBarItem) {
-			this.statusBarItem.setText(`📋 ${notDone} 待办`);
+			this.statusBarItem.setText(`📋 ${notDone} ${t('stats').pending}`);
 		}
 	}
 
@@ -176,10 +186,10 @@ export default class SmartTaskPlugin extends Plugin {
 
 		try {
 			await this.taskIndex.updateTaskStatus(task, completed);
-			new Notice(completed ? '任务已完成 🎉' : '任务已恢复');
+			new Notice(completed ? t('notices').taskCompleted : t('notices').taskRestored);
 		} catch (e: unknown) {
 			console.error('Failed to toggle task:', e);
-			new Notice('更新任务失败');
+			new Notice(t('notices').updateFailed);
 		}
 	}
 
@@ -194,7 +204,7 @@ export default class SmartTaskPlugin extends Plugin {
 		try {
 			const targetFile = await this.getTargetFile();
 			if (!targetFile) {
-				new Notice('无法确定保存位置');
+				new Notice(t('notices').noSaveLocation);
 				return;
 			}
 
@@ -238,8 +248,9 @@ export default class SmartTaskPlugin extends Plugin {
 				taskLine += ` 📅 ${dueDate}`;
 			}
 
-			const startDate = new Date().toISOString().split('T')[0];
+			const startDate = formatLocalDate(new Date());
 			taskLine += ` 🛫 ${startDate}`;
+			taskLine += ` 🖊 ${startDate}`;
 
 			if (this.settings.autoAddTags && this.settings.autoAddTags.length > 0) {
 				const tagsStr = this.settings.autoAddTags.map(tag => `#${tag}`).join(' ');
@@ -271,10 +282,10 @@ export default class SmartTaskPlugin extends Plugin {
 			const newContent = lines.join('\n');
 			await this.app.vault.modify(targetFile, newContent);
 
-			new Notice(parentTask ? '子任务已添加 ✅' : '任务已创建 ✅');
+			new Notice(parentTask ? t('notices').subtaskAdded : t('notices').taskCreated);
 		} catch (e: unknown) {
 			console.error('Failed to create task:', e);
-			new Notice('创建任务失败: ' + (e instanceof Error ? e.message : String(e)));
+			new Notice(`${t('notices').createFailed}: ${e instanceof Error ? e.message : String(e)}`);
 		}
 	}
 
@@ -302,15 +313,22 @@ export default class SmartTaskPlugin extends Plugin {
 
 	private async getDailyNoteFile(): Promise<TFile | null> {
 		try {
-			const dailyNoteApi = (this.app as unknown as { plugins: { dailyNotes?: { getDailyNote: (date: Date) => TFile | null; createDailyNote: (date: Date) => Promise<TFile> } } }).plugins.dailyNotes;
-			if (dailyNoteApi) {
-				const today = new Date();
-				let file = dailyNoteApi.getDailyNote(today);
-				if (!file) {
-					file = await dailyNoteApi.createDailyNote(today);
-				}
-				return file;
+			const today = new Date();
+			const dateStr = this.formatDate(today, 'YYYY-MM-DD');
+			const dailyNotePath = `${dateStr}.md`;
+
+			const existing = this.app.vault.getAbstractFileByPath(dailyNotePath);
+			if (existing instanceof TFile) {
+				return existing;
 			}
+
+			const allFiles = this.app.vault.getMarkdownFiles();
+			const matched = allFiles.find(f => f.basename === dateStr);
+			if (matched) {
+				return matched;
+			}
+
+			return await this.app.vault.create(dailyNotePath, '');
 		} catch (e: unknown) {
 			console.warn('Daily note access failed, falling back to inbox', e);
 		}
@@ -386,6 +404,7 @@ export default class SmartTaskPlugin extends Plugin {
 	}
 
 	private notifyTasksChange(): void {
+		this.invalidateTagsCache();
 		for (const listener of this.tasksChangeListeners) {
 			try {
 				listener();
@@ -399,19 +418,28 @@ export default class SmartTaskPlugin extends Plugin {
 		const leaves = this.app.workspace.getLeavesOfType(SMARTTASK_VIEW_TYPE);
 		for (const leaf of leaves) {
 			if (leaf.view instanceof SmartTaskView) {
-				// 视图会通过事件订阅自动更新
+				// 设置变化后强制视图按最新设置重渲染
+				leaf.view.refreshFromSettings();
 			}
 		}
 	}
 
+	private tagsCache: string[] | null = null;
+
 	getAllTags(): string[] {
+		if (this.tagsCache) return this.tagsCache;
 		const tagSet = new Set<string>();
 		for (const task of this.getTasks()) {
 			for (const tag of task.tags) {
 				tagSet.add(tag);
 			}
 		}
-		return Array.from(tagSet).sort();
+		this.tagsCache = Array.from(tagSet).sort();
+		return this.tagsCache;
+	}
+
+	private invalidateTagsCache(): void {
+		this.tagsCache = null;
 	}
 }
 
@@ -428,54 +456,43 @@ class QuickCreateModal extends Modal {
 		const { contentEl } = this;
 		contentEl.empty();
 
-		contentEl.createEl('h3', { text: 'Quick Create Task' });
+		contentEl.createEl('h3', { text: t('viewTitles').quickCreate });
 
 		const form = contentEl.createDiv({ cls: 'smarttask-quick-form' });
 
 		const descInput = form.createEl('input', {
 			type: 'text',
-			placeholder: 'Task description...',
+			placeholder: t('quickCreate').placeholder,
 			cls: 'smarttask-input',
 		});
 
 		const dateRow = form.createDiv({ cls: 'smarttask-row' });
 
-		dateRow.createSpan({ text: 'Due Date:' });
+		dateRow.createSpan({ text: `${t('settings').dueDate}:` });
 		const dateInput = dateRow.createEl('input', { type: 'date', cls: 'smarttask-date-input' });
 
-		const quickDates = [
-			{ label: 'Today', days: 0 },
-			{ label: 'Tomorrow', days: 1 },
-			{ label: 'Next Week', days: 7 },
-		];
+		const quickDates = buildQuickDateButtons();
 		for (const qd of quickDates) {
 			const btn = dateRow.createEl('button', { text: qd.label, cls: 'smarttask-btn' });
 			btn.onclick = () => {
 				const d = new Date();
 				d.setDate(d.getDate() + qd.days);
-				dateInput.value = d.toISOString().split('T')[0];
+				dateInput.value = formatLocalDate(d);
 			};
 		}
 
 		const priorityRow = form.createDiv({ cls: 'smarttask-row small-gap' });
 
-		priorityRow.createSpan({ text: 'Priority:' });
+		priorityRow.createSpan({ text: `${t('settings').priority}:` });
 		const prioritySelect = form.createEl('select', { cls: 'smarttask-select' });
-		const options = [
-			{ value: '', text: 'None' },
-			{ value: TaskPriority.Highest, text: '🔝 Highest' },
-			{ value: TaskPriority.High, text: '🔺 High' },
-			{ value: TaskPriority.Medium, text: '🔼 Medium' },
-			{ value: TaskPriority.Low, text: '🔽 Low' },
-			{ value: TaskPriority.Lowest, text: '⏬ Lowest' },
-		];
+		const options = buildPriorityOptions();
 		for (const opt of options) {
-			prioritySelect.createEl('option', { value: opt.value, text: opt.text });
+			prioritySelect.createEl('option', { value: opt.value, text: opt.label });
 		}
 
 		const targetRow = form.createDiv({ cls: 'smarttask-row small-gap' });
 
-		targetRow.createSpan({ text: 'Save to:' });
+		targetRow.createSpan({ text: t('quickCreate').saveTo });
 		const targetSelect = form.createEl('select', { cls: 'smarttask-select' });
 		targetSelect.createEl('option', { value: 'inbox', text: t('saveTargets').inbox });
 		targetSelect.createEl('option', { value: 'currentFile', text: t('saveTargets').currentFile });
@@ -491,10 +508,10 @@ class QuickCreateModal extends Modal {
 
 		const btnRow = form.createDiv({ cls: 'smarttask-btn-row' });
 
-		const cancelBtn = btnRow.createEl('button', { text: 'Cancel', cls: 'smarttask-btn-cancel' });
+		const cancelBtn = btnRow.createEl('button', { text: t('ui').cancel, cls: 'smarttask-btn-cancel' });
 		cancelBtn.onclick = () => this.close();
 
-		const createBtn = btnRow.createEl('button', { text: 'Create', cls: 'smarttask-btn-create' });
+		const createBtn = btnRow.createEl('button', { text: t('ui').create, cls: 'smarttask-btn-create' });
 		createBtn.onclick = async () => {
 			const desc = descInput.value.trim();
 			if (desc) {

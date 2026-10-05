@@ -1,4 +1,5 @@
 import { Task, TaskQuery, TaskGroup, GroupField, SortField, TaskPriority } from './types';
+import { formatLocalDate } from './dateUtils';
 
 export class QueryEngine {
 	static query(tasks: Task[], query: TaskQuery): Task[] {
@@ -199,13 +200,13 @@ export class QueryEngine {
 	}
 
 	static getToday(): string {
-		return new Date().toISOString().split('T')[0];
+		return formatLocalDate(new Date());
 	}
 
 	static getTomorrow(): string {
 		const tomorrow = new Date();
 		tomorrow.setDate(tomorrow.getDate() + 1);
-		return tomorrow.toISOString().split('T')[0];
+		return formatLocalDate(tomorrow);
 	}
 
 	static getOverdueTasks(tasks: Task[]): Task[] {
@@ -222,7 +223,7 @@ export class QueryEngine {
 		const today = this.getToday();
 		const future = new Date();
 		future.setDate(future.getDate() + days);
-		const futureStr = future.toISOString().split('T')[0];
+		const futureStr = formatLocalDate(future);
 
 		return tasks.filter(t =>
 			!t.completed &&

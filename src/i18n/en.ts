@@ -13,7 +13,14 @@ export const en = {
 		month: 'Month',
 		overdue: 'Overdue',
 		thisWeek: 'This week',
-		thisMonth: 'This month'
+		thisMonth: 'This month',
+		sun: 'Sun',
+		mon: 'Mon',
+		tue: 'Tue',
+		wed: 'Wed',
+		thu: 'Thu',
+		fri: 'Fri',
+		sat: 'Sat'
 	},
 	filters: {
 		all: 'All',
@@ -53,7 +60,108 @@ export const en = {
 		searchPlaceholder: 'Search tasks...',
 		tagPlaceholder: 'Enter tag and press Enter',
 		subtask: 'Subtask',
-		subtasks: 'Subtasks'
+		subtasks: 'Subtasks',
+		taskDescPlaceholder: 'Enter task description...',
+		subtaskDescPlaceholder: 'Subtask description...',
+		emptyIcon: '🎉',
+		noDatedTasks: 'No tasks with due dates',
+		addDueDateHint: 'Add a due date to a task to see it in the timeline',
+		noteNotFound: 'Note not found: ',
+		noteCreated: 'Created note: ',
+		tasks: 'tasks',
+		edit: 'Edit'
+	},
+	calendar: {
+		prevMonth: 'Previous month',
+		nextMonth: 'Next month',
+		weekdayShort: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const,
+		yearMonthFormat: '{month}/{year}'
+	},
+	timeline: {
+		groupByDay: 'By day',
+		groupByWeek: 'By week',
+		groupByMonth: 'By month',
+		startLabel: 'Start',
+		dueLabel: 'Due',
+		none: 'None',
+		monthFormat: '{n}'
+	},
+	wheelPicker: {
+		daySuffix: '',
+		yearSuffix: '',
+		monthSuffix: ''
+	},
+	ui: {
+		add: 'Add',
+		search: 'Search',
+		edit: 'Edit',
+		cancel: 'Cancel',
+		create: 'Create',
+		save: 'Save',
+		delete: 'Delete',
+		close: 'Close',
+		loading: 'Loading...',
+		ok: 'OK'
+	},
+	editor: {
+		title: 'Edit Task',
+		description: 'Description',
+		dueDate: 'Due Date',
+		priority: 'Priority',
+		tags: 'Tags (comma-separated)',
+		deleteTask: 'Delete Task',
+		confirmDeleteTitle: 'Confirm Delete',
+		confirmDeleteMessage: 'Are you sure you want to delete this task?',
+		descEmpty: 'Description cannot be empty',
+		updated: 'Task updated ✅',
+		updateFailed: 'Failed to update task',
+		deleted: 'Task deleted',
+		deleteFailed: 'Failed to delete task',
+		dayTasks: '{date} Tasks',
+		selectDate: 'Select Date'
+	},
+	viewTitles: {
+		list: 'List View',
+		kanban: 'Kanban View',
+		calendar: 'Calendar View',
+		timeline: 'Timeline View',
+		quickCreate: 'Quick Create',
+		search: 'Search'
+	},
+	quickCreate: {
+		placeholder: 'Enter task description...',
+		noDate: 'No date',
+		today: 'Today',
+		tomorrow: 'Tomorrow',
+		custom: 'Custom date',
+		noPriority: 'No priority',
+		saveTo: 'Save to:',
+		nextWeek: 'Next Week'
+	},
+	kanban: {
+		todo: 'Todo',
+		done: 'Done',
+		emptyTodo: 'No pending tasks',
+		emptyDone: 'No completed tasks'
+	},
+	tooltips: {
+		editTask: 'Edit task',
+		addSubtask: 'Add subtask',
+		quickCreate: 'Quick create',
+		search: 'Search',
+		listView: 'List view',
+		kanbanView: 'Kanban view',
+		calendarView: 'Calendar view',
+		timelineView: 'Timeline view'
+	},
+	notices: {
+		taskCompleted: 'Task completed 🎉',
+		taskRestored: 'Task restored',
+		taskCreated: 'Task created ✅',
+		subtaskAdded: 'Subtask added ✅',
+		noSaveLocation: 'Could not determine save location',
+		createFailed: 'Failed to create task',
+		updateFailed: 'Failed to update task'
 	},
 	commands: {
 		openView: 'Open SmartTask View',

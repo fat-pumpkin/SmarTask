@@ -1,6 +1,7 @@
-import { App, TFile, Vault } from 'obsidian';
-import { Task } from './types';
+import { App, EventRef, TFile, Vault } from 'obsidian';
+import { Task, RecurrenceRule } from './types';
 import { TaskParser } from './taskParser';
+import { formatLocalDate, parseLocalDate } from './dateUtils';
 
 const DEBOUNCE_DELAY_MS = 1000;
 const YIELD_INTERVAL_MS = 10;
@@ -15,6 +16,7 @@ export class TaskIndex {
 	private indexingPromise: Promise<void> | null = null;
 	private debounceTimer: number | null = null;
 	private listeners: Set<() => void> = new Set();
+	private vaultEventRefs: EventRef[] = [];
 
 	constructor(app: App) {
 		this.app = app;
@@ -27,31 +29,31 @@ export class TaskIndex {
 	}
 
 	private registerEventHandlers(): void {
-		this.vault.on('create', (file) => {
+		this.vaultEventRefs.push(this.vault.on('create', (file) => {
 			if (file instanceof TFile && file.extension === 'md') {
 				this.scheduleReindex();
 			}
-		});
+		}));
 
-		this.vault.on('delete', (file) => {
+		this.vaultEventRefs.push(this.vault.on('delete', (file) => {
 			if (file instanceof TFile && file.extension === 'md') {
 				this.removeFileFromCache(file.path);
 				this.notifyListeners();
 			}
-		});
+		}));
 
-		this.vault.on('modify', (file) => {
+		this.vaultEventRefs.push(this.vault.on('modify', (file) => {
 			if (file instanceof TFile && file.extension === 'md') {
 				this.scheduleReindex();
 			}
-		});
+		}));
 
-		this.vault.on('rename', (file, oldPath) => {
+		this.vaultEventRefs.push(this.vault.on('rename', (file, oldPath) => {
 			if (file instanceof TFile && file.extension === 'md') {
 				this.removeFileFromCache(oldPath);
 				this.scheduleReindex();
 			}
-		});
+		}));
 	}
 
 	private scheduleReindex(): void {
@@ -211,7 +213,7 @@ export class TaskIndex {
 
 			let updatedLine = newLine;
 			if (completed) {
-				const today = new Date().toISOString().split('T')[0];
+				const today = formatLocalDate(new Date());
 				if (!/✅\s*\d{4}-\d{2}-\d{2}/.test(updatedLine)) {
 					updatedLine += ` ✅ ${today}`;
 				}
@@ -220,6 +222,26 @@ export class TaskIndex {
 			}
 
 			lines[lineIndex] = updatedLine;
+
+			// 重复任务：完成时自动生成下一次任务，插到该任务（及其子树）之后
+			if (completed && task.recurrence) {
+				const nextDue = this.computeNextDueDate(task.dueDate, task.recurrence);
+				const newTask: Task = {
+					...task,
+					id: `${task.filePath}:${lineIndex + 2}`,
+					completed: false,
+					completedDate: undefined,
+					dueDate: nextDue,
+					subtasks: [],
+					parentId: task.parentId,
+				};
+				// 保留原行的缩进，使嵌套的重复任务仍是其父任务的子任务
+				const indentMatch = line.match(/^(\s*)/);
+				const indent = indentMatch ? indentMatch[1] : '';
+				const insertIndex = this.findSubtreeEnd(lines, lineIndex);
+				lines.splice(insertIndex, 0, indent + TaskParser.taskToMarkdown(newTask));
+			}
+
 			await this.vault.modify(file, lines.join('\n'));
 		}
 	}
@@ -246,14 +268,72 @@ export class TaskIndex {
 		const lines = content.split('\n');
 
 		if (task.lineNumber > 0 && task.lineNumber <= lines.length) {
-			lines.splice(task.lineNumber - 1, 1);
+			// 删除该任务行及其缩进子树（避免子任务残留成为孤立任务）
+			const lineIndex = task.lineNumber - 1;
+			const endIndex = this.findSubtreeEnd(lines, lineIndex);
+			lines.splice(lineIndex, endIndex - lineIndex);
 			await this.vault.modify(file, lines.join('\n'));
 		}
 	}
 
+	/**
+	 * 计算重复任务的下一次截止日期。
+	 * 以当前截止日期（若无则今天）为基准，按频率递进 interval 个周期。
+	 */
+	private computeNextDueDate(dueDate: string | undefined, rule: RecurrenceRule): string | undefined {
+		const base = dueDate ? parseLocalDate(dueDate) : new Date();
+		const interval = Math.max(1, rule.interval || 1);
+		const next = new Date(base);
+		switch (rule.frequency) {
+			case 'daily':
+				next.setDate(next.getDate() + interval);
+				break;
+			case 'weekly':
+				next.setDate(next.getDate() + 7 * interval);
+				break;
+			case 'monthly':
+				next.setMonth(next.getMonth() + interval);
+				break;
+			case 'yearly':
+				next.setFullYear(next.getFullYear() + interval);
+				break;
+		}
+		return formatLocalDate(next);
+	}
+
+	/**
+	 * 返回 startIndex（0 起始，指向一行任务）所在任务"子树"结束后的插入下标：
+	 * 目标行本身 + 其后所有缩进更深（或中间空行）的行，遇到缩进相同或更浅的行停止。
+	 */
+	private findSubtreeEnd(lines: string[], startIndex: number): number {
+		const indentMatch = lines[startIndex].match(/^(\s*)/);
+		const indent = indentMatch ? indentMatch[1].length : 0;
+		let i = startIndex + 1;
+		while (i < lines.length) {
+			const l = lines[i];
+			if (l.trim() === '') {
+				i++;
+				continue;
+			}
+			const li = l.match(/^(\s*)/)![1].length;
+			if (li > indent) {
+				i++;
+			} else {
+				break;
+			}
+		}
+		return i;
+	}
+
 	destroy(): void {
+		for (const ref of this.vaultEventRefs) {
+			this.vault.offref(ref);
+		}
+		this.vaultEventRefs = [];
+
 		if (this.debounceTimer !== null) {
 			window.clearTimeout(this.debounceTimer);
+			this.debounceTimer = null;
 		}
 		this.listeners.clear();
 		this.taskCache.clear();

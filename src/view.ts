@@ -58,4 +58,11 @@ export class SmartTaskView extends ItemView {
 		this.controller = new SmartTaskViewController(this.plugin, wrapper);
 		this.controller.render();
 	}
+
+	/** 设置变化后强制视图按最新设置重渲染（由 updateAllViews 调用）。 */
+	refreshFromSettings(): void {
+		if (this.controller) {
+			this.controller.refresh();
+		}
+	}
 }

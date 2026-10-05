@@ -5,6 +5,7 @@ export class TaskParser {
 	private static readonly DUE_DATE_REGEX = /[📅📆🗓]\s*(\d{4}-\d{2}-\d{2})/u;
 	private static readonly SCHEDULED_DATE_REGEX = /[⏳⌛]\s*(\d{4}-\d{2}-\d{2})/u;
 	private static readonly START_DATE_REGEX = /[🛫🚀]\s*(\d{4}-\d{2}-\d{2})/u;
+	private static readonly CREATED_DATE_REGEX = /[🖊✍]\s*(\d{4}-\d{2}-\d{2})/u;
 	private static readonly COMPLETED_DATE_REGEX = /✅\s*(\d{4}-\d{2}-\d{2})/u;
 	private static readonly PRIORITY_REGEX = /[🔝🔺⏫🔼🔽⏬🔻]\s*/gu;
 	private static readonly RECURRENCE_REGEX = /🔁\s+(.+)$/u;
@@ -31,6 +32,7 @@ export class TaskParser {
 		const dueDate = this.extractDueDate(cleanDescription);
 		const scheduledDate = this.extractScheduledDate(cleanDescription);
 		const startDate = this.extractStartDate(cleanDescription);
+		const createdDate = this.extractCreatedDate(cleanDescription);
 		const completedDate = completed ? this.extractCompletedDate(cleanDescription) : undefined;
 		const priority = this.extractPriority(cleanDescription);
 		const recurrence = this.extractRecurrence(cleanDescription);
@@ -49,6 +51,7 @@ export class TaskParser {
 			dueDate,
 			scheduledDate,
 			startDate,
+			createdDate,
 			priority,
 			tags,
 			wikiLinks,
@@ -71,6 +74,11 @@ export class TaskParser {
 
 	private static extractStartDate(text: string): string | undefined {
 		const match = text.match(this.START_DATE_REGEX);
+		return match ? match[1] : undefined;
+	}
+
+	private static extractCreatedDate(text: string): string | undefined {
+		const match = text.match(this.CREATED_DATE_REGEX);
 		return match ? match[1] : undefined;
 	}
 
@@ -144,6 +152,7 @@ export class TaskParser {
 		clean = clean.replace(this.DUE_DATE_REGEX, '');
 		clean = clean.replace(this.SCHEDULED_DATE_REGEX, '');
 		clean = clean.replace(this.START_DATE_REGEX, '');
+		clean = clean.replace(this.CREATED_DATE_REGEX, '');
 		clean = clean.replace(this.COMPLETED_DATE_REGEX, '');
 		clean = clean.replace(this.PRIORITY_REGEX, '');
 		clean = clean.replace(this.RECURRENCE_REGEX, '');
@@ -199,6 +208,7 @@ export class TaskParser {
 		if (task.dueDate) line += ` 📅 ${task.dueDate}`;
 		if (task.scheduledDate) line += ` ⏳ ${task.scheduledDate}`;
 		if (task.startDate) line += ` 🛫 ${task.startDate}`;
+		if (task.createdDate) line += ` 🖊 ${task.createdDate}`;
 		if (task.completedDate) line += ` ✅ ${task.completedDate}`;
 		if (task.recurrence) line += ` 🔁 every ${task.recurrence.frequency}`;
 

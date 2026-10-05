@@ -19,6 +19,13 @@ export interface Translation {
 		overdue: string;
 		thisWeek: string;
 		thisMonth: string;
+		sun: string;
+		mon: string;
+		tue: string;
+		wed: string;
+		thu: string;
+		fri: string;
+		sat: string;
 	};
 	filters: {
 		all: string;
@@ -59,6 +66,107 @@ export interface Translation {
 		tagPlaceholder: string;
 		subtask: string;
 		subtasks: string;
+		taskDescPlaceholder: string;
+		subtaskDescPlaceholder: string;
+		emptyIcon: string;
+		noDatedTasks: string;
+		addDueDateHint: string;
+		noteNotFound: string;
+		noteCreated: string;
+		tasks: string;
+		edit: string;
+	};
+	calendar: {
+		prevMonth: string;
+		nextMonth: string;
+		weekdayShort: readonly [string, string, string, string, string, string, string];
+		yearMonthFormat: string;
+	};
+	timeline: {
+		groupByDay: string;
+		groupByWeek: string;
+		groupByMonth: string;
+		startLabel: string;
+		dueLabel: string;
+		none: string;
+		monthFormat: string;
+	};
+	wheelPicker: {
+		daySuffix: string;
+		yearSuffix: string;
+		monthSuffix: string;
+	};
+	ui: {
+		add: string;
+		search: string;
+		edit: string;
+		cancel: string;
+		create: string;
+		save: string;
+		delete: string;
+		close: string;
+		loading: string;
+		ok: string;
+	};
+	editor: {
+		title: string;
+		description: string;
+		dueDate: string;
+		priority: string;
+		tags: string;
+		deleteTask: string;
+		confirmDeleteTitle: string;
+		confirmDeleteMessage: string;
+		descEmpty: string;
+		updated: string;
+		updateFailed: string;
+		deleted: string;
+		deleteFailed: string;
+		dayTasks: string;
+		selectDate: string;
+	};
+	viewTitles: {
+		list: string;
+		kanban: string;
+		calendar: string;
+		timeline: string;
+		quickCreate: string;
+		search: string;
+	};
+	quickCreate: {
+		placeholder: string;
+		noDate: string;
+		today: string;
+		tomorrow: string;
+		custom: string;
+		noPriority: string;
+		saveTo: string;
+		nextWeek: string;
+	};
+	kanban: {
+		todo: string;
+		done: string;
+		emptyTodo: string;
+		emptyDone: string;
+	};
+	tooltips: {
+		editTask: string;
+		addSubtask: string;
+		quickCreate: string;
+		search: string;
+		listView: string;
+		kanbanView: string;
+		calendarView: string;
+		timelineView: string;
+	};
+	notices: {
+		taskCompleted: string;
+		taskRestored: string;
+		taskCreated: string;
+		subtaskAdded: string;
+		noSaveLocation: string;
+		createFailed: string;
+		updateFailed: string;
 	};
 	commands: {
 		openView: string;

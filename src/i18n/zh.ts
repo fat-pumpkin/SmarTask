@@ -13,7 +13,14 @@ export const zh = {
 		month: '月',
 		overdue: '已逾期',
 		thisWeek: '本周内',
-		thisMonth: '本月内'
+		thisMonth: '本月内',
+		sun: '周日',
+		mon: '周一',
+		tue: '周二',
+		wed: '周三',
+		thu: '周四',
+		fri: '周五',
+		sat: '周六'
 	},
 	filters: {
 		all: '全部',
@@ -53,7 +60,108 @@ export const zh = {
 		searchPlaceholder: '搜索任务...',
 		tagPlaceholder: '输入标签并按回车',
 		subtask: '子任务',
-		subtasks: '子任务'
+		subtasks: '子任务',
+		taskDescPlaceholder: '输入任务描述...',
+		subtaskDescPlaceholder: '子任务描述...',
+		emptyIcon: '🎉',
+		noDatedTasks: '暂无带日期的任务',
+		addDueDateHint: '为任务添加截止日期即可在时间线中查看',
+		noteNotFound: '未找到笔记: ',
+		noteCreated: '已创建笔记: ',
+		tasks: '个任务',
+		edit: '编辑'
+	},
+	calendar: {
+		prevMonth: '上个月',
+		nextMonth: '下个月',
+		weekdayShort: ['日', '一', '二', '三', '四', '五', '六'] as const,
+		yearMonthFormat: '{year}年{month}月'
+	},
+	timeline: {
+		groupByDay: '按天',
+		groupByWeek: '按周',
+		groupByMonth: '按月',
+		startLabel: '起始',
+		dueLabel: '截止',
+		none: '无',
+		monthFormat: '{n}月'
+	},
+	wheelPicker: {
+		daySuffix: '日',
+		yearSuffix: '年',
+		monthSuffix: '月'
+	},
+	ui: {
+		add: '添加',
+		search: '搜索',
+		edit: '编辑',
+		cancel: '取消',
+		create: '创建',
+		save: '保存',
+		delete: '删除',
+		close: '关闭',
+		loading: '加载中...',
+		ok: '确定'
+	},
+	editor: {
+		title: '编辑任务',
+		description: '任务描述',
+		dueDate: '截止日期',
+		priority: '优先级',
+		tags: '标签（逗号分隔）',
+		deleteTask: '删除任务',
+		confirmDeleteTitle: '确认删除',
+		confirmDeleteMessage: '确定要删除该任务吗？',
+		descEmpty: '任务描述不能为空',
+		updated: '任务已更新 ✅',
+		updateFailed: '更新任务失败',
+		deleted: '任务已删除',
+		deleteFailed: '删除任务失败',
+		dayTasks: '{date} 的任务',
+		selectDate: '选择日期'
+	},
+	viewTitles: {
+		list: '列表视图',
+		kanban: '看板视图',
+		calendar: '日历视图',
+		timeline: '时间线视图',
+		quickCreate: '快速创建',
+		search: '搜索'
+	},
+	quickCreate: {
+		placeholder: '输入任务描述...',
+		noDate: '无日期',
+		today: '今天',
+		tomorrow: '明天',
+		custom: '自定义时间',
+		noPriority: '无优先级',
+		saveTo: '保存到:',
+		nextWeek: '下周'
+	},
+	kanban: {
+		todo: '待办',
+		done: '已完成',
+		emptyTodo: '暂无待办任务',
+		emptyDone: '暂无已完成任务'
+	},
+	tooltips: {
+		editTask: '编辑任务',
+		addSubtask: '添加子任务',
+		quickCreate: '快速创建',
+		search: '搜索',
+		listView: '列表视图',
+		kanbanView: '看板视图',
+		calendarView: '日历视图',
+		timelineView: '时间线视图'
+	},
+	notices: {
+		taskCompleted: '任务已完成 🎉',
+		taskRestored: '任务已恢复',
+		taskCreated: '任务已创建 ✅',
+		subtaskAdded: '子任务已添加 ✅',
+		noSaveLocation: '无法确定保存位置',
+		createFailed: '创建任务失败',
+		updateFailed: '更新任务失败'
 	},
 	commands: {
 		openView: '打开 SmartTask 视图',

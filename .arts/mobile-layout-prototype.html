@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SmartTask 移动端新布局原型</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  
+  body {
+    background: #1a1a2e;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    padding: 20px;
+    gap: 30px;
+    flex-wrap: wrap;
+  }
+
+  /* 手机容器 */
+  .phone {
+    width: 390px;
+    height: 844px;
+    background: #1e1e2e;
+    border-radius: 40px;
+    padding: 16px 10px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 0 2px #333;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* 状态栏 */
+  .status-bar {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 16px 8px;
+    color: #cdd6f4;
+    font-size: 12px;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+
+  /* ===== 功能模块 ===== */
+  .functional-module {
+    flex-shrink: 0;
+    background: #181825;
+    border-radius: 14px;
+    margin: 0 2px 8px;
+    padding: 10px 12px 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  }
+
+  /* —— Row 1 —— */
+  .row-1 {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+
+  .row-1 .title-area {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  .row-1 .title-area .icon {
+    font-size: 18px;
+  }
+
+  .row-1 .title-area h2 {
+    font-size: 16px;
+    font-weight: 700;
+    color: #cdd6f4;
+    margin: 0;
+    letter-spacing: -0.3px;
+  }
+
+  /* 统计 */
+  .stats-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  .stat-item {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    background: rgba(255,255,255,0.04);
+    padding: 2px 7px;
+    border-radius: 10px;
+    font-size: 10px;
+    white-space: nowrap;
+  }
+
+  .stat-item .stat-label {
+    color: #a6adc8;
+    font-size: 9px;
+  }
+
+  .stat-item .stat-num {
+    font-weight: 700;
+    font-size: 11px;
+  }
+
+  .stat-item.pending .stat-num { color: #89b4fa; }
+  .stat-item.overdue .stat-num { color: #f38ba8; }
+  .stat-item.today .stat-num { color: #a6e3a1; }
+  .stat-item.upcoming .stat-num { color: #f9e2af; }
+
+  /* 进度条 */
+  .progress-mini {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: 2px;
+  }
+
+  .progress-mini .bar {
+    width: 36px;
+    height: 4px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .progress-mini .bar .fill {
+    height: 100%;
+    background: linear-gradient(90deg, #89b4fa, #a6e3a1);
+    border-radius: 4px;
+    transition: width 0.3s;
+  }
+
+  .progress-mini .pct {
+    font-size: 9px;
+    color: #a6adc8;
+    font-weight: 600;
+  }
+
+  /* 筛选标签 */
+  .filter-tabs {
+    display: flex;
+    gap: 2px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 12px;
+    padding: 2px;
+    flex-shrink: 0;
+  }
+
+  .filter-tab {
+    border: none;
+    background: transparent;
+    color: #a6adc8;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 4px 10px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+
+  .filter-tab.active {
+    background: #45475a;
+    color: #cdd6f4;
+    font-weight: 600;
+  }
+
+  .filter-tab:hover {
+    color: #cdd6f4;
+  }
+
+  /* —— Row 2 —— */
+  .row-2 {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    padding: 4px 0;
+    border-top: 1px solid rgba(255,255,255,0.05);
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .action-btn {
+    width: 40px;
+    height: 36px;
+    border: none;
+    background: transparent;
+    border-radius: 10px;
+    font-size: 20px;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    color: #cdd6f4;
+  }
+
+  .action-btn:hover {
+    background: rgba(255,255,255,0.08);
+  }
+
+  .action-btn.active {
+    background: #45475a;
+    transform: scale(1.05);
+  }
+
+  .action-btn .badge {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    width: 8px;
+    height: 8px;
+    background: #f38ba8;
+    border-radius: 50%;
+    border: 2px solid #181825;
+  }
+
+  /* —— 展开面板 —— */
+  .expandable-panel {
+    overflow: hidden;
+    max-height: 0;
+    transition: max-height 0.25s ease, padding 0.25s ease;
+    padding: 0 2px;
+  }
+
+  .expandable-panel.open {
+    max-height: 200px;
+    padding: 8px 2px 4px;
+  }
+
+  /* 快速创建 */
+  .quick-create {
+    display: flex;
+    gap: 6px;
+    align-items: flex-start;
+  }
+
+  .quick-create textarea {
+    flex: 1;
+    background: #313244;
+    border: 1px solid #45475a;
+    border-radius: 10px;
+    padding: 8px 10px;
+    color: #cdd6f4;
+    font-size: 13px;
+    font-family: inherit;
+    resize: none;
+    min-height: 36px;
+    line-height: 1.4;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  .quick-create textarea:focus {
+    border-color: #89b4fa;
+  }
+
+  .quick-create textarea::placeholder {
+    color: #585b70;
+  }
+
+  .quick-create .add-btn {
+    background: #89b4fa;
+    color: #1e1e2e;
+    border: none;
+    border-radius: 10px;
+    padding: 8px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s;
+  }
+
+  .quick-create .add-btn:hover {
+    background: #74c7ec;
+  }
+
+  /* 紧凑搜索面板 */
+  .compact-search {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .compact-search .search-input-row {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .compact-search .search-input-row input {
+    flex: 1;
+    background: #313244;
+    border: 1px solid #45475a;
+    border-radius: 10px;
+    padding: 7px 10px 7px 32px;
+    color: #cdd6f4;
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  .compact-search .search-input-row input:focus {
+    border-color: #89b4fa;
+  }
+
+  .compact-search .search-input-row input::placeholder {
+    color: #585b70;
+  }
+
+  .compact-search .search-input-row .search-icon-pos {
+    position: relative;
+    flex: 1;
+  }
+
+  .compact-search .search-input-row .search-icon-pos .icon {
+    position: absolute;
+    left: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 14px;
+    pointer-events: none;
+  }
+
+  .compact-search .filter-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .compact-search .filter-chips select,
+  .compact-search .filter-chips input[type="text"] {
+    background: #313244;
+    border: 1px solid #45475a;
+    border-radius: 8px;
+    padding: 4px 8px;
+    color: #cdd6f4;
+    font-size: 11px;
+    outline: none;
+    flex: 1;
+    min-width: 60px;
+  }
+
+  .compact-search .filter-chips select {
+    appearance: none;
+    cursor: pointer;
+    padding-right: 18px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23a6adc8' fill='none' stroke-width='1.5'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 6px center;
+  }
+
+  .compact-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: #45475a;
+    border-radius: 12px;
+    padding: 3px 10px;
+    font-size: 11px;
+    color: #cdd6f4;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+
+  .compact-chip:hover {
+    background: #585b70;
+  }
+
+  .compact-chip.active {
+    background: #89b4fa;
+    color: #1e1e2e;
+  }
+
+  .compact-chip .remove {
+    font-size: 10px;
+    opacity: 0.6;
+    margin-left: 2px;
+  }
+
+  /* ===== 展示模块 ===== */
+  .display-module {
+    flex: 1;
+    overflow-y: auto;
+    margin: 0 2px;
+    border-radius: 12px;
+    background: #181825;
+    padding: 10px 12px;
+  }
+
+  .display-module::-webkit-scrollbar {
+    width: 3px;
+  }
+  .display-module::-webkit-scrollbar-thumb {
+    background: #45475a;
+    border-radius: 10px;
+  }
+
+  /* 视图标题 */
+  .view-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+
+  .view-header h3 {
+    font-size: 13px;
+    color: #a6adc8;
+    font-weight: 600;
+  }
+
+  .view-header .count {
+    font-size: 11px;
+    color: #585b70;
+  }
+
+  /* 列表视图 */
+  .task-list .task-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 8px 6px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    transition: background 0.1s;
+  }
+
+  .task-list .task-item:last-child {
+    border-bottom: none;
+  }
+
+  .task-list .task-item:hover {
+    background: rgba(255,255,255,0.03);
+    border-radius: 8px;
+  }
+
+  .task-list .task-item .checkbox {
+    width: 16px;
+    height: 16px;
+    border: 2px solid #585b70;
+    border-radius: 4px;
+    flex-shrink: 0;
+    margin-top: 2px;
+    cursor: pointer;
+    transition: border-color 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .task-list .task-item .checkbox.done {
+    background: #a6e3a1;
+    border-color: #a6e3a1;
+  }
+
+  .task-list .task-item .checkbox.done::after {
+    content: '✓';
+    font-size: 10px;
+    color: #1e1e2e;
+    font-weight: 700;
+  }
+
+  .task-list .task-item .task-body {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .task-list .task-item .task-body .desc {
+    font-size: 13px;
+    color: #cdd6f4;
+    line-height: 1.4;
+  }
+
+  .task-list .task-item .task-body .desc.done-text {
+    text-decoration: line-through;
+    color: #585b70;
+  }
+
+  .task-list .task-item .task-body .meta {
+    display: flex;
+    gap: 6px;
+    margin-top: 3px;
+    font-size: 10px;
+    color: #585b70;
+    flex-wrap: wrap;
+  }
+
+  .task-list .task-item .task-body .meta .tag {
+    color: #89b4fa;
+  }
+
+  .task-list .task-item .task-body .meta .due {
+    color: #f9e2af;
+  }
+
+  .task-list .task-item .task-body .meta .pri {
+    font-weight: 600;
+  }
+
+  .task-list .task-item .actions {
+    display: flex;
+    gap: 2px;
+    flex-shrink: 0;
+    opacity: 0.5;
+  }
+
+  .task-list .task-item .actions span {
+    cursor: pointer;
+    font-size: 14px;
+    padding: 2px;
+    border-radius: 4px;
+  }
+
+  .task-list .task-item .actions span:hover {
+    background: rgba(255,255,255,0.08);
+  }
+
+  /* 空状态 */
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: #585b70;
+  }
+
+  .empty-state .big-icon {
+    font-size: 40px;
+    margin-bottom: 12px;
+  }
+  
+  .empty-state p {
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  /* 交互演示 */
+  .demo-hint {
+    flex-shrink: 0;
+    text-align: center;
+    padding: 6px;
+    color: #585b70;
+    font-size: 11px;
+    border-top: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .demo-hint span {
+    display: inline-block;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 1; }
+  }
+
+  /* ===== 主题切换 ===== */
+  .theme-toggle {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: #313244;
+    color: #cdd6f4;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 14px;
+  }
+
+  /* 亮色主题 - 用户可通过按钮切换 */
+  body.light .phone {
+    background: #ffffff;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.15), 0 0 0 2px #e0e0e0;
+  }
+  body.light .status-bar { color: #4c4f69; }
+  body.light .functional-module { background: #f5f5f9; }
+  body.light .row-1 .title-area h2 { color: #4c4f69; }
+  body.light .stat-item { background: rgba(0,0,0,0.04); }
+  body.light .stat-item .stat-label { color: #6c6f85; }
+  body.light .filter-tab { color: #6c6f85; }
+  body.light .filter-tab.active { background: #dce0e8; color: #4c4f69; }
+  body.light .action-btn { color: #4c4f69; }
+  body.light .action-btn.active { background: #dce0e8; }
+  body.light .action-btn .badge { border-color: #f5f5f9; }
+  body.light .row-2 { border-color: rgba(0,0,0,0.06); }
+  body.light .quick-create textarea,
+  body.light .compact-search .search-input-row input,
+  body.light .compact-search .filter-chips select,
+  body.light .compact-search .filter-chips input[type="text"] { 
+    background: #eff1f5; border-color: #dce0e8; color: #4c4f69; 
+  }
+  body.light .quick-create textarea::placeholder,
+  body.light .compact-search .search-input-row input::placeholder { color: #9ca0b0; }
+  body.light .display-module { background: #f5f5f9; }
+  body.light .task-list .task-item { border-color: rgba(0,0,0,0.04); }
+  body.light .task-list .task-item .task-body .desc { color: #4c4f69; }
+  body.light .task-list .task-item .task-body .desc.done-text { color: #9ca0b0; }
+  body.light .task-list .task-item .checkbox { border-color: #9ca0b0; }
+  body.light .compact-chip { background: #dce0e8; color: #4c4f69; }
+  body.light .compact-chip.active { background: #7287fd; color: #fff; }
+  body.light .view-header h3 { color: #6c6f85; }
+  body.light .empty-state { color: #9ca0b0; }
+  body.light .demo-hint { color: #9ca0b0; border-color: rgba(0,0,0,0.06); }
+</style>
+</head>
+<body>
+
+<button class="theme-toggle" onclick="document.body.classList.toggle('light')">🌓 切换主题</button>
+
+<!-- 手机原型 -->
+<div class="phone" id="phone">
+  <!-- 状态栏 -->
+  <div class="status-bar">
+    <span>9:41</span>
+    <span>📶 🔋</span>
+  </div>
+
+  <!-- ===== 功能模块 ===== -->
+  <div class="functional-module">
+    
+    <!-- Row 1: 标题 + 统计 + 筛选 -->
+    <div class="row-1">
+      <div class="title-area">
+        <span class="icon">✅</span>
+        <h2>SmartTask</h2>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat-item pending">
+          <span class="stat-label">待办</span>
+          <span class="stat-num">7</span>
+        </div>
+        <div class="stat-item overdue">
+          <span class="stat-label">逾期</span>
+          <span class="stat-num">2</span>
+        </div>
+        <div class="stat-item today">
+          <span class="stat-label">今天</span>
+          <span class="stat-num">4</span>
+        </div>
+        <div class="stat-item upcoming">
+          <span class="stat-label">近期</span>
+          <span class="stat-num">6</span>
+        </div>
+        <div class="progress-mini">
+          <div class="bar"><div class="fill" style="width: 42%"></div></div>
+          <span class="pct">42%</span>
+        </div>
+      </div>
+
+      <div class="filter-tabs">
+        <button class="filter-tab">待办</button>
+        <button class="filter-tab">已完成</button>
+        <button class="filter-tab active">全部</button>
+      </div>
+    </div>
+
+    <!-- Row 2: 功能按钮 -->
+    <div class="row-2">
+      <button class="action-btn" id="btnQuickAdd" title="快速创建" onclick="togglePanel('quickPanel', this)">➕</button>
+      <button class="action-btn" id="btnSearch" title="搜索" onclick="togglePanel('searchPanel', this)">🔍</button>
+      <button class="action-btn active" title="列表视图" onclick="switchView('list', this)">📋</button>
+      <button class="action-btn" title="看板视图" onclick="switchView('kanban', this)">🗂️</button>
+      <button class="action-btn" title="日历视图" onclick="switchView('calendar', this)">📅</button>
+      <button class="action-btn" title="时间线视图" onclick="switchView('timeline', this)">📊</button>
+    </div>
+
+    <!-- ➕ 展开：快速创建 -->
+    <div class="expandable-panel" id="quickPanel">
+      <div class="quick-create">
+        <textarea rows="1" placeholder="输入任务描述...">设计移动端新布局</textarea>
+        <button class="add-btn">添加</button>
+      </div>
+    </div>
+
+    <!-- 🔍 展开：紧凑搜索 -->
+    <div class="expandable-panel" id="searchPanel">
+      <div class="compact-search">
+        <div class="search-input-row">
+          <div class="search-icon-pos" style="flex:1">
+            <span class="icon">🔍</span>
+            <input type="text" placeholder="搜索任务..." style="width:100%">
+          </div>
+        </div>
+        <div class="filter-chips">
+          <select><option>📅 日期</option><option>今天</option><option>本周</option><option>逾期</option></select>
+          <select><option>🎯 优先级</option><option>最高</option><option>高</option><option>中</option></select>
+          <input type="text" placeholder="# 标签">
+          <span class="compact-chip active">🏷️ 工作 <span class="remove">✕</span></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 展示模块 ===== -->
+  <div class="display-module" id="displayModule">
+    <!-- 列表视图 -->
+    <div id="view-list">
+      <div class="view-header">
+        <h3>📋 列表视图</h3>
+        <span class="count">共 7 项</span>
+      </div>
+      <div class="task-list">
+        <div class="task-item">
+          <div class="checkbox" onclick="this.classList.toggle('done')"></div>
+          <div class="task-body">
+            <div class="desc">设计移动端新布局原型</div>
+            <div class="meta">
+              <span class="pri" style="color:#f38ba8">🔺高</span>
+              <span class="due">📅 今天</span>
+              <span class="tag">#UI</span>
+              <span class="tag">#mobile</span>
+            </div>
+          </div>
+          <div class="actions"><span>✏️</span><span>➕</span></div>
+        </div>
+        <div class="task-item">
+          <div class="checkbox done" onclick="this.classList.toggle('done')"></div>
+          <div class="task-body">
+            <div class="desc done-text">优化移动端响应式布局</div>
+            <div class="meta">
+              <span class="pri" style="color:#a6e3a1">🔽低</span>
+              <span class="due">📅 昨天</span>
+              <span class="tag">#css</span>
+            </div>
+          </div>
+          <div class="actions"><span>✏️</span><span>➕</span></div>
+        </div>
+        <div class="task-item">
+          <div class="checkbox" onclick="this.classList.toggle('done')"></div>
+          <div class="task-body">
+            <div class="desc">修复时间线视图在移动端的展示问题</div>
+            <div class="meta">
+              <span class="pri" style="color:#89b4fa">🔼中</span>
+              <span class="due" style="color:#f38ba8">📅 逾期 2天</span>
+              <span class="tag">#bug</span>
+            </div>
+          </div>
+          <div class="actions"><span>✏️</span><span>➕</span></div>
+        </div>
+        <div class="task-item">
+          <div class="checkbox" onclick="this.classList.toggle('done')"></div>
+          <div class="task-body">
+            <div class="desc">添加日历视图触摸优化</div>
+            <div class="meta">
+              <span class="pri" style="color:#a6e3a1">🔽低</span>
+              <span class="due">📅 明天</span>
+              <span class="tag">#enhance</span>
+            </div>
+          </div>
+          <div class="actions"><span>✏️</span><span>➕</span></div>
+        </div>
+        <div class="task-item">
+          <div class="checkbox" onclick="this.classList.toggle('done')"></div>
+          <div class="task-body">
+            <div class="desc">更新中文翻译文件</div>
+            <div class="meta">
+              <span class="pri" style="color:#585b70">⚪低</span>
+              <span class="tag">#i18n</span>
+            </div>
+          </div>
+          <div class="actions"><span>✏️</span><span>➕</span></div>
+        </div>
+        <div class="task-item">
+          <div class="checkbox" onclick="this.classList.toggle('done')"></div>
+          <div class="task-body">
+            <div class="desc">调研 Obsidian 插件审核风险标记问题</div>
+            <div class="meta">
+              <span class="pri" style="color:#f38ba8">🔺高</span>
+              <span class="due">📅 周三</span>
+              <span class="tag">#research</span>
+            </div>
+          </div>
+          <div class="actions"><span>✏️</span><span>➕</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 看板视图 (隐藏) -->
+    <div id="view-kanban" style="display:none">
+      <div class="view-header">
+        <h3>🗂️ 看板视图</h3>
+        <span class="count">3 列</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="background:rgba(255,255,255,0.03);border-radius:10px;padding:8px">
+          <div style="font-size:12px;color:#f38ba8;font-weight:600;margin-bottom:6px">⏳ 待办 · 4</div>
+          <div style="font-size:12px;color:#cdd6f4;padding:4px 6px;background:rgba(255,255,255,0.04);border-radius:6px;margin-bottom:4px">设计移动端新布局原型</div>
+          <div style="font-size:12px;color:#cdd6f4;padding:4px 6px;background:rgba(255,255,255,0.04);border-radius:6px;margin-bottom:4px">修复时间线视图问题</div>
+          <div style="font-size:12px;color:#cdd6f4;padding:4px 6px;background:rgba(255,255,255,0.04);border-radius:6px">添加日历触摸优化</div>
+        </div>
+        <div style="background:rgba(255,255,255,0.03);border-radius:10px;padding:8px">
+          <div style="font-size:12px;color:#a6e3a1;font-weight:600;margin-bottom:6px">✅ 已完成 · 6</div>
+          <div style="font-size:12px;color:#585b70;padding:4px 6px;background:rgba(255,255,255,0.04);border-radius:6px;text-decoration:line-through">优化移动端响应式布局</div>
+        </div>
+        <div style="background:rgba(255,255,255,0.03);border-radius:10px;padding:8px">
+          <div style="font-size:12px;color:#89b4fa;font-weight:600;margin-bottom:6px">📋 待分类 · 2</div>
+          <div style="font-size:12px;color:#cdd6f4;padding:4px 6px;background:rgba(255,255,255,0.04);border-radius:6px">更新中文翻译文件</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 日历视图 (隐藏) -->
+    <div id="view-calendar" style="display:none">
+      <div class="view-header">
+        <h3>📅 七月 2026</h3>
+        <span class="count">本周</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;font-size:11px">
+        <div style="color:#585b70;padding:4px 0">一</div><div style="color:#585b70;padding:4px 0">二</div>
+        <div style="color:#585b70;padding:4px 0">三</div><div style="color:#585b70;padding:4px 0">四</div>
+        <div style="color:#585b70;padding:4px 0">五</div><div style="color:#585b70;padding:4px 0">六</div>
+        <div style="color:#f38ba8;padding:4px 0">日</div>
+        <div style="color:#585b70;padding:6px 0">30</div>
+        <div style="color:#585b70;padding:6px 0">1</div>
+        <div style="color:#cdd6f4;padding:6px 0;position:relative">
+          2<div style="position:absolute;bottom:1px;left:50%;transform:translateX(-50%);width:4px;height:4px;background:#a6e3a1;border-radius:50%"></div>
+        </div>
+        <div style="color:#cdd6f4;padding:6px 0;position:relative">
+          3<div style="position:absolute;bottom:1px;left:50%;transform:translateX(-50%);width:4px;height:4px;background:#a6e3a1;border-radius:50%"></div>
+        </div>
+        <div style="color:#cdd6f4;padding:6px 0;position:relative">
+          4<div style="position:absolute;bottom:1px;left:50%;transform:translateX(-50%);width:8px;height:8px;background:#89b4fa;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:8px;color:#1e1e2e;font-weight:700">2</div>
+        </div>
+        <div style="color:#cdd6f4;padding:6px 0;position:relative">
+          5<div style="position:absolute;bottom:1px;left:50%;transform:translateX(-50%);width:4px;height:4px;background:#f38ba8;border-radius:50%"></div>
+        </div>
+        <div style="color:#f38ba8;padding:6px 0">6</div>
+        <div style="color:#585b70;padding:6px 0">7</div>
+        <div style="color:#585b70;padding:6px 0">8</div>
+        <div style="color:#cdd6f4;padding:6px 0;background:#89b4fa20;border-radius:4px;position:relative">
+          9<div style="position:absolute;bottom:1px;left:50%;transform:translateX(-50%);width:4px;height:4px;background:#a6e3a1;border-radius:50%"></div>
+        </div>
+        <div style="color:#cdd6f4;padding:6px 0;position:relative">
+          10<div style="position:absolute;bottom:1px;left:50%;transform:translateX(-50%);width:4px;height:4px;background:#a6e3a1;border-radius:50%"></div>
+        </div>
+        <div style="color:#cdd6f4;padding:6px 0;background:#89b4fa20;border-radius:4px;font-weight:700">11</div>
+        <div style="color:#cdd6f4;padding:6px 0">12</div>
+        <div style="color:#cdd6f4;padding:6px 0">13</div>
+      </div>
+    </div>
+
+    <!-- 时间线视图 (隐藏) -->
+    <div id="view-timeline" style="display:none">
+      <div class="view-header">
+        <h3>📊 时间线视图</h3>
+        <span class="count">按天</span>
+      </div>
+      <div>
+        <div style="display:flex;gap:4px;margin-bottom:8px">
+          <button style="background:#45475a;border:none;color:#cdd6f4;padding:3px 8px;border-radius:6px;font-size:10px;cursor:pointer">◀</button>
+          <span style="font-size:11px;color:#a6adc8;flex:1;text-align:center;padding:3px 0">2026-07-14 周二</span>
+          <button style="background:#45475a;border:none;color:#cdd6f4;padding:3px 8px;border-radius:6px;font-size:10px;cursor:pointer">▶</button>
+          <button style="background:#89b4fa;border:none;color:#1e1e2e;padding:3px 8px;border-radius:6px;font-size:10px;cursor:pointer;font-weight:600">今天</button>
+        </div>
+        <div style="margin-bottom:10px;display:flex;gap:4px;flex-wrap:wrap">
+          <span style="font-size:10px;background:rgba(255,255,255,0.05);color:#a6adc8;padding:3px 8px;border-radius:6px;cursor:pointer">按天</span>
+          <span style="font-size:10px;background:rgba(255,255,255,0.05);color:#a6adc8;padding:3px 8px;border-radius:6px;cursor:pointer">按周</span>
+          <span style="font-size:10px;background:rgba(255,255,255,0.05);color:#a6adc8;padding:3px 8px;border-radius:6px;cursor:pointer">按月</span>
+          <span style="font-size:10px;background:rgba(255,255,255,0.05);color:#a6adc8;padding:3px 8px;border-radius:6px;cursor:pointer">经典</span>
+          <span style="font-size:10px;background:rgba(255,255,255,0.05);color:#a6adc8;padding:3px 8px;border-radius:6px;cursor:pointer">甘特</span>
+          <span style="font-size:10px;background:#45475a;color:#cdd6f4;padding:3px 8px;border-radius:6px;cursor:pointer;font-weight:600">交错</span>
+          <span style="font-size:10px;background:rgba(255,255,255,0.05);color:#a6adc8;padding:3px 8px;border-radius:6px;cursor:pointer">卡片</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div>
+            <div style="font-size:11px;color:#a6e3a1;font-weight:600;margin-bottom:4px">📅 今天 · 7月14日</div>
+            <div style="font-size:12px;color:#cdd6f4;padding:6px 8px;background:rgba(255,255,255,0.03);border-radius:6px;margin-bottom:3px">
+              <span style="color:#f38ba8">⬜</span> 设计移动端新布局原型 <span style="font-size:10px;color:#585b70">🔺高</span>
+            </div>
+            <div style="font-size:12px;color:#cdd6f4;padding:6px 8px;background:rgba(255,255,255,0.03);border-radius:6px;margin-bottom:3px">
+              <span style="color:#a6e3a1">✅</span> 优化移动端响应式布局 <span style="font-size:10px;color:#585b70">🔽低</span>
+            </div>
+          </div>
+          <div>
+            <div style="font-size:11px;color:#f38ba8;font-weight:600;margin-bottom:4px">⚠️ 逾期</div>
+            <div style="font-size:12px;color:#cdd6f4;padding:6px 8px;background:rgba(255,255,255,0.03);border-radius:6px">
+              <span style="color:#f38ba8">⬜</span> 修复时间线视图展示问题 <span style="font-size:10px;color:#f38ba8">逾期2天</span>
+            </div>
+          </div>
+          <div>
+            <div style="font-size:11px;color:#f9e2af;font-weight:600;margin-bottom:4px">📅 明天 · 7月15日</div>
+            <div style="font-size:12px;color:#cdd6f4;padding:6px 8px;background:rgba(255,255,255,0.03);border-radius:6px">
+              <span style="color:#f38ba8">⬜</span> 添加日历视图触摸优化 <span style="font-size:10px;color:#585b70">🔽低</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 底部演示提示 -->
+  <div class="demo-hint">
+    <span>👆 点击 ➕ 或 🔍 按钮查看展开效果 · 点击 📋🗂️📅📊 切换视图</span>
+  </div>
+</div>
+
+<script>
+  // 展开面板切换
+  function togglePanel(panelId, btn) {
+    const panel = document.getElementById(panelId);
+    const isOpen = panel.classList.contains('open');
+    
+    // 关闭所有面板
+    document.querySelectorAll('.expandable-panel').forEach(p => p.classList.remove('open'));
+    document.querySelectorAll('.action-btn').forEach(b => b.classList.remove('active'));
+    
+    if (!isOpen) {
+      panel.classList.add('open');
+      btn.classList.add('active');
+    }
+  }
+
+  // 视图切换
+  function switchView(view, btn) {
+    // 更新按钮状态
+    document.querySelectorAll('.row-2 .action-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    
+    // 切换视图显示
+    const views = ['list', 'kanban', 'calendar', 'timeline'];
+    views.forEach(v => {
+      const el = document.getElementById('view-' + v);
+      if (el) el.style.display = v === view ? 'block' : 'none';
+    });
+    
+    // 关闭展开面板
+    document.querySelectorAll('.expandable-panel').forEach(p => p.classList.remove('open'));
+  }
+</script>
+
+</body>
+</html>
+        <span class="count">按天</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div>
+          <div style="font-size:11px;color:#

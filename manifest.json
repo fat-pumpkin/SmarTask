@@ -1,10 +1,10 @@
-{
-  "id": "smarttask",
-  "name": "SmartTask",
-  "version": "2.0.2",
-  "minAppVersion": "1.2.0",
-  "description": "A high-performance, easy-to-use intelligent task management plugin that supports multiple views, quick creation, and smart queries.",
-  "author": "SmartTask Team",
-  "authorUrl": "https://github.com",
-  "isDesktopOnly": false
+﻿{
+    "id":  "smarttask",
+    "name":  "SmartTask",
+    "version":  "2.0.3",
+    "minAppVersion":  "1.5.0",
+    "description":  "A high-performance, easy-to-use intelligent task management plugin that supports multiple views, quick creation, and smart queries.",
+    "author":  "SmartTask Team",
+    "authorUrl":  "https://github.com",
+    "isDesktopOnly":  false
 }

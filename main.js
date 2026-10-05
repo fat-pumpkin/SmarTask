@@ -63,6 +63,7 @@ var TaskParser = class {
     const dueDate = this.extractDueDate(cleanDescription);
     const scheduledDate = this.extractScheduledDate(cleanDescription);
     const startDate = this.extractStartDate(cleanDescription);
+    const createdDate = this.extractCreatedDate(cleanDescription);
     const completedDate = completed ? this.extractCompletedDate(cleanDescription) : void 0;
     const priority = this.extractPriority(cleanDescription);
     const recurrence = this.extractRecurrence(cleanDescription);
@@ -78,6 +79,7 @@ var TaskParser = class {
       dueDate,
       scheduledDate,
       startDate,
+      createdDate,
       priority,
       tags,
       wikiLinks,
@@ -97,6 +99,10 @@ var TaskParser = class {
   }
   static extractStartDate(text) {
     const match = text.match(this.START_DATE_REGEX);
+    return match ? match[1] : void 0;
+  }
+  static extractCreatedDate(text) {
+    const match = text.match(this.CREATED_DATE_REGEX);
     return match ? match[1] : void 0;
   }
   static extractCompletedDate(text) {
@@ -166,6 +172,7 @@ var TaskParser = class {
     clean = clean.replace(this.DUE_DATE_REGEX, "");
     clean = clean.replace(this.SCHEDULED_DATE_REGEX, "");
     clean = clean.replace(this.START_DATE_REGEX, "");
+    clean = clean.replace(this.CREATED_DATE_REGEX, "");
     clean = clean.replace(this.COMPLETED_DATE_REGEX, "");
     clean = clean.replace(this.PRIORITY_REGEX, "");
     clean = clean.replace(this.RECURRENCE_REGEX, "");
@@ -219,6 +226,8 @@ var TaskParser = class {
       line += ` \u23F3 ${task.scheduledDate}`;
     if (task.startDate)
       line += ` \u{1F6EB} ${task.startDate}`;
+    if (task.createdDate)
+      line += ` \u{1F58A} ${task.createdDate}`;
     if (task.completedDate)
       line += ` \u2705 ${task.completedDate}`;
     if (task.recurrence)
@@ -233,6 +242,7 @@ TaskParser.TASK_REGEX = /^\s*([-*+]|\d+\.)\s+\[([ xX])\]\s+(.+)$/u;
 TaskParser.DUE_DATE_REGEX = /[📅📆🗓]\s*(\d{4}-\d{2}-\d{2})/u;
 TaskParser.SCHEDULED_DATE_REGEX = /[⏳⌛]\s*(\d{4}-\d{2}-\d{2})/u;
 TaskParser.START_DATE_REGEX = /[🛫🚀]\s*(\d{4}-\d{2}-\d{2})/u;
+TaskParser.CREATED_DATE_REGEX = /[🖊✍]\s*(\d{4}-\d{2}-\d{2})/u;
 TaskParser.COMPLETED_DATE_REGEX = /✅\s*(\d{4}-\d{2}-\d{2})/u;
 TaskParser.PRIORITY_REGEX = /[🔝🔺⏫🔼🔽⏬🔻]\s*/gu;
 TaskParser.RECURRENCE_REGEX = /🔁\s+(.+)$/u;
@@ -248,6 +258,21 @@ TaskParser.PRIORITY_MAP = {
   "\u{1F53B}": "lowest" /* Lowest */
 };
 
+// src/dateUtils.ts
+function formatLocalDate(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+function parseLocalDate(dateStr) {
+  const parts = dateStr.split("-").map(Number);
+  if (parts.length === 3 && parts.every((p) => Number.isFinite(p))) {
+    return new Date(parts[0], parts[1] - 1, parts[2]);
+  }
+  return new Date(dateStr);
+}
+
 // src/taskIndex.ts
 var DEBOUNCE_DELAY_MS = 1e3;
 var YIELD_INTERVAL_MS = 10;
@@ -260,6 +285,7 @@ var TaskIndex = class {
     this.indexingPromise = null;
     this.debounceTimer = null;
     this.listeners = /* @__PURE__ */ new Set();
+    this.vaultEventRefs = [];
     this.app = app;
     this.vault = app.vault;
   }
@@ -268,28 +294,28 @@ var TaskIndex = class {
     this.registerEventHandlers();
   }
   registerEventHandlers() {
-    this.vault.on("create", (file) => {
+    this.vaultEventRefs.push(this.vault.on("create", (file) => {
       if (file instanceof import_obsidian.TFile && file.extension === "md") {
         this.scheduleReindex();
       }
-    });
-    this.vault.on("delete", (file) => {
+    }));
+    this.vaultEventRefs.push(this.vault.on("delete", (file) => {
       if (file instanceof import_obsidian.TFile && file.extension === "md") {
         this.removeFileFromCache(file.path);
         this.notifyListeners();
       }
-    });
-    this.vault.on("modify", (file) => {
+    }));
+    this.vaultEventRefs.push(this.vault.on("modify", (file) => {
       if (file instanceof import_obsidian.TFile && file.extension === "md") {
         this.scheduleReindex();
       }
-    });
-    this.vault.on("rename", (file, oldPath) => {
+    }));
+    this.vaultEventRefs.push(this.vault.on("rename", (file, oldPath) => {
       if (file instanceof import_obsidian.TFile && file.extension === "md") {
         this.removeFileFromCache(oldPath);
         this.scheduleReindex();
       }
-    });
+    }));
   }
   scheduleReindex() {
     if (this.debounceTimer !== null) {
@@ -423,7 +449,7 @@ var TaskIndex = class {
       });
       let updatedLine = newLine;
       if (completed) {
-        const today = (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
+        const today = formatLocalDate(/* @__PURE__ */ new Date());
         if (!/✅\s*\d{4}-\d{2}-\d{2}/.test(updatedLine)) {
           updatedLine += ` \u2705 ${today}`;
         }
@@ -431,6 +457,22 @@ var TaskIndex = class {
         updatedLine = updatedLine.replace(/\s*✅\s*\d{4}-\d{2}-\d{2}/, "");
       }
       lines[lineIndex] = updatedLine;
+      if (completed && task.recurrence) {
+        const nextDue = this.computeNextDueDate(task.dueDate, task.recurrence);
+        const newTask = {
+          ...task,
+          id: `${task.filePath}:${lineIndex + 2}`,
+          completed: false,
+          completedDate: void 0,
+          dueDate: nextDue,
+          subtasks: [],
+          parentId: task.parentId
+        };
+        const indentMatch = line.match(/^(\s*)/);
+        const indent = indentMatch ? indentMatch[1] : "";
+        const insertIndex = this.findSubtreeEnd(lines, lineIndex);
+        lines.splice(insertIndex, 0, indent + TaskParser.taskToMarkdown(newTask));
+      }
       await this.vault.modify(file, lines.join("\n"));
     }
   }
@@ -453,13 +495,67 @@ var TaskIndex = class {
     const content = await this.vault.read(file);
     const lines = content.split("\n");
     if (task.lineNumber > 0 && task.lineNumber <= lines.length) {
-      lines.splice(task.lineNumber - 1, 1);
+      const lineIndex = task.lineNumber - 1;
+      const endIndex = this.findSubtreeEnd(lines, lineIndex);
+      lines.splice(lineIndex, endIndex - lineIndex);
       await this.vault.modify(file, lines.join("\n"));
     }
   }
+  /**
+   * 计算重复任务的下一次截止日期。
+   * 以当前截止日期（若无则今天）为基准，按频率递进 interval 个周期。
+   */
+  computeNextDueDate(dueDate, rule) {
+    const base = dueDate ? parseLocalDate(dueDate) : /* @__PURE__ */ new Date();
+    const interval = Math.max(1, rule.interval || 1);
+    const next = new Date(base);
+    switch (rule.frequency) {
+      case "daily":
+        next.setDate(next.getDate() + interval);
+        break;
+      case "weekly":
+        next.setDate(next.getDate() + 7 * interval);
+        break;
+      case "monthly":
+        next.setMonth(next.getMonth() + interval);
+        break;
+      case "yearly":
+        next.setFullYear(next.getFullYear() + interval);
+        break;
+    }
+    return formatLocalDate(next);
+  }
+  /**
+   * 返回 startIndex（0 起始，指向一行任务）所在任务"子树"结束后的插入下标：
+   * 目标行本身 + 其后所有缩进更深（或中间空行）的行，遇到缩进相同或更浅的行停止。
+   */
+  findSubtreeEnd(lines, startIndex) {
+    const indentMatch = lines[startIndex].match(/^(\s*)/);
+    const indent = indentMatch ? indentMatch[1].length : 0;
+    let i = startIndex + 1;
+    while (i < lines.length) {
+      const l = lines[i];
+      if (l.trim() === "") {
+        i++;
+        continue;
+      }
+      const li = l.match(/^(\s*)/)[1].length;
+      if (li > indent) {
+        i++;
+      } else {
+        break;
+      }
+    }
+    return i;
+  }
   destroy() {
+    for (const ref of this.vaultEventRefs) {
+      this.vault.offref(ref);
+    }
+    this.vaultEventRefs = [];
     if (this.debounceTimer !== null) {
       window.clearTimeout(this.debounceTimer);
+      this.debounceTimer = null;
     }
     this.listeners.clear();
     this.taskCache.clear();
@@ -486,7 +582,14 @@ var en = {
     month: "Month",
     overdue: "Overdue",
     thisWeek: "This week",
-    thisMonth: "This month"
+    thisMonth: "This month",
+    sun: "Sun",
+    mon: "Mon",
+    tue: "Tue",
+    wed: "Wed",
+    thu: "Thu",
+    fri: "Fri",
+    sat: "Sat"
   },
   filters: {
     all: "All",
@@ -526,7 +629,108 @@ var en = {
     searchPlaceholder: "Search tasks...",
     tagPlaceholder: "Enter tag and press Enter",
     subtask: "Subtask",
-    subtasks: "Subtasks"
+    subtasks: "Subtasks",
+    taskDescPlaceholder: "Enter task description...",
+    subtaskDescPlaceholder: "Subtask description...",
+    emptyIcon: "\u{1F389}",
+    noDatedTasks: "No tasks with due dates",
+    addDueDateHint: "Add a due date to a task to see it in the timeline",
+    noteNotFound: "Note not found: ",
+    noteCreated: "Created note: ",
+    tasks: "tasks",
+    edit: "Edit"
+  },
+  calendar: {
+    prevMonth: "Previous month",
+    nextMonth: "Next month",
+    weekdayShort: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+    yearMonthFormat: "{month}/{year}"
+  },
+  timeline: {
+    groupByDay: "By day",
+    groupByWeek: "By week",
+    groupByMonth: "By month",
+    startLabel: "Start",
+    dueLabel: "Due",
+    none: "None",
+    monthFormat: "{n}"
+  },
+  wheelPicker: {
+    daySuffix: "",
+    yearSuffix: "",
+    monthSuffix: ""
+  },
+  ui: {
+    add: "Add",
+    search: "Search",
+    edit: "Edit",
+    cancel: "Cancel",
+    create: "Create",
+    save: "Save",
+    delete: "Delete",
+    close: "Close",
+    loading: "Loading...",
+    ok: "OK"
+  },
+  editor: {
+    title: "Edit Task",
+    description: "Description",
+    dueDate: "Due Date",
+    priority: "Priority",
+    tags: "Tags (comma-separated)",
+    deleteTask: "Delete Task",
+    confirmDeleteTitle: "Confirm Delete",
+    confirmDeleteMessage: "Are you sure you want to delete this task?",
+    descEmpty: "Description cannot be empty",
+    updated: "Task updated \u2705",
+    updateFailed: "Failed to update task",
+    deleted: "Task deleted",
+    deleteFailed: "Failed to delete task",
+    dayTasks: "{date} Tasks",
+    selectDate: "Select Date"
+  },
+  viewTitles: {
+    list: "List View",
+    kanban: "Kanban View",
+    calendar: "Calendar View",
+    timeline: "Timeline View",
+    quickCreate: "Quick Create",
+    search: "Search"
+  },
+  quickCreate: {
+    placeholder: "Enter task description...",
+    noDate: "No date",
+    today: "Today",
+    tomorrow: "Tomorrow",
+    custom: "Custom date",
+    noPriority: "No priority",
+    saveTo: "Save to:",
+    nextWeek: "Next Week"
+  },
+  kanban: {
+    todo: "Todo",
+    done: "Done",
+    emptyTodo: "No pending tasks",
+    emptyDone: "No completed tasks"
+  },
+  tooltips: {
+    editTask: "Edit task",
+    addSubtask: "Add subtask",
+    quickCreate: "Quick create",
+    search: "Search",
+    listView: "List view",
+    kanbanView: "Kanban view",
+    calendarView: "Calendar view",
+    timelineView: "Timeline view"
+  },
+  notices: {
+    taskCompleted: "Task completed \u{1F389}",
+    taskRestored: "Task restored",
+    taskCreated: "Task created \u2705",
+    subtaskAdded: "Subtask added \u2705",
+    noSaveLocation: "Could not determine save location",
+    createFailed: "Failed to create task",
+    updateFailed: "Failed to update task"
   },
   commands: {
     openView: "Open SmartTask View",
@@ -604,7 +808,14 @@ var zh = {
     month: "\u6708",
     overdue: "\u5DF2\u903E\u671F",
     thisWeek: "\u672C\u5468\u5185",
-    thisMonth: "\u672C\u6708\u5185"
+    thisMonth: "\u672C\u6708\u5185",
+    sun: "\u5468\u65E5",
+    mon: "\u5468\u4E00",
+    tue: "\u5468\u4E8C",
+    wed: "\u5468\u4E09",
+    thu: "\u5468\u56DB",
+    fri: "\u5468\u4E94",
+    sat: "\u5468\u516D"
   },
   filters: {
     all: "\u5168\u90E8",
@@ -644,7 +855,108 @@ var zh = {
     searchPlaceholder: "\u641C\u7D22\u4EFB\u52A1...",
     tagPlaceholder: "\u8F93\u5165\u6807\u7B7E\u5E76\u6309\u56DE\u8F66",
     subtask: "\u5B50\u4EFB\u52A1",
-    subtasks: "\u5B50\u4EFB\u52A1"
+    subtasks: "\u5B50\u4EFB\u52A1",
+    taskDescPlaceholder: "\u8F93\u5165\u4EFB\u52A1\u63CF\u8FF0...",
+    subtaskDescPlaceholder: "\u5B50\u4EFB\u52A1\u63CF\u8FF0...",
+    emptyIcon: "\u{1F389}",
+    noDatedTasks: "\u6682\u65E0\u5E26\u65E5\u671F\u7684\u4EFB\u52A1",
+    addDueDateHint: "\u4E3A\u4EFB\u52A1\u6DFB\u52A0\u622A\u6B62\u65E5\u671F\u5373\u53EF\u5728\u65F6\u95F4\u7EBF\u4E2D\u67E5\u770B",
+    noteNotFound: "\u672A\u627E\u5230\u7B14\u8BB0: ",
+    noteCreated: "\u5DF2\u521B\u5EFA\u7B14\u8BB0: ",
+    tasks: "\u4E2A\u4EFB\u52A1",
+    edit: "\u7F16\u8F91"
+  },
+  calendar: {
+    prevMonth: "\u4E0A\u4E2A\u6708",
+    nextMonth: "\u4E0B\u4E2A\u6708",
+    weekdayShort: ["\u65E5", "\u4E00", "\u4E8C", "\u4E09", "\u56DB", "\u4E94", "\u516D"],
+    yearMonthFormat: "{year}\u5E74{month}\u6708"
+  },
+  timeline: {
+    groupByDay: "\u6309\u5929",
+    groupByWeek: "\u6309\u5468",
+    groupByMonth: "\u6309\u6708",
+    startLabel: "\u8D77\u59CB",
+    dueLabel: "\u622A\u6B62",
+    none: "\u65E0",
+    monthFormat: "{n}\u6708"
+  },
+  wheelPicker: {
+    daySuffix: "\u65E5",
+    yearSuffix: "\u5E74",
+    monthSuffix: "\u6708"
+  },
+  ui: {
+    add: "\u6DFB\u52A0",
+    search: "\u641C\u7D22",
+    edit: "\u7F16\u8F91",
+    cancel: "\u53D6\u6D88",
+    create: "\u521B\u5EFA",
+    save: "\u4FDD\u5B58",
+    delete: "\u5220\u9664",
+    close: "\u5173\u95ED",
+    loading: "\u52A0\u8F7D\u4E2D...",
+    ok: "\u786E\u5B9A"
+  },
+  editor: {
+    title: "\u7F16\u8F91\u4EFB\u52A1",
+    description: "\u4EFB\u52A1\u63CF\u8FF0",
+    dueDate: "\u622A\u6B62\u65E5\u671F",
+    priority: "\u4F18\u5148\u7EA7",
+    tags: "\u6807\u7B7E\uFF08\u9017\u53F7\u5206\u9694\uFF09",
+    deleteTask: "\u5220\u9664\u4EFB\u52A1",
+    confirmDeleteTitle: "\u786E\u8BA4\u5220\u9664",
+    confirmDeleteMessage: "\u786E\u5B9A\u8981\u5220\u9664\u8BE5\u4EFB\u52A1\u5417\uFF1F",
+    descEmpty: "\u4EFB\u52A1\u63CF\u8FF0\u4E0D\u80FD\u4E3A\u7A7A",
+    updated: "\u4EFB\u52A1\u5DF2\u66F4\u65B0 \u2705",
+    updateFailed: "\u66F4\u65B0\u4EFB\u52A1\u5931\u8D25",
+    deleted: "\u4EFB\u52A1\u5DF2\u5220\u9664",
+    deleteFailed: "\u5220\u9664\u4EFB\u52A1\u5931\u8D25",
+    dayTasks: "{date} \u7684\u4EFB\u52A1",
+    selectDate: "\u9009\u62E9\u65E5\u671F"
+  },
+  viewTitles: {
+    list: "\u5217\u8868\u89C6\u56FE",
+    kanban: "\u770B\u677F\u89C6\u56FE",
+    calendar: "\u65E5\u5386\u89C6\u56FE",
+    timeline: "\u65F6\u95F4\u7EBF\u89C6\u56FE",
+    quickCreate: "\u5FEB\u901F\u521B\u5EFA",
+    search: "\u641C\u7D22"
+  },
+  quickCreate: {
+    placeholder: "\u8F93\u5165\u4EFB\u52A1\u63CF\u8FF0...",
+    noDate: "\u65E0\u65E5\u671F",
+    today: "\u4ECA\u5929",
+    tomorrow: "\u660E\u5929",
+    custom: "\u81EA\u5B9A\u4E49\u65F6\u95F4",
+    noPriority: "\u65E0\u4F18\u5148\u7EA7",
+    saveTo: "\u4FDD\u5B58\u5230:",
+    nextWeek: "\u4E0B\u5468"
+  },
+  kanban: {
+    todo: "\u5F85\u529E",
+    done: "\u5DF2\u5B8C\u6210",
+    emptyTodo: "\u6682\u65E0\u5F85\u529E\u4EFB\u52A1",
+    emptyDone: "\u6682\u65E0\u5DF2\u5B8C\u6210\u4EFB\u52A1"
+  },
+  tooltips: {
+    editTask: "\u7F16\u8F91\u4EFB\u52A1",
+    addSubtask: "\u6DFB\u52A0\u5B50\u4EFB\u52A1",
+    quickCreate: "\u5FEB\u901F\u521B\u5EFA",
+    search: "\u641C\u7D22",
+    listView: "\u5217\u8868\u89C6\u56FE",
+    kanbanView: "\u770B\u677F\u89C6\u56FE",
+    calendarView: "\u65E5\u5386\u89C6\u56FE",
+    timelineView: "\u65F6\u95F4\u7EBF\u89C6\u56FE"
+  },
+  notices: {
+    taskCompleted: "\u4EFB\u52A1\u5DF2\u5B8C\u6210 \u{1F389}",
+    taskRestored: "\u4EFB\u52A1\u5DF2\u6062\u590D",
+    taskCreated: "\u4EFB\u52A1\u5DF2\u521B\u5EFA \u2705",
+    subtaskAdded: "\u5B50\u4EFB\u52A1\u5DF2\u6DFB\u52A0 \u2705",
+    noSaveLocation: "\u65E0\u6CD5\u786E\u5B9A\u4FDD\u5B58\u4F4D\u7F6E",
+    createFailed: "\u521B\u5EFA\u4EFB\u52A1\u5931\u8D25",
+    updateFailed: "\u66F4\u65B0\u4EFB\u52A1\u5931\u8D25"
   },
   commands: {
     openView: "\u6253\u5F00 SmartTask \u89C6\u56FE",
@@ -1015,12 +1327,12 @@ var QueryEngine = class {
     }
   }
   static getToday() {
-    return (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
+    return formatLocalDate(/* @__PURE__ */ new Date());
   }
   static getTomorrow() {
     const tomorrow = /* @__PURE__ */ new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
-    return tomorrow.toISOString().split("T")[0];
+    return formatLocalDate(tomorrow);
   }
   static getOverdueTasks(tasks) {
     const today = this.getToday();
@@ -1034,15 +1346,35 @@ var QueryEngine = class {
     const today = this.getToday();
     const future = /* @__PURE__ */ new Date();
     future.setDate(future.getDate() + days);
-    const futureStr = future.toISOString().split("T")[0];
+    const futureStr = formatLocalDate(future);
     return tasks.filter(
       (t2) => !t2.completed && t2.dueDate && t2.dueDate >= today && t2.dueDate <= futureStr
     );
   }
 };
 
+// src/quickCreateHelpers.ts
+function buildPriorityOptions() {
+  return [
+    { value: "", label: `\u2B50 ${t("quickCreate").noPriority}` },
+    { value: "highest" /* Highest */, label: `\u{1F51D} ${t("priorities").highest}` },
+    { value: "high" /* High */, label: `\u{1F53A} ${t("priorities").high}` },
+    { value: "medium" /* Medium */, label: `\u{1F53C} ${t("priorities").medium}` },
+    { value: "low" /* Low */, label: `\u{1F53D} ${t("priorities").low}` },
+    { value: "lowest" /* Lowest */, label: `\u23EC ${t("priorities").lowest}` }
+  ];
+}
+function buildQuickDateButtons() {
+  return [
+    { label: t("quickCreate").today, days: 0 },
+    { label: t("quickCreate").tomorrow, days: 1 },
+    { label: t("quickCreate").nextWeek, days: 7 }
+  ];
+}
+
 // src/smartTaskView.ts
 var HIGHLIGHT_DURATION_MS = 2e3;
+var SEARCH_DEBOUNCE_MS = 150;
 var SmartTaskViewController = class {
   constructor(plugin, container) {
     this.mainEl = null;
@@ -1060,21 +1392,18 @@ var SmartTaskViewController = class {
     this.filterTags = [];
     this.dateFilter = "all";
     this.expandedTasks = /* @__PURE__ */ new Set();
-    // 新布局 DOM 元素
-    this.functionalModuleEl = null;
-    this.row1El = null;
-    this.row2El = null;
-    this.quickCreatePanelEl = null;
-    this.searchPanelEl = null;
-    this.displayModuleEl = null;
-    // 旧布局 DOM 元素（兼容过渡）
-    this.headerEl = null;
-    this.quickCreateEl = null;
-    this.searchRowEl = null;
-    this.filterPanelEl = null;
-    this.contentEl = null;
+    this.searchDebounceTimer = null;
     this.calendarYear = (/* @__PURE__ */ new Date()).getFullYear();
     this.calendarMonth = (/* @__PURE__ */ new Date()).getMonth();
+    // 布局 DOM 元素（A 方案：单行工具栏 + 面板容器）
+    this.functionalModuleEl = null;
+    this.toolbarEl = null;
+    this.filterBarEl = null;
+    this.statsStripEl = null;
+    this.searchInputEl = null;
+    this.panelContainerEl = null;
+    this.displayModuleEl = null;
+    this.contentEl = null;
     this.plugin = plugin;
     this.container = container;
     this.tasks = plugin.getTasks();
@@ -1086,10 +1415,10 @@ var SmartTaskViewController = class {
   render() {
     this.mainEl = this.container.createDiv({ cls: "smarttask-container" });
     this.functionalModuleEl = this.mainEl.createDiv({ cls: "functional-module" });
-    this.renderRow1();
-    this.renderRow2();
-    this.renderQuickCreatePanel();
-    this.renderSearchPanel();
+    this.renderToolbar();
+    this.renderFilterBar();
+    this.renderStatsStrip();
+    this.renderPanels();
     this.displayModuleEl = this.mainEl.createDiv({ cls: "display-module" });
     this.renderContent();
   }
@@ -1104,12 +1433,15 @@ var SmartTaskViewController = class {
       window.clearTimeout(this.highlightTimer);
       this.highlightTimer = null;
     }
+    if (this.searchDebounceTimer !== null) {
+      window.clearTimeout(this.searchDebounceTimer);
+      this.searchDebounceTimer = null;
+    }
   }
   updateTasks(tasks, allTags) {
     this.tasks = tasks;
     this.allTags = allTags;
-    this.renderRow1();
-    this.renderRow2();
+    this.renderStatsStrip();
     this.renderContent();
   }
   get filteredTasks() {
@@ -1143,14 +1475,14 @@ var SmartTaskViewController = class {
       nextWeek.setDate(nextWeek.getDate() + 7);
       query.dueDate = {
         after: today,
-        before: nextWeek.toISOString().split("T")[0]
+        before: formatLocalDate(nextWeek)
       };
     } else if (this.dateFilter === "month") {
       const nextMonth = /* @__PURE__ */ new Date();
       nextMonth.setMonth(nextMonth.getMonth() + 1);
       query.dueDate = {
         after: today,
-        before: nextMonth.toISOString().split("T")[0]
+        before: formatLocalDate(nextMonth)
       };
     }
     return query;
@@ -1158,54 +1490,141 @@ var SmartTaskViewController = class {
   get hasActiveFilters() {
     return this.filterPriorities.length > 0 || this.filterTags.length > 0 || this.dateFilter !== "all" || this.searchQuery.length > 0;
   }
-  // ========== 新布局：功能模块 ==========
-  renderRow1() {
+  // ========== 功能模块（A 方案）：单行工具栏 + 筛选条 + 可折叠统计 + 面板容器 ==========
+  renderToolbar() {
     if (!this.functionalModuleEl)
       return;
-    if (this.row1El) {
-      this.row1El.remove();
+    if (this.toolbarEl) {
+      this.toolbarEl.remove();
+      this.toolbarEl = null;
     }
-    this.row1El = this.functionalModuleEl.createDiv({ cls: "row-1" });
-    const titleArea = this.row1El.createDiv({ cls: "title-area" });
+    this.toolbarEl = this.functionalModuleEl.createDiv({ cls: "smarttask-toolbar" });
+    const titleArea = this.toolbarEl.createDiv({ cls: "title-area" });
     titleArea.createSpan({ cls: "smarttask-icon", text: "\u2705" });
     titleArea.createEl("h2", { text: "SmartTask" });
-    const statsRow = this.row1El.createDiv({ cls: "stats-row" });
-    this.renderStatsCompact(statsRow);
-    const filterTabs = this.row1El.createDiv({ cls: "filter-tabs" });
+    const viewSwitcher = this.toolbarEl.createDiv({ cls: "toolbar-views" });
+    const views = [
+      { id: "list", icon: "list", title: t("tooltips").listView },
+      { id: "kanban", icon: "kanban", title: t("tooltips").kanbanView },
+      { id: "calendar", icon: "calendar", title: t("tooltips").calendarView },
+      { id: "timeline", icon: "bar-chart-3", title: t("tooltips").timelineView }
+    ];
+    for (const v of views) {
+      const btn = viewSwitcher.createEl("button", {
+        cls: "toolbar-view-btn",
+        attr: { "data-view": v.id, "aria-label": v.title, "data-tooltip": v.title }
+      });
+      if (this.currentView === v.id)
+        btn.addClass("active");
+      (0, import_obsidian3.setIcon)(btn, v.icon);
+      btn.createSpan({ cls: "toolbar-view-btn-label", text: v.title });
+      btn.addEventListener("click", () => {
+        if (this.currentView === v.id)
+          return;
+        this.currentView = v.id;
+        this.showQuickCreate = false;
+        this.showSearch = false;
+        const siblings = btn.parentElement;
+        if (siblings) {
+          for (const child of Array.from(siblings.children)) {
+            child.removeClass("active");
+          }
+        }
+        btn.addClass("active");
+        this.renderPanels();
+        this.renderContent();
+      });
+    }
+  }
+  renderFilterBar() {
+    if (!this.functionalModuleEl)
+      return;
+    if (this.filterBarEl) {
+      this.filterBarEl.remove();
+      this.filterBarEl = null;
+    }
+    this.filterBarEl = this.functionalModuleEl.createDiv({ cls: "smarttask-filterbar" });
     const tabs = [
       { id: "not-done", label: t("filters").pending },
       { id: "done", label: t("filters").done },
       { id: "all", label: t("filters").all }
     ];
     for (const tab of tabs) {
-      const btn = filterTabs.createEl("button", {
+      const btn = this.filterBarEl.createEl("button", {
         cls: "filter-tab",
-        text: tab.label
+        text: tab.label,
+        attr: { "data-status": tab.id }
       });
       if (this.filterStatus === tab.id)
         btn.addClass("active");
       btn.addEventListener("click", () => {
+        if (this.filterStatus === tab.id)
+          return;
         this.filterStatus = tab.id;
-        this.renderRow1();
-        this.reorderFunctionalChildren();
+        const tabsEl = btn.parentElement;
+        if (tabsEl) {
+          for (const child of Array.from(tabsEl.children)) {
+            child.removeClass("active");
+          }
+        }
+        btn.addClass("active");
         this.renderContent();
       });
     }
-    this.reorderFunctionalChildren();
+    const searchWrap = this.filterBarEl.createDiv({ cls: "toolbar-search" });
+    searchWrap.createSpan({ cls: "toolbar-search-icon", text: "\u{1F50D}" });
+    const searchInput = searchWrap.createEl("input", {
+      type: "text",
+      cls: "toolbar-search-input",
+      attr: { placeholder: t("messages").searchPlaceholder, "aria-label": t("messages").searchPlaceholder }
+    });
+    searchInput.value = this.searchQuery;
+    this.searchInputEl = searchInput;
+    searchInput.addEventListener("input", (e) => {
+      this.searchQuery = e.target.value;
+      if (this.searchDebounceTimer !== null) {
+        window.clearTimeout(this.searchDebounceTimer);
+      }
+      this.searchDebounceTimer = window.setTimeout(() => {
+        this.searchDebounceTimer = null;
+        this.renderContent();
+      }, SEARCH_DEBOUNCE_MS);
+    });
+    searchInput.addEventListener("focus", () => {
+      if (!this.showSearch) {
+        this.showSearch = true;
+        this.renderPanels();
+      }
+    });
+    searchInput.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        this.showSearch = false;
+        this.renderPanels();
+        searchInput.blur();
+      }
+    });
+    const addBtn = this.filterBarEl.createEl("button", {
+      cls: "toolbar-add",
+      attr: { "aria-label": t("tooltips").quickCreate, "data-tooltip": t("tooltips").quickCreate }
+    });
+    (0, import_obsidian3.setIcon)(addBtn, "plus");
+    addBtn.addEventListener("click", () => {
+      this.showQuickCreate = !this.showQuickCreate;
+      if (this.showQuickCreate)
+        this.showSearch = false;
+      this.renderPanels();
+    });
   }
-  reorderFunctionalChildren() {
-    if (!this.functionalModuleEl)
+  renderStatsStrip() {
+    if (!this.functionalModuleEl || !this.toolbarEl)
       return;
-    const order = [
-      this.row1El,
-      this.row2El,
-      this.quickCreatePanelEl,
-      this.searchPanelEl
-    ];
-    for (const el of order) {
-      if (el)
-        this.functionalModuleEl.appendChild(el);
+    if (this.statsStripEl) {
+      this.statsStripEl.remove();
+      this.statsStripEl = null;
     }
+    this.statsStripEl = this.toolbarEl.createDiv({ cls: "stats-strip" });
+    this.toolbarEl.insertBefore(this.statsStripEl, this.toolbarEl.lastChild);
+    this.renderStatsCompact(this.statsStripEl);
   }
   renderStatsCompact(container) {
     const total = this.tasks.length;
@@ -1216,10 +1635,10 @@ var SmartTaskViewController = class {
     const upcoming = QueryEngine.getUpcomingTasks(this.tasks, 7).length;
     const progress = total > 0 ? Math.round(done / total * 100) : 0;
     const stats = [
-      { value: notDone, label: "\u5F85\u529E", cls: "pending" },
-      { value: overdue, label: "\u903E\u671F", cls: "overdue" },
-      { value: today, label: "\u4ECA\u5929", cls: "today" },
-      { value: upcoming, label: "\u8FD1\u671F", cls: "upcoming" }
+      { value: notDone, label: t("stats").pending, cls: "pending" },
+      { value: overdue, label: t("stats").overdue, cls: "overdue" },
+      { value: today, label: t("stats").today, cls: "today" },
+      { value: upcoming, label: t("stats").upcoming, cls: "upcoming" }
     ];
     for (const s of stats) {
       const item = container.createDiv({ cls: `stat-item ${s.cls}` });
@@ -1232,98 +1651,57 @@ var SmartTaskViewController = class {
     fill.setCssStyles({ width: `${progress}%` });
     progressMini.createSpan({ cls: "pct", text: `${progress}%` });
   }
-  renderRow2() {
+  renderPanels() {
     if (!this.functionalModuleEl)
       return;
-    const scrollEl = this.displayModuleEl;
-    const savedScroll = scrollEl ? scrollEl.scrollTop : 0;
-    if (this.row2El) {
-      this.row2El.remove();
+    if (!this.panelContainerEl) {
+      this.panelContainerEl = this.functionalModuleEl.createDiv({ cls: "smarttask-panels" });
+    } else {
+      this.panelContainerEl.empty();
     }
-    this.row2El = this.functionalModuleEl.createDiv({ cls: "row-2" });
-    const actions = [
-      { id: "quickAdd", icon: "\u2795", label: "\u6DFB\u52A0", title: "\u5FEB\u901F\u521B\u5EFA", group: "tool" },
-      { id: "search", icon: "\u{1F50D}", label: "\u641C\u7D22", title: "\u641C\u7D22", group: "tool" },
-      { id: "list", icon: "\u{1F4CB}", label: "\u5217\u8868", title: "\u5217\u8868\u89C6\u56FE", group: "view" },
-      { id: "kanban", icon: "\u{1F5C2}\uFE0F", label: "\u770B\u677F", title: "\u770B\u677F\u89C6\u56FE", group: "view" },
-      { id: "calendar", icon: "\u{1F4C5}", label: "\u65E5\u5386", title: "\u65E5\u5386\u89C6\u56FE", group: "view" },
-      { id: "timeline", icon: "\u{1F4CA}", label: "\u7EDF\u8BA1", title: "\u65F6\u95F4\u7EBF\u89C6\u56FE", group: "view" }
-    ];
-    for (const action of actions) {
-      const wrapper = this.row2El.createDiv({ cls: `action-cell action-${action.group}` });
-      const btn = wrapper.createEl("button", {
-        cls: "action-btn",
-        attr: { title: action.title }
-      });
-      btn.createSpan({ cls: "action-btn-icon", text: action.icon });
-      wrapper.createSpan({ cls: "action-btn-label", text: action.label });
-      if (["list", "kanban", "calendar", "timeline"].includes(action.id)) {
-        if (this.currentView === action.id)
-          wrapper.addClass("active");
-        btn.addEventListener("click", () => {
-          this.currentView = action.id;
-          this.showQuickCreate = false;
-          this.showSearch = false;
-          this.renderRow2();
-          this.renderQuickCreatePanel();
-          this.renderSearchPanel();
-          this.reorderFunctionalChildren();
-          this.renderContent();
-        });
-      } else if (action.id === "quickAdd") {
-        if (this.showQuickCreate)
-          wrapper.addClass("active");
-        btn.addEventListener("click", () => {
-          this.showQuickCreate = !this.showQuickCreate;
-          if (this.showQuickCreate)
-            this.showSearch = false;
-          this.renderRow2();
-          this.renderQuickCreatePanel();
-          this.renderSearchPanel();
-          this.reorderFunctionalChildren();
-        });
-      } else if (action.id === "search") {
-        if (this.showSearch)
-          wrapper.addClass("active");
-        btn.addEventListener("click", () => {
-          this.showSearch = !this.showSearch;
-          if (this.showSearch)
-            this.showQuickCreate = false;
-          this.renderRow2();
-          this.renderQuickCreatePanel();
-          this.renderSearchPanel();
-          this.reorderFunctionalChildren();
-        });
+    try {
+      if (this.showQuickCreate) {
+        this.panelContainerEl.addClass("open");
+        this.renderQuickCreatePanel(this.panelContainerEl);
+      } else if (this.showSearch) {
+        this.panelContainerEl.addClass("open");
+        this.renderSearchPanel(this.panelContainerEl);
+      } else {
+        this.panelContainerEl.removeClass("open");
       }
-    }
-    this.reorderFunctionalChildren();
-    if (scrollEl) {
-      scrollEl.scrollTop = savedScroll;
+    } catch (e) {
+      console.error("[SmartTask] renderPanels failed:", e);
+      new import_obsidian3.Notice(`SmartTask \u9762\u677F\u6E32\u67D3\u5931\u8D25: ${e instanceof Error ? e.message : String(e)}`);
     }
   }
-  renderQuickCreatePanel() {
-    if (this.quickCreatePanelEl) {
-      this.quickCreatePanelEl.remove();
-      this.quickCreatePanelEl = null;
-    }
-    if (!this.showQuickCreate || !this.functionalModuleEl)
+  renderQuickCreatePanel(container) {
+    if (!container)
       return;
-    this.quickCreatePanelEl = this.functionalModuleEl.createDiv({ cls: "expandable-panel open" });
-    this.reorderFunctionalChildren();
-    const panel = this.quickCreatePanelEl.createDiv({ cls: "quick-create" });
+    const panel = container.createDiv({ cls: "quick-create" });
+    const panelHeader = panel.createDiv({ cls: "compact-search-header" });
+    panelHeader.createSpan({ text: t("ui").add });
+    const closeBtn = panelHeader.createEl("button", {
+      cls: "compact-search-close",
+      text: "\u2715",
+      attr: { "aria-label": t("ui").close }
+    });
+    closeBtn.addEventListener("click", () => {
+      this.showQuickCreate = false;
+      this.renderPanels();
+    });
     const inputRow = panel.createDiv({ cls: "quick-create-input-row" });
     const textarea = inputRow.createEl("textarea", {
       cls: "quick-create-textarea",
-      attr: { placeholder: "\u8F93\u5165\u4EFB\u52A1\u63CF\u8FF0...", rows: "1" }
+      attr: { placeholder: t("quickCreate").placeholder, rows: "1" }
     });
-    const addBtn = inputRow.createEl("button", { cls: "add-btn", text: "\u6DFB\u52A0" });
+    const addBtn = inputRow.createEl("button", { cls: "add-btn", text: t("ui").add });
     const optionsRow = panel.createDiv({ cls: "quick-create-options" });
     const dateSelect = optionsRow.createEl("select", { cls: "quick-create-date" });
     const dateOpts = [
-      { value: "", label: "\u{1F4C5} \u65E0\u65E5\u671F" },
-      { value: "today", label: "\u{1F4C5} \u4ECA\u5929" },
-      { value: "tomorrow", label: "\u{1F4C5} \u660E\u5929" },
-      { value: "custom", label: "\u{1F4C5} \u81EA\u5B9A\u4E49\u65F6\u95F4" }
+      { value: "", label: `\u{1F4C5} ${t("quickCreate").noDate}` },
+      { value: "today", label: `\u{1F4C5} ${t("quickCreate").today}` },
+      { value: "tomorrow", label: `\u{1F4C5} ${t("quickCreate").tomorrow}` },
+      { value: "custom", label: `\u{1F4C5} ${t("quickCreate").custom}` }
     ];
     for (const opt of dateOpts) {
       dateSelect.createEl("option", { text: opt.label, value: opt.value });
@@ -1346,7 +1724,7 @@ var SmartTaskViewController = class {
       } else {
         for (let i = 0; i < dateSelect.options.length; i++) {
           if (dateSelect.options[i].value === "custom") {
-            dateSelect.options[i].textContent = "\u{1F4C5} \u81EA\u5B9A\u4E49\u65F6\u95F4";
+            dateSelect.options[i].textContent = `\u{1F4C5} ${t("quickCreate").custom}`;
             break;
           }
         }
@@ -1371,14 +1749,7 @@ var SmartTaskViewController = class {
       updateDateLabel();
     });
     const priSelect = optionsRow.createEl("select", { cls: "quick-create-priority" });
-    const priOpts = [
-      { value: "", label: "\u2B50 \u65E0\u4F18\u5148\u7EA7" },
-      { value: "highest", label: "\u{1F51D} \u6700\u9AD8" },
-      { value: "high", label: "\u{1F53A} \u9AD8" },
-      { value: "medium", label: "\u{1F53C} \u4E2D" },
-      { value: "low", label: "\u{1F53D} \u4F4E" },
-      { value: "lowest", label: "\u23EC \u6700\u4F4E" }
-    ];
+    const priOpts = buildPriorityOptions();
     for (const opt of priOpts) {
       priSelect.createEl("option", { text: opt.label, value: opt.value });
     }
@@ -1393,11 +1764,13 @@ var SmartTaskViewController = class {
           const d = /* @__PURE__ */ new Date();
           if (dateVal === "tomorrow")
             d.setDate(d.getDate() + 1);
-          dueDate = d.toISOString().split("T")[0];
+          dueDate = formatLocalDate(d);
         }
         const priVal = priSelect.value;
         const priority = priVal ? priVal : void 0;
-        void this.plugin.createQuickTask(desc, dueDate, priority);
+        void this.plugin.createQuickTask(desc, dueDate, priority).then(() => {
+          this.updateTasks(this.plugin.getTasks(), this.plugin.getAllTags());
+        });
         textarea.value = "";
         dateSelect.value = "";
         customDateInput.value = "";
@@ -1421,36 +1794,31 @@ var SmartTaskViewController = class {
     };
     textarea.addEventListener("input", autoResize);
   }
-  renderSearchPanel() {
-    if (this.searchPanelEl) {
-      this.searchPanelEl.remove();
-      this.searchPanelEl = null;
-    }
-    if (!this.showSearch || !this.functionalModuleEl)
+  renderSearchPanel(container) {
+    if (!container)
       return;
-    this.searchPanelEl = this.functionalModuleEl.createDiv({ cls: "expandable-panel open" });
-    this.reorderFunctionalChildren();
-    const panel = this.searchPanelEl.createDiv({ cls: "compact-search" });
-    const searchRow = panel.createDiv({ cls: "search-input-row" });
-    const inputWrap = searchRow.createDiv({ cls: "search-icon-pos" });
-    inputWrap.createSpan({ cls: "search-icon", text: "\u{1F50D}" });
-    const searchInput = inputWrap.createEl("input", {
-      type: "text",
-      attr: { placeholder: "\u641C\u7D22\u4EFB\u52A1..." }
+    const panel = container.createDiv({ cls: "compact-search" });
+    const panelHeader = panel.createDiv({ cls: "compact-search-header" });
+    panelHeader.createSpan({ text: t("ui").search });
+    const closeBtn = panelHeader.createEl("button", {
+      cls: "compact-search-close",
+      text: "\u2715",
+      attr: { "aria-label": t("ui").close }
     });
-    searchInput.value = this.searchQuery;
-    searchInput.addEventListener("input", (e) => {
-      this.searchQuery = e.target.value;
-      this.renderContent();
+    closeBtn.addEventListener("click", () => {
+      this.showSearch = false;
+      this.renderPanels();
+      if (this.searchInputEl)
+        this.searchInputEl.blur();
     });
     const filtersEl = panel.createDiv({ cls: "filter-chips" });
     const dateSelect = filtersEl.createEl("select");
     const dateOpts = [
-      { value: "all", label: "\u{1F4C5} \u5168\u90E8\u65E5\u671F" },
-      { value: "overdue", label: "\u903E\u671F" },
-      { value: "today", label: "\u4ECA\u5929" },
-      { value: "week", label: "\u672C\u5468" },
-      { value: "month", label: "\u672C\u6708" }
+      { value: "all", label: `\u{1F4C5} ${t("filters").all}` },
+      { value: "overdue", label: t("dates").overdue },
+      { value: "today", label: t("dates").today },
+      { value: "week", label: t("dates").thisWeek },
+      { value: "month", label: t("dates").thisMonth }
     ];
     for (const opt of dateOpts) {
       const option = dateSelect.createEl("option", { text: opt.label, value: opt.value });
@@ -1459,18 +1827,17 @@ var SmartTaskViewController = class {
     }
     dateSelect.addEventListener("change", () => {
       this.dateFilter = dateSelect.value;
-      this.renderSearchPanel();
-      this.renderRow1();
+      this.renderPanels();
       this.renderContent();
     });
     const priSelect = filtersEl.createEl("select");
     const priOpts = [
-      { value: "", label: "\u{1F3AF} \u5168\u90E8\u4F18\u5148\u7EA7" },
-      { value: "highest", label: "\u{1F51D} \u6700\u9AD8" },
-      { value: "high", label: "\u{1F53A} \u9AD8" },
-      { value: "medium", label: "\u{1F53C} \u4E2D" },
-      { value: "low", label: "\u{1F53D} \u4F4E" },
-      { value: "lowest", label: "\u23EC \u6700\u4F4E" }
+      { value: "", label: `\u{1F3AF} ${t("filters").all}` },
+      { value: "highest", label: `\u{1F51D} ${t("priorities").highest}` },
+      { value: "high", label: `\u{1F53A} ${t("priorities").high}` },
+      { value: "medium", label: `\u{1F53C} ${t("priorities").medium}` },
+      { value: "low", label: `\u{1F53D} ${t("priorities").low}` },
+      { value: "lowest", label: `\u23EC ${t("priorities").lowest}` }
     ];
     for (const opt of priOpts) {
       const option = priSelect.createEl("option", { text: opt.label, value: opt.value });
@@ -1485,13 +1852,12 @@ var SmartTaskViewController = class {
       } else {
         this.filterPriorities = [];
       }
-      this.renderSearchPanel();
-      this.renderRow1();
+      this.renderPanels();
       this.renderContent();
     });
     const tagInput = filtersEl.createEl("input", {
       type: "text",
-      attr: { placeholder: "# \u6807\u7B7E" }
+      attr: { placeholder: t("messages").tagPlaceholder }
     });
     tagInput.addEventListener("keydown", (e) => {
       if (e.key === "Enter") {
@@ -1499,8 +1865,7 @@ var SmartTaskViewController = class {
         if (val && !this.filterTags.includes(val)) {
           this.filterTags = [...this.filterTags, val];
           e.target.value = "";
-          this.renderSearchPanel();
-          this.renderRow1();
+          this.renderPanels();
           this.renderContent();
         }
       }
@@ -1508,36 +1873,41 @@ var SmartTaskViewController = class {
     if (this.filterTags.length > 0 || this.dateFilter !== "all" || this.filterPriorities.length > 0) {
       if (this.dateFilter !== "all") {
         const dateLabels = {
-          "overdue": "\u903E\u671F",
-          "today": "\u4ECA\u5929",
-          "week": "\u672C\u5468",
-          "month": "\u672C\u6708"
+          "overdue": t("dates").overdue,
+          "today": t("dates").today,
+          "week": t("dates").thisWeek,
+          "month": t("dates").thisMonth
         };
         const chip = filtersEl.createSpan({ cls: "compact-chip active" });
         chip.createSpan({ text: `\u{1F4C5} ${dateLabels[this.dateFilter] || this.dateFilter}` });
         const removeBtn = chip.createEl("span", { cls: "remove", text: "\u2715" });
         removeBtn.addEventListener("click", () => {
           this.dateFilter = "all";
-          this.renderSearchPanel();
-          this.renderRow1();
+          this.renderPanels();
           this.renderContent();
         });
       }
       for (const p of this.filterPriorities) {
-        const priLabels = {
-          "highest": "\u{1F51D} \u6700\u9AD8",
-          "high": "\u{1F53A} \u9AD8",
-          "medium": "\u{1F53C} \u4E2D",
-          "low": "\u{1F53D} \u4F4E",
-          "lowest": "\u23EC \u6700\u4F4E"
+        const priEmojiMap = {
+          "highest": "\u{1F51D}",
+          "high": "\u{1F53A}",
+          "medium": "\u{1F53C}",
+          "low": "\u{1F53D}",
+          "lowest": "\u23EC"
+        };
+        const priLabelMap = {
+          "highest": t("priorities").highest,
+          "high": t("priorities").high,
+          "medium": t("priorities").medium,
+          "low": t("priorities").low,
+          "lowest": t("priorities").lowest
         };
         const chip = filtersEl.createSpan({ cls: "compact-chip active" });
-        chip.createSpan({ text: priLabels[p] || p });
+        chip.createSpan({ text: `${priEmojiMap[p] || ""} ${priLabelMap[p] || p}` });
         const removeBtn = chip.createEl("span", { cls: "remove", text: "\u2715" });
         removeBtn.addEventListener("click", () => {
           this.filterPriorities = this.filterPriorities.filter((x) => x !== p);
-          this.renderSearchPanel();
-          this.renderRow1();
+          this.renderPanels();
           this.renderContent();
         });
       }
@@ -1547,8 +1917,7 @@ var SmartTaskViewController = class {
         const removeBtn = chip.createEl("span", { cls: "remove", text: "\u2715" });
         removeBtn.addEventListener("click", () => {
           this.filterTags = this.filterTags.filter((t2) => t2 !== tag);
-          this.renderSearchPanel();
-          this.renderRow1();
+          this.renderPanels();
           this.renderContent();
         });
       }
@@ -1562,6 +1931,10 @@ var SmartTaskViewController = class {
     if (!this.displayModuleEl)
       return;
     this.contentEl = this.displayModuleEl.createDiv({ cls: "smarttask-content" });
+    if (this.plugin.settings.indexingEnabled && !this.plugin.isIndexReady() && this.tasks.length === 0) {
+      this.renderSkeleton(this.contentEl);
+      return;
+    }
     if (this.currentView === "list") {
       this.renderTaskList(this.contentEl, this.groupedTasks);
     } else if (this.currentView === "kanban") {
@@ -1572,29 +1945,56 @@ var SmartTaskViewController = class {
       this.renderCalendarView(this.contentEl);
     }
   }
+  renderSkeleton(container) {
+    const sk = container.createDiv({ cls: "skeleton-container" });
+    for (let i = 0; i < 6; i++) {
+      const block = sk.createDiv({ cls: "skeleton-block" });
+      block.createDiv({ cls: "skeleton-checkbox" });
+      const lines = block.createDiv({});
+      lines.createDiv({ cls: `skeleton-line ${i % 2 === 0 ? "long" : "medium"}` });
+      lines.createDiv({ cls: "skeleton-line short" });
+    }
+  }
   renderTaskList(container, groups) {
     const listEl = container.createDiv({ cls: "task-list" });
     const allEmpty = groups.length === 0 || groups.every((g) => g.tasks.length === 0);
     if (allEmpty) {
       const empty = listEl.createDiv({ cls: "empty-state" });
-      empty.createDiv({ cls: "empty-icon", text: "\u{1F389}" });
+      empty.createDiv({ cls: "empty-icon", text: t("messages").emptyIcon });
       empty.createEl("p", { text: t("messages").noTasks });
       empty.createEl("p", { cls: "empty-hint", text: t("messages").addTask });
+      const guideBtn = empty.createEl("button", { cls: "empty-guide-btn", text: t("ui").add });
+      guideBtn.addEventListener("click", () => {
+        this.showQuickCreate = true;
+        this.showSearch = false;
+        this.renderPanels();
+      });
       return;
     }
+    const visibleIds = /* @__PURE__ */ new Set();
+    for (const t2 of this.filteredTasks)
+      visibleIds.add(t2.id);
+    const nestedSubtaskIds = /* @__PURE__ */ new Set();
+    for (const t2 of this.filteredTasks) {
+      if (t2.parentId && visibleIds.has(t2.parentId))
+        nestedSubtaskIds.add(t2.id);
+    }
     for (const group of groups) {
+      const displayTasks = group.tasks.filter((t2) => !(t2.parentId && nestedSubtaskIds.has(t2.parentId)));
+      if (displayTasks.length === 0)
+        continue;
       if (group.name) {
         const groupEl = listEl.createDiv({ cls: "task-group" });
         const header = groupEl.createDiv({ cls: "group-header" });
         header.createSpan({ cls: "group-name", text: group.name });
-        header.createSpan({ cls: "group-count", text: group.tasks.length.toString() });
+        header.createSpan({ cls: "group-count", text: displayTasks.length.toString() });
         const tasksEl = groupEl.createDiv({ cls: "group-tasks" });
-        for (const task of group.tasks) {
+        for (const task of displayTasks) {
           this.renderTaskItem(tasksEl, task);
         }
       } else {
         const flatEl = listEl.createDiv({ cls: "flat-tasks" });
-        for (const task of group.tasks) {
+        for (const task of displayTasks) {
           this.renderTaskItem(flatEl, task);
         }
       }
@@ -1604,33 +2004,257 @@ var SmartTaskViewController = class {
     const kanbanEl = container.createDiv({ cls: "kanban-view" });
     const todoTasks = this.filteredTasks.filter((t2) => !t2.completed);
     const doneTasks = this.filteredTasks.filter((t2) => t2.completed);
+    const priorityColumns = [
+      { priority: "highest", label: t("priorities").highest, icon: "flame", color: "var(--priority-highest)" },
+      { priority: "high", label: t("priorities").high, icon: "arrow-up", color: "var(--priority-high)" },
+      { priority: "medium", label: t("priorities").medium, icon: "minus", color: "var(--priority-medium)" },
+      { priority: "low", label: t("priorities").low, icon: "arrow-down", color: "var(--priority-low)" },
+      { priority: "lowest", label: t("priorities").lowest, icon: "chevrons-down", color: "var(--priority-lowest)" }
+    ];
     if (this.filterStatus !== "done") {
-      const todoCol = kanbanEl.createDiv({ cls: "kanban-column" });
-      todoCol.createEl("h3", { text: `\u{1F4CB} \u5F85\u529E (${todoTasks.length})` });
-      const todoList = todoCol.createDiv({ cls: "kanban-task-list" });
-      for (const task of todoTasks) {
-        this.renderTaskItem(todoList, task);
-      }
-      if (todoTasks.length === 0) {
-        const empty = todoList.createDiv({ cls: "kanban-empty" });
-        empty.setText("\u6682\u65E0\u5F85\u529E\u4EFB\u52A1");
+      for (const col of priorityColumns) {
+        const colTasks = todoTasks.filter((t2) => t2.priority === col.priority);
+        const colEl = kanbanEl.createDiv({
+          cls: "kanban-column",
+          attr: { "data-priority": col.priority, "aria-label": col.label }
+        });
+        const header = colEl.createDiv({ cls: "kanban-column-header" });
+        const titleWrap = header.createDiv({ cls: "kanban-column-title" });
+        const iconWrap = titleWrap.createSpan({ cls: "kanban-column-icon" });
+        iconWrap.setCssStyles({ color: col.color });
+        (0, import_obsidian3.setIcon)(iconWrap, col.icon);
+        titleWrap.createSpan({ cls: "kanban-column-name", text: col.label });
+        const badge = header.createSpan({ cls: "kanban-column-badge" });
+        badge.setCssStyles({ background: col.color });
+        badge.setText(String(colTasks.length));
+        const taskList = colEl.createDiv({ cls: "kanban-task-list" });
+        for (const task of colTasks) {
+          this.renderKanbanCard(taskList, task);
+        }
+        if (colTasks.length === 0) {
+          const empty = taskList.createDiv({ cls: "kanban-empty" });
+          empty.setText(t("kanban").emptyTodo);
+        }
+        this.attachPriorityColumnDropTarget(colEl, col.priority);
       }
     }
     if (this.filterStatus !== "not-done") {
-      const doneCol = kanbanEl.createDiv({ cls: "kanban-column done" });
-      doneCol.createEl("h3", { text: `\u2705 \u5DF2\u5B8C\u6210 (${doneTasks.length})` });
+      const doneCol = kanbanEl.createDiv({ cls: "kanban-column done", attr: { "aria-label": t("kanban").done } });
+      const header = doneCol.createDiv({ cls: "kanban-column-header" });
+      const titleWrap = header.createDiv({ cls: "kanban-column-title" });
+      (0, import_obsidian3.setIcon)(titleWrap.createSpan({ cls: "kanban-column-icon" }), "check-circle-2");
+      titleWrap.createSpan({ cls: "kanban-column-name", text: t("kanban").done });
+      const badge = header.createSpan({ cls: "kanban-column-badge done" });
+      badge.setText(String(doneTasks.length));
       const doneList = doneCol.createDiv({ cls: "kanban-task-list" });
       for (const task of doneTasks) {
-        this.renderTaskItem(doneList, task);
+        this.renderKanbanCard(doneList, task);
       }
       if (doneTasks.length === 0) {
         const empty = doneList.createDiv({ cls: "kanban-empty" });
-        empty.setText("\u6682\u65E0\u5DF2\u5B8C\u6210\u4EFB\u52A1");
+        empty.setText(t("kanban").emptyDone);
       }
+      this.attachColumnDropTarget(doneCol, true);
     }
   }
-  renderTaskItem(container, task) {
-    const item = container.createDiv({ cls: "task-item" });
+  renderKanbanCard(container, task) {
+    const priAttr = this.getPriorityDataAttr(task.priority);
+    const card = container.createDiv({
+      cls: "kanban-card",
+      attr: {
+        ...priAttr ? { "data-priority": priAttr } : {},
+        draggable: "true",
+        role: "button",
+        tabindex: "0",
+        "aria-label": `${task.description}${task.completed ? "" : " \u2014 pending"}${task.dueDate ? ` \u2014 due ${task.dueDate}` : ""}`
+      }
+    });
+    if (task.completed)
+      card.addClass("completed");
+    if (this.isOverdue(task))
+      card.addClass("overdue");
+    const body = card.createDiv({ cls: "kanban-card-body" });
+    const topRow = body.createDiv({ cls: "kanban-card-top" });
+    const checkbox = topRow.createEl("input", {
+      type: "checkbox",
+      cls: "kanban-card-checkbox",
+      attr: { "aria-label": task.completed ? "Mark as not done" : "Mark as done" }
+    });
+    checkbox.checked = task.completed;
+    checkbox.addEventListener("change", (e) => {
+      e.stopPropagation();
+      void this.plugin.toggleTaskStatus(task, checkbox.checked);
+    });
+    const descEl = topRow.createEl("span", { cls: "kanban-card-desc", text: task.description });
+    const meta = body.createDiv({ cls: "kanban-card-meta" });
+    if (task.dueDate) {
+      const due = meta.createSpan({ cls: "kanban-card-due" });
+      (0, import_obsidian3.setIcon)(due, "calendar");
+      due.appendText(` ${this.formatDateShort(task.dueDate)}`);
+      if (this.isOverdue(task))
+        due.addClass("overdue");
+    }
+    if (task.subtasks.length > 0) {
+      const progress = this.getSubtaskProgress(task);
+      const sub = meta.createSpan({ cls: "kanban-card-subtasks" });
+      (0, import_obsidian3.setIcon)(sub, "list-checks");
+      sub.appendText(` ${progress.done}/${progress.total}`);
+    }
+    if (task.tags.length > 0) {
+      const tag = meta.createSpan({ cls: "kanban-card-tag" });
+      (0, import_obsidian3.setIcon)(tag, "tag");
+      tag.appendText(` ${task.tags[0]}`);
+      if (task.tags.length > 1) {
+        tag.appendText(` +${task.tags.length - 1}`);
+      }
+    }
+    const actions = body.createDiv({ cls: "kanban-card-actions" });
+    const editBtn = actions.createEl("button", {
+      cls: "kanban-card-action-btn",
+      attr: { "data-tooltip": t("tooltips").editTask, "aria-label": t("tooltips").editTask }
+    });
+    (0, import_obsidian3.setIcon)(editBtn, "pencil");
+    editBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      this.openTaskEditor(task);
+    });
+    const addBtn = actions.createEl("button", {
+      cls: "kanban-card-action-btn",
+      attr: { "data-tooltip": t("tooltips").addSubtask, "aria-label": t("tooltips").addSubtask }
+    });
+    (0, import_obsidian3.setIcon)(addBtn, "plus");
+    addBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      let subtaskInput = card.querySelector(".kanban-card-subtask-input");
+      if (subtaskInput) {
+        subtaskInput.remove();
+        return;
+      }
+      subtaskInput = body.createDiv({ cls: "kanban-card-subtask-input" });
+      const input = subtaskInput.createEl("input", {
+        type: "text",
+        attr: { placeholder: t("messages").subtaskDescPlaceholder }
+      });
+      const doAdd = () => {
+        const desc = input.value.trim();
+        if (desc) {
+          void this.plugin.addSubtask(task, desc);
+        }
+      };
+      const addSubtaskBtn = subtaskInput.createEl("button", {
+        cls: "kanban-card-subtask-add-btn",
+        text: t("ui").add
+      });
+      addSubtaskBtn.addEventListener("click", doAdd);
+      input.addEventListener("keydown", (ev) => {
+        if (ev.key === "Enter")
+          doAdd();
+        if (ev.key === "Escape")
+          subtaskInput == null ? void 0 : subtaskInput.remove();
+      });
+      input.focus();
+    });
+    card.addEventListener("dragstart", (e) => {
+      var _a2;
+      (_a2 = e.dataTransfer) == null ? void 0 : _a2.setData("text/plain", task.id);
+      card.addClass("dragging");
+    });
+    card.addEventListener("dragend", () => {
+      card.removeClass("dragging");
+    });
+    card.addEventListener("click", () => {
+      this.plugin.openTaskFile(task.filePath, task.lineNumber);
+    });
+    card.addEventListener("keydown", (e) => {
+      if (e.key === " " || e.key === "Enter") {
+        e.preventDefault();
+        checkbox.checked = !checkbox.checked;
+        void this.plugin.toggleTaskStatus(task, checkbox.checked);
+      } else if (e.key === "e" || e.key === "E") {
+        e.preventDefault();
+        this.openTaskEditor(task);
+      }
+    });
+  }
+  attachColumnDropTarget(col, completed) {
+    col.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      if (e.dataTransfer)
+        e.dataTransfer.dropEffect = "move";
+      col.addClass("drag-over");
+    });
+    col.addEventListener("dragleave", (e) => {
+      if (!col.contains(e.relatedTarget)) {
+        col.removeClass("drag-over");
+      }
+    });
+    col.addEventListener("drop", (e) => {
+      var _a2;
+      e.preventDefault();
+      col.removeClass("drag-over");
+      const taskId = (_a2 = e.dataTransfer) == null ? void 0 : _a2.getData("text/plain");
+      if (taskId)
+        this.handleKanbanDrop(taskId, completed);
+    });
+  }
+  attachPriorityColumnDropTarget(col, priority) {
+    col.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      if (e.dataTransfer)
+        e.dataTransfer.dropEffect = "move";
+      col.addClass("drag-over");
+    });
+    col.addEventListener("dragleave", (e) => {
+      if (!col.contains(e.relatedTarget)) {
+        col.removeClass("drag-over");
+      }
+    });
+    col.addEventListener("drop", (e) => {
+      var _a2;
+      e.preventDefault();
+      col.removeClass("drag-over");
+      const taskId = (_a2 = e.dataTransfer) == null ? void 0 : _a2.getData("text/plain");
+      if (taskId)
+        this.handlePriorityDrop(taskId, priority);
+    });
+  }
+  handleKanbanDrop(taskId, completed) {
+    const task = this.tasks.find((tk) => tk.id === taskId);
+    if (task && task.completed !== completed) {
+      void this.plugin.toggleTaskStatus(task, completed);
+    }
+  }
+  handlePriorityDrop(taskId, priority) {
+    const task = this.tasks.find((tk) => tk.id === taskId);
+    if (task && task.priority !== priority) {
+      void this.plugin.updateTask(task, { priority });
+    }
+  }
+  renderTaskItem(container, task, draggable = false) {
+    const priAttr = this.getPriorityDataAttr(task.priority);
+    const item = container.createDiv({
+      cls: "task-item",
+      attr: {
+        ...priAttr ? { "data-priority": priAttr } : {},
+        role: "button",
+        tabindex: "0",
+        "aria-label": `${task.description}${task.completed ? "" : " \u2014 pending"}${task.dueDate ? ` \u2014 due ${task.dueDate}` : ""}`
+      }
+    });
+    if (priAttr) {
+      item.createSpan({ cls: `pri-dot pri-${priAttr}` });
+    }
+    if (draggable) {
+      item.draggable = true;
+      item.addEventListener("dragstart", (e) => {
+        var _a2;
+        (_a2 = e.dataTransfer) == null ? void 0 : _a2.setData("text/plain", task.id);
+        item.addClass("dragging");
+      });
+      item.addEventListener("dragend", () => {
+        item.removeClass("dragging");
+      });
+    }
     if (task.completed)
       item.addClass("completed");
     if (this.isOverdue(task))
@@ -1662,6 +2286,26 @@ var SmartTaskViewController = class {
       e.stopPropagation();
       void this.plugin.toggleTaskStatus(task, checkbox.checked);
     });
+    item.addEventListener("keydown", (e) => {
+      if (e.key === " " || e.key === "Enter") {
+        e.preventDefault();
+        checkbox.checked = !checkbox.checked;
+        void this.plugin.toggleTaskStatus(task, checkbox.checked);
+      } else if (e.key === "e" || e.key === "E") {
+        e.preventDefault();
+        this.openTaskEditor(task);
+      } else if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+        e.preventDefault();
+        const items = Array.from(((_a = item.parentElement) == null ? void 0 : _a.querySelectorAll(".task-item")) || []);
+        const idx = items.indexOf(item);
+        const nextIdx = e.key === "ArrowDown" ? idx + 1 : idx - 1;
+        if (nextIdx >= 0 && nextIdx < items.length) {
+          items[nextIdx].focus();
+        }
+      } else if (e.key === "Escape") {
+        item.blur();
+      }
+    });
     const content = item.createDiv({ cls: "task-content" });
     content.addEventListener("click", () => {
       this.plugin.openTaskFile(task.filePath, task.lineNumber);
@@ -1689,7 +2333,7 @@ var SmartTaskViewController = class {
     const editBtn = metaActions.createEl("button", {
       cls: "meta-action-btn",
       text: "\u270F\uFE0F",
-      attr: { title: "\u7F16\u8F91\u4EFB\u52A1" }
+      attr: { "data-tooltip": t("tooltips").editTask, "aria-label": t("tooltips").editTask }
     });
     editBtn.addEventListener("click", (e) => {
       e.stopPropagation();
@@ -1698,7 +2342,7 @@ var SmartTaskViewController = class {
     const addSubBtn = metaActions.createEl("button", {
       cls: "meta-action-btn",
       text: "\u2795",
-      attr: { title: "\u6DFB\u52A0\u5B50\u4EFB\u52A1" }
+      attr: { "data-tooltip": t("tooltips").addSubtask, "aria-label": t("tooltips").addSubtask }
     });
     addSubBtn.addEventListener("click", (e) => {
       e.stopPropagation();
@@ -1707,13 +2351,18 @@ var SmartTaskViewController = class {
     if (this.plugin.settings.showSubtasks && hasSubtasks && expanded) {
       const subtasksEl = content.createDiv({ cls: "subtasks" });
       for (const subtask of task.subtasks) {
-        const stItem = subtasksEl.createDiv({ cls: "subtask-item" });
+        const stPri = this.getPriorityDataAttr(subtask.priority);
+        const stItem = subtasksEl.createDiv({ cls: "subtask-item", attr: stPri ? { "data-priority": stPri } : {} });
         if (subtask.completed)
           stItem.addClass("completed");
         const stCheckbox = stItem.createEl("input", {
           type: "checkbox"
         });
         stCheckbox.checked = subtask.completed;
+        stCheckbox.addEventListener("change", (e) => {
+          e.stopPropagation();
+          void this.plugin.toggleSubtaskStatus(task, subtask.id, stCheckbox.checked);
+        });
         stItem.createSpan({ cls: "subtask-text", text: subtask.description });
         if (subtask.dueDate) {
           stItem.createSpan({ cls: "subtask-due", text: this.formatDate(subtask.dueDate) });
@@ -1728,11 +2377,11 @@ var SmartTaskViewController = class {
         addSubtaskEl = content.createDiv({ cls: "add-subtask" });
         const input = addSubtaskEl.createEl("input", {
           type: "text",
-          attr: { placeholder: "\u5B50\u4EFB\u52A1\u63CF\u8FF0..." }
+          attr: { placeholder: t("messages").subtaskDescPlaceholder }
         });
         const addBtn = addSubtaskEl.createEl("button", {
           cls: "add-subtask-btn",
-          text: "\u6DFB\u52A0"
+          text: t("ui").add
         });
         const doAdd = () => {
           const desc = input.value.trim();
@@ -1767,48 +2416,64 @@ var SmartTaskViewController = class {
   isOverdue(task) {
     if (!task.dueDate || task.completed)
       return false;
-    const today = (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
+    const today = formatLocalDate(/* @__PURE__ */ new Date());
     return task.dueDate < today;
   }
   isToday(task) {
     if (!task.dueDate)
       return false;
-    const today = (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
+    const today = formatLocalDate(/* @__PURE__ */ new Date());
     return task.dueDate === today;
   }
   formatDate(dateStr) {
-    const date = new Date(dateStr);
+    const date = parseLocalDate(dateStr);
     const month = date.getMonth() + 1;
     const day = date.getDate();
     return `${month}/${day}`;
   }
   getPriorityColor(priority) {
     switch (priority) {
-      case "highest" /* Highest */:
-        return "var(--text-error)";
-      case "high" /* High */:
-        return "var(--text-accent)";
-      case "medium" /* Medium */:
-        return "var(--text-warning)";
-      case "low" /* Low */:
-        return "var(--text-muted)";
-      case "lowest" /* Lowest */:
-        return "var(--text-faint)";
+      case "highest":
+        return "var(--priority-highest)";
+      case "high":
+        return "var(--priority-high)";
+      case "medium":
+        return "var(--priority-medium)";
+      case "low":
+        return "var(--priority-low)";
+      case "lowest":
+        return "var(--priority-lowest)";
       default:
         return "transparent";
     }
   }
+  getPriorityDataAttr(priority) {
+    switch (priority) {
+      case "highest":
+        return "highest";
+      case "high":
+        return "high";
+      case "medium":
+        return "medium";
+      case "low":
+        return "low";
+      case "lowest":
+        return "lowest";
+      default:
+        return "";
+    }
+  }
   getPriorityIcon(priority) {
     switch (priority) {
-      case "highest" /* Highest */:
+      case "highest":
         return "\u{1F51D}";
-      case "high" /* High */:
+      case "high":
         return "\u{1F53A}";
-      case "medium" /* Medium */:
+      case "medium":
         return "\u{1F53C}";
-      case "low" /* Low */:
+      case "low":
         return "\u{1F53D}";
-      case "lowest" /* Lowest */:
+      case "lowest":
         return "\u23EC";
       default:
         return "";
@@ -1831,7 +2496,8 @@ var SmartTaskViewController = class {
       return;
     const subtasksEl = container.createDiv({ cls: "subtasks timeline-subtasks" });
     for (const subtask of task.subtasks) {
-      const stItem = subtasksEl.createDiv({ cls: "subtask-item" });
+      const stPri = this.getPriorityDataAttr(subtask.priority);
+      const stItem = subtasksEl.createDiv({ cls: "subtask-item", attr: stPri ? { "data-priority": stPri } : {} });
       if (subtask.completed)
         stItem.addClass("completed");
       const stCheckbox = stItem.createEl("input", {
@@ -1852,11 +2518,11 @@ var SmartTaskViewController = class {
     const addSubtaskEl = container.createDiv({ cls: "add-subtask" });
     const input = addSubtaskEl.createEl("input", {
       type: "text",
-      attr: { placeholder: "\u5B50\u4EFB\u52A1\u63CF\u8FF0..." }
+      attr: { placeholder: t("messages").subtaskDescPlaceholder }
     });
     const addBtn = addSubtaskEl.createEl("button", {
       cls: "add-subtask-btn",
-      text: "\u6DFB\u52A0"
+      text: t("ui").add
     });
     const doAdd = () => {
       const desc = input.value.trim();
@@ -1909,8 +2575,7 @@ var SmartTaskViewController = class {
             this.filterTags = this.filterTags.filter((t2) => t2 !== tagName);
           }
           this.showSearch = true;
-          this.renderSearchPanel();
-          this.renderRow1();
+          this.renderPanels();
           this.renderContent();
         });
       }
@@ -1923,20 +2588,40 @@ var SmartTaskViewController = class {
   getPlainDescription(desc) {
     return desc.replace(/\[\[([^\]|]+)(?:\|[^\]]+)?\]\]/g, (_match, p1) => p1.split("|")[0].trim()).replace(/#[a-zA-Z0-9_\u4e00-\u9fa5][a-zA-Z0-9_\u4e00-\u9fa5/-]*/g, "").replace(/\s+/g, " ").trim();
   }
-  openWikiLink(target) {
-    var _a;
-    const file = this.plugin.app.vault.getAbstractFileByPath(target);
-    if (file) {
-      void this.plugin.app.workspace.openLinkText(target, "", true);
-    } else {
-      const files = this.plugin.app.vault.getFiles();
-      const targetName = (_a = target.split("/").pop()) == null ? void 0 : _a.toLowerCase();
-      const found = files.find((f) => f.basename.toLowerCase() === targetName);
-      if (found) {
-        void this.plugin.app.workspace.openLinkText(found.path, "", true);
-      } else {
-        new import_obsidian3.Notice(`\u672A\u627E\u5230\u7B14\u8BB0: ${target}`);
+  async openWikiLink(target) {
+    const vault = this.plugin.app.vault;
+    const file = vault.getAbstractFileByPath(target);
+    if (file instanceof import_obsidian3.TFile) {
+      void this.plugin.app.workspace.openLinkText(file.path, "", true);
+      return;
+    }
+    const linkDest = this.plugin.app.metadataCache.getFirstLinkpathDest(target, "");
+    if (linkDest instanceof import_obsidian3.TFile) {
+      void this.plugin.app.workspace.openLinkText(linkDest.path, "", true);
+      return;
+    }
+    try {
+      const cleaned = (0, import_obsidian3.normalizePath)(target);
+      const slash = cleaned.lastIndexOf("/");
+      let folder = null;
+      let fname = cleaned;
+      if (slash >= 0) {
+        const folderPath = cleaned.substring(0, slash);
+        folder = vault.getFolderByPath(folderPath);
+        if (!folder) {
+          await vault.createFolder(folderPath);
+          folder = vault.getFolderByPath(folderPath);
+        }
+        fname = cleaned.substring(slash + 1);
       }
+      const newFile = await this.plugin.app.fileManager.createNewMarkdownFile(folder != null ? folder : vault.getRoot(), fname || "Untitled");
+      if (newFile) {
+        await this.plugin.app.workspace.openLinkText(newFile.path, "", true);
+        new import_obsidian3.Notice(`${t("messages").noteCreated}${newFile.path}`);
+      }
+    } catch (err) {
+      console.error("[SmartTask] create note failed:", err);
+      new import_obsidian3.Notice(`${t("messages").noteNotFound}${target}`);
     }
   }
   renderTimelineView(container) {
@@ -1958,9 +2643,9 @@ var SmartTaskViewController = class {
     });
     const chipsGroup = toolbar.createDiv({ cls: "timeline-chips-row" });
     const groupOptions = [
-      { value: "day", label: "\u6309\u5929" },
-      { value: "week", label: "\u6309\u5468" },
-      { value: "month", label: "\u6309\u6708" }
+      { value: "day", label: t("timeline").groupByDay },
+      { value: "week", label: t("timeline").groupByWeek },
+      { value: "month", label: t("timeline").groupByMonth }
     ];
     for (const opt of groupOptions) {
       const chip = chipsGroup.createEl("button", {
@@ -1975,10 +2660,10 @@ var SmartTaskViewController = class {
       });
     }
     const styleOptions = [
-      { value: "classic", label: "\u7ECF\u5178" },
-      { value: "gantt", label: "\u7518\u7279" },
-      { value: "zigzag", label: "\u4EA4\u9519" },
-      { value: "cards", label: "\u5361\u7247" }
+      { value: "classic", label: t("timelineStyles").classic },
+      { value: "gantt", label: t("timelineStyles").gantt },
+      { value: "zigzag", label: t("timelineStyles").zigzag },
+      { value: "cards", label: t("timelineStyles").card }
     ];
     for (const opt of styleOptions) {
       const chip = chipsGroup.createEl("button", {
@@ -1998,8 +2683,8 @@ var SmartTaskViewController = class {
     if (groups.length === 0) {
       const empty = timelineEl.createDiv({ cls: "empty-state" });
       empty.createDiv({ cls: "empty-icon", text: "\u{1F4C5}" });
-      empty.createEl("p", { text: "\u6682\u65E0\u5E26\u65E5\u671F\u7684\u4EFB\u52A1" });
-      empty.createEl("p", { cls: "empty-hint", text: "\u4E3A\u4EFB\u52A1\u6DFB\u52A0\u622A\u6B62\u65E5\u671F\u5373\u53EF\u5728\u65F6\u95F4\u7EBF\u4E2D\u67E5\u770B" });
+      empty.createEl("p", { text: t("messages").noDatedTasks });
+      empty.createEl("p", { cls: "empty-hint", text: t("messages").addDueDateHint });
       return;
     }
     if (this.timelineStyle === "classic") {
@@ -2011,10 +2696,55 @@ var SmartTaskViewController = class {
     } else {
       this.renderCardsTimeline(timelineEl, groups);
     }
+    if (this.timelineStyle !== "classic") {
+      todayBtn.addEventListener("click", () => {
+        if (this.timelineStyle === "gantt") {
+          const header = timelineEl.querySelector(".gantt-header");
+          const body = timelineEl.querySelector(".gantt-body");
+          const todayLine = timelineEl.querySelector(".gantt-today-line");
+          if (header && body && todayLine) {
+            const targetLeft = Math.max(0, todayLine.offsetLeft - header.clientWidth / 2);
+            header.scrollLeft = targetLeft;
+            body.scrollLeft = targetLeft;
+            todayLine.addClass("today-highlight");
+            if (this.highlightTimer !== null)
+              window.clearTimeout(this.highlightTimer);
+            this.highlightTimer = window.setTimeout(() => todayLine.removeClass("today-highlight"), HIGHLIGHT_DURATION_MS);
+          }
+        } else if (this.timelineStyle === "zigzag") {
+          const todayGroup = timelineEl.querySelector(".zigzag-group.today-group");
+          if (todayGroup) {
+            todayGroup.scrollIntoView({ behavior: "smooth", block: "center" });
+            todayGroup.addClass("today-highlight");
+            if (this.highlightTimer !== null)
+              window.clearTimeout(this.highlightTimer);
+            this.highlightTimer = window.setTimeout(() => todayGroup.removeClass("today-highlight"), HIGHLIGHT_DURATION_MS);
+          }
+        } else {
+          const todayKey = QueryEngine.getToday();
+          const todaySection = timelineEl.querySelector(`.cards-section[data-group-key="${todayKey}"]`);
+          if (todaySection) {
+            todaySection.scrollIntoView({ behavior: "smooth", block: "center" });
+            todaySection.addClass("today-highlight");
+            if (this.highlightTimer !== null)
+              window.clearTimeout(this.highlightTimer);
+            this.highlightTimer = window.setTimeout(() => todaySection.removeClass("today-highlight"), HIGHLIGHT_DURATION_MS);
+          }
+        }
+      });
+    }
   }
   getTimelineNavLabel() {
     const today = /* @__PURE__ */ new Date();
-    const weekdays = ["\u5468\u65E5", "\u5468\u4E00", "\u5468\u4E8C", "\u5468\u4E09", "\u5468\u56DB", "\u5468\u4E94", "\u5468\u516D"];
+    const weekdays = [
+      t("dates").sun,
+      t("dates").mon,
+      t("dates").tue,
+      t("dates").wed,
+      t("dates").thu,
+      t("dates").fri,
+      t("dates").sat
+    ];
     return `${today.getMonth() + 1}/${today.getDate()} ${weekdays[today.getDay()]}`;
   }
   renderClassicTimeline(timelineEl, groups, prevBtn, todayBtn, nextBtn) {
@@ -2022,23 +2752,28 @@ var SmartTaskViewController = class {
     const groupEls = [];
     for (let i = 0; i < groups.length; i++) {
       const group = groups[i];
+      const isToday = group.key === QueryEngine.getToday();
+      const isOverdueGroup = group.key < QueryEngine.getToday();
       const groupEl = timelineContent.createDiv({
-        cls: "timeline-group classic-group",
+        cls: `timeline-group classic-group ${isToday ? "today-group" : ""} ${isOverdueGroup ? "overdue-group" : ""}`,
         attr: { "data-group-key": group.key, "data-group-index": i.toString() }
       });
       groupEls.push({ key: group.key, el: groupEl });
       const groupHeader = groupEl.createDiv({ cls: "timeline-group-header classic-group-header" });
-      groupHeader.createSpan({ cls: "timeline-dot classic-dot" });
-      const isToday = group.key === QueryEngine.getToday();
-      const isOverdueGroup = group.key < QueryEngine.getToday();
+      const dot = groupHeader.createSpan({ cls: "timeline-dot classic-dot" });
+      if (isToday)
+        dot.addClass("today");
+      if (isOverdueGroup)
+        dot.addClass("overdue");
+      const titleWrap = groupHeader.createDiv({ cls: "classic-title-wrap" });
       if (isToday) {
-        groupHeader.createSpan({ cls: "timeline-group-title today-title", text: group.name });
+        titleWrap.createSpan({ cls: "timeline-group-title today-title", text: group.name });
       } else if (isOverdueGroup) {
-        groupHeader.createSpan({ cls: "timeline-group-title overdue-title", text: group.name });
+        titleWrap.createSpan({ cls: "timeline-group-title overdue-title", text: group.name });
       } else {
-        groupHeader.createSpan({ cls: "timeline-group-title", text: group.name });
+        titleWrap.createSpan({ cls: "timeline-group-title", text: group.name });
       }
-      groupHeader.createSpan({ cls: "timeline-group-count", text: `${group.tasks.length} \u4E2A\u4EFB\u52A1` });
+      titleWrap.createSpan({ cls: "timeline-group-count", text: `${group.tasks.length}` });
       const tasksEl = groupEl.createDiv({ cls: "timeline-tasks classic-tasks" });
       this.renderTimelineTaskList(tasksEl, group.tasks);
     }
@@ -2082,6 +2817,9 @@ var SmartTaskViewController = class {
     const ganttContainer = timelineEl.createDiv({ cls: "gantt-timeline" });
     const ganttHeader = ganttContainer.createDiv({ cls: "gantt-header" });
     const ganttBody = ganttContainer.createDiv({ cls: "gantt-body" });
+    ganttHeader.addEventListener("scroll", () => {
+      ganttBody.scrollLeft = ganttHeader.scrollLeft;
+    });
     const allTasks = [];
     for (const group of groups) {
       allTasks.push(...group.tasks);
@@ -2109,15 +2847,20 @@ var SmartTaskViewController = class {
           maxDate = end2;
       }
       if (!minDate || !maxDate) {
-        const today = (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
-        minDate = today;
-        maxDate = today;
+        const today2 = formatLocalDate(/* @__PURE__ */ new Date());
+        minDate = today2;
+        maxDate = today2;
       }
-      const start = new Date(minDate);
-      const end = new Date(maxDate);
+      const todayStr2 = formatLocalDate(/* @__PURE__ */ new Date());
+      if (todayStr2 < minDate)
+        minDate = todayStr2;
+      if (todayStr2 > maxDate)
+        maxDate = todayStr2;
+      const start = parseLocalDate(minDate);
+      const end = parseLocalDate(maxDate);
       const current = new Date(start);
       while (current <= end) {
-        const dateStr = current.toISOString().split("T")[0];
+        const dateStr = formatLocalDate(current);
         timeUnits.push(dateStr);
         unitToIndex.set(dateStr, timeUnits.length - 1);
         current.setDate(current.getDate() + 1);
@@ -2129,6 +2872,11 @@ var SmartTaskViewController = class {
           unitToIndex.set(group.key, timeUnits.length - 1);
         }
       }
+      const todayWeekKey = this.getTimelineGroupKey(QueryEngine.getToday());
+      if (!unitToIndex.has(todayWeekKey)) {
+        timeUnits.push(todayWeekKey);
+        unitToIndex.set(todayWeekKey, timeUnits.length - 1);
+      }
     } else {
       for (const group of groups) {
         if (!unitToIndex.has(group.key)) {
@@ -2136,26 +2884,46 @@ var SmartTaskViewController = class {
           unitToIndex.set(group.key, timeUnits.length - 1);
         }
       }
+      const todayMonthKey = QueryEngine.getToday().substring(0, 7);
+      if (!unitToIndex.has(todayMonthKey)) {
+        timeUnits.push(todayMonthKey);
+        unitToIndex.set(todayMonthKey, timeUnits.length - 1);
+      }
+    }
+    timeUnits.sort();
+    unitToIndex.clear();
+    for (let i = 0; i < timeUnits.length; i++) {
+      unitToIndex.set(timeUnits[i], i);
     }
     const totalUnits = timeUnits.length;
-    for (const unit of timeUnits) {
+    const today = QueryEngine.getToday();
+    const todayIndex = unitToIndex.get(today);
+    for (let i = 0; i < timeUnits.length; i++) {
+      const unit = timeUnits[i];
       const headerCell = ganttHeader.createDiv({ cls: "gantt-header-cell" });
       headerCell.setCssStyles({ width: `${100 / totalUnits}%` });
+      if (unit === today)
+        headerCell.addClass("today");
       headerCell.createSpan({ cls: "gantt-date", text: this.formatDateShort(unit) });
     }
-    const rowColors = ["#ff6b6b", "#4ecdc4", "#45b7d1", "#96ceb4", "#ffeaa7", "#dfe6e9", "#a29bfe", "#fd79a8"];
     for (let i = 0; i < sortedTasks.length; i++) {
       const task = sortedTasks[i];
       const row = ganttBody.createDiv({ cls: "gantt-row" });
       if (task.completed)
         row.addClass("completed");
       const labelCell = row.createDiv({ cls: "gantt-label" });
+      const priDot = labelCell.createSpan({ cls: "gantt-priority-dot" });
+      priDot.setCssStyles({ background: this.getPriorityColor(task.priority) });
       const plainDesc = this.getPlainDescription(task.description);
       labelCell.createSpan({
         cls: "gantt-task-label",
-        text: plainDesc.length > 20 ? plainDesc.substring(0, 20) + "..." : plainDesc
+        text: plainDesc.length > 18 ? plainDesc.substring(0, 18) + "..." : plainDesc
       });
       const barsContainer = row.createDiv({ cls: "gantt-bars" });
+      if (todayIndex !== void 0) {
+        const todayLine = barsContainer.createDiv({ cls: "gantt-today-line" });
+        todayLine.setCssStyles({ left: `${(todayIndex + 0.5) * (100 / totalUnits)}%` });
+      }
       let left = 0;
       let width = 0;
       if (this.timelineGroupBy === "day") {
@@ -2183,23 +2951,30 @@ var SmartTaskViewController = class {
       if (width > 0) {
         const leftPct = left / totalUnits * 100;
         const widthPct = width / totalUnits * 100;
-        const bar = barsContainer.createDiv({ cls: "gantt-bar" });
+        const bar = barsContainer.createDiv({
+          cls: "gantt-bar",
+          attr: { "data-priority": task.priority }
+        });
         bar.setCssProps({
           "--gantt-left": `${leftPct}%`,
-          "--gantt-width": `${widthPct}%`,
-          "--gantt-color": rowColors[i % rowColors.length]
+          "--gantt-width": `${widthPct}%`
         });
         if (task.completed)
           bar.addClass("completed");
         if (this.isOverdue(task) && !task.completed) {
           bar.addClass("overdue");
         }
+        const progress = task.subtasks.length > 0 ? this.getSubtaskProgress(task) : null;
+        if (progress && progress.total > 0) {
+          const progressPct = progress.done / progress.total * 100;
+          bar.createDiv({ cls: "gantt-bar-progress" }).setCssStyles({ width: `${progressPct}%` });
+        }
         const plainDesc2 = this.getPlainDescription(task.description);
-        const shortDesc = plainDesc2.length > 12 ? plainDesc2.substring(0, 12) + "..." : plainDesc2;
+        const shortDesc = plainDesc2.length > 10 ? plainDesc2.substring(0, 10) + "..." : plainDesc2;
         bar.createDiv({ cls: "gantt-bar-label", text: shortDesc });
         bar.title = `${plainDesc2}
-\u8D77\u59CB: ${task.startDate || "\u65E0"}
-\u622A\u6B62: ${task.dueDate || "\u65E0"}`;
+${t("timeline").startLabel}: ${task.startDate || t("timeline").none}
+${t("timeline").dueLabel}: ${task.dueDate || t("timeline").none}`;
         bar.addEventListener("click", () => {
           this.plugin.openTaskFile(task.filePath, task.lineNumber);
         });
@@ -2212,43 +2987,39 @@ var SmartTaskViewController = class {
     for (let i = 0; i < groups.length; i++) {
       const group = groups[i];
       const isLeft = i % 2 === 0;
+      const isToday = group.key === QueryEngine.getToday();
+      const isOverdueGroup = group.key < QueryEngine.getToday();
       const groupEl = zigzagContainer.createDiv({
-        cls: `zigzag-group ${isLeft ? "left" : "right"}`
+        cls: `zigzag-group ${isLeft ? "left" : "right"} ${isToday ? "today-group" : ""} ${isOverdueGroup ? "overdue-group" : ""}`
       });
       const node = groupEl.createDiv({ cls: "zigzag-node" });
       const nodeInner = node.createDiv({ cls: "zigzag-node-inner" });
+      if (isToday)
+        nodeInner.addClass("today");
+      if (isOverdueGroup)
+        nodeInner.addClass("overdue");
       nodeInner.createSpan({ text: group.name.split(" ")[0] });
       const content = groupEl.createDiv({ cls: "zigzag-content" });
       const contentCard = content.createDiv({ cls: "zigzag-card" });
       const cardHeader = contentCard.createDiv({ cls: "zigzag-card-header" });
-      cardHeader.createSpan({ cls: "zigzag-card-title", text: group.name });
-      cardHeader.createSpan({ cls: "zigzag-card-count", text: `${group.tasks.length} \u4E2A\u4EFB\u52A1` });
+      const titleWrap = cardHeader.createDiv({ cls: "zigzag-card-title-wrap" });
+      titleWrap.createSpan({ cls: "zigzag-card-title", text: group.name });
+      cardHeader.createSpan({ cls: "zigzag-card-count", text: `${group.tasks.length}` });
       const taskList = contentCard.createDiv({ cls: "zigzag-task-list" });
       for (const task of group.tasks) {
-        const item = taskList.createDiv({ cls: "zigzag-task-item" });
+        const item = taskList.createDiv({
+          cls: "zigzag-task-item",
+          attr: { "data-priority": task.priority }
+        });
         if (task.completed)
           item.addClass("completed");
         if (this.isOverdue(task) && !task.completed)
           item.addClass("overdue");
         const taskMain = item.createDiv({ cls: "zigzag-task-main" });
-        const hasSubtasks = task.subtasks.length > 0;
-        const expanded = this.expandedTasks.has(task.id) || hasSubtasks;
-        if (hasSubtasks) {
-          const expandBtn = taskMain.createEl("button", { cls: "expand-btn", text: expanded ? "\u25BC" : "\u25B6" });
-          expandBtn.addEventListener("click", (e) => {
-            e.stopPropagation();
-            if (this.expandedTasks.has(task.id)) {
-              this.expandedTasks.delete(task.id);
-            } else {
-              this.expandedTasks.add(task.id);
-            }
-            this.refresh();
-          });
-        } else {
-          taskMain.createSpan({ cls: "expand-placeholder" });
-        }
         const checkbox = taskMain.createEl("input", {
-          type: "checkbox"
+          type: "checkbox",
+          cls: "zigzag-task-checkbox",
+          attr: { "aria-label": task.completed ? "Mark as not done" : "Mark as done" }
         });
         checkbox.checked = task.completed;
         checkbox.addEventListener("change", (e) => {
@@ -2260,36 +3031,29 @@ var SmartTaskViewController = class {
         desc.addEventListener("click", () => {
           void this.plugin.openTaskFile(task.filePath, task.lineNumber);
         });
-        const taskContent = item.createDiv({ cls: "zigzag-task-content" });
-        this.renderSubtasks(taskContent, task);
-        let addSubtaskEl = null;
         const zigzagMeta = item.createDiv({ cls: "zigzag-task-meta" });
         if (task.dueDate) {
-          zigzagMeta.createSpan({ cls: "task-due", text: `\u{1F4C5} ${this.formatDate(task.dueDate)}` });
+          const due = zigzagMeta.createSpan({ cls: "zigzag-meta-item due" });
+          (0, import_obsidian3.setIcon)(due, "calendar");
+          due.appendText(` ${this.formatDateShort(task.dueDate)}`);
+          if (this.isOverdue(task))
+            due.addClass("overdue");
         }
-        const zigzagMetaActions = zigzagMeta.createDiv({ cls: "task-meta-actions" });
+        if (task.subtasks.length > 0) {
+          const progress = this.getSubtaskProgress(task);
+          const sub = zigzagMeta.createSpan({ cls: "zigzag-meta-item subtasks" });
+          (0, import_obsidian3.setIcon)(sub, "list-checks");
+          sub.appendText(` ${progress.done}/${progress.total}`);
+        }
+        const zigzagMetaActions = zigzagMeta.createDiv({ cls: "zigzag-meta-actions" });
         const editBtn = zigzagMetaActions.createEl("button", {
-          cls: "meta-action-btn",
-          text: "\u270F\uFE0F",
-          attr: { title: "\u7F16\u8F91\u4EFB\u52A1" }
+          cls: "zigzag-meta-btn",
+          attr: { "data-tooltip": t("tooltips").editTask, "aria-label": t("tooltips").editTask }
         });
+        (0, import_obsidian3.setIcon)(editBtn, "pencil");
         editBtn.addEventListener("click", (e) => {
           e.stopPropagation();
           this.openTaskEditor(task);
-        });
-        const addSubBtn = zigzagMetaActions.createEl("button", {
-          cls: "meta-action-btn",
-          text: "\u2795",
-          attr: { title: "\u6DFB\u52A0\u5B50\u4EFB\u52A1" }
-        });
-        addSubBtn.addEventListener("click", (e) => {
-          e.stopPropagation();
-          if (addSubtaskEl) {
-            addSubtaskEl.remove();
-            addSubtaskEl = null;
-          } else {
-            addSubtaskEl = this.renderAddSubtaskInput(taskContent, task);
-          }
         });
       }
     }
@@ -2297,84 +3061,80 @@ var SmartTaskViewController = class {
   renderCardsTimeline(timelineEl, groups) {
     const cardsContainer = timelineEl.createDiv({ cls: "cards-timeline" });
     for (const group of groups) {
-      const section = cardsContainer.createDiv({ cls: "cards-section" });
+      const section = cardsContainer.createDiv({ cls: "cards-section", attr: { "data-group-key": group.key } });
       const sectionHeader = section.createDiv({ cls: "cards-section-header" });
-      sectionHeader.createSpan({ cls: "cards-section-title", text: group.name });
+      const titleWrap = sectionHeader.createDiv({ cls: "cards-section-title-wrap" });
+      const priBar = titleWrap.createSpan({ cls: "cards-section-pri-bar" });
+      titleWrap.createSpan({ cls: "cards-section-title", text: group.name });
       sectionHeader.createSpan({ cls: "cards-section-count", text: `${group.tasks.length}` });
       const cardsGrid = section.createDiv({ cls: "cards-grid" });
       for (const task of group.tasks) {
-        const card = cardsGrid.createDiv({ cls: "task-card" });
+        const card = cardsGrid.createDiv({
+          cls: "task-card",
+          attr: { "data-priority": task.priority }
+        });
         if (task.completed)
           card.addClass("completed");
         if (this.isOverdue(task) && !task.completed)
           card.addClass("overdue");
-        const cardTop = card.createDiv({ cls: "task-card-top" });
-        cardTop.createSpan({
-          cls: "task-card-priority",
-          attr: { "data-priority": task.priority }
-        });
-        cardTop.createSpan({ cls: "task-card-date", text: task.dueDate || "" });
-        const cardBody = card.createDiv({ cls: "task-card-body" });
-        const desc = cardBody.createSpan({ cls: "task-card-desc" });
-        this.renderDescriptionWithLinks(desc, task);
-        desc.addEventListener("click", () => {
-          this.plugin.openTaskFile(task.filePath, task.lineNumber);
-        });
-        const hasSubtasks = task.subtasks.length > 0;
-        const expanded = this.expandedTasks.has(task.id) || hasSubtasks;
-        if (hasSubtasks && this.plugin.settings.showSubtasks) {
-          const subtaskToggle = cardBody.createEl("button", {
-            cls: "card-subtask-toggle",
-            text: `${expanded ? "\u25BC" : "\u25B6"} \u5B50\u4EFB\u52A1 (${this.getSubtaskProgress(task).done}/${this.getSubtaskProgress(task).total})`
-          });
-          subtaskToggle.addEventListener("click", (e) => {
-            e.stopPropagation();
-            if (this.expandedTasks.has(task.id)) {
-              this.expandedTasks.delete(task.id);
-            } else {
-              this.expandedTasks.add(task.id);
-            }
-            this.refresh();
-          });
-        }
-        const cardSubtasks = card.createDiv({ cls: "card-subtasks" });
-        this.renderSubtasks(cardSubtasks, task);
-        let addSubtaskEl = null;
-        const cardFooter = card.createDiv({ cls: "task-card-footer" });
-        const checkbox = cardFooter.createEl("input", {
-          type: "checkbox"
+        const cardLeft = card.createDiv({ cls: "task-card-left" });
+        const checkbox = cardLeft.createEl("input", {
+          type: "checkbox",
+          cls: "task-card-checkbox",
+          attr: { "aria-label": task.completed ? "Mark as not done" : "Mark as done" }
         });
         checkbox.checked = task.completed;
         checkbox.addEventListener("change", (e) => {
           e.stopPropagation();
           void this.plugin.toggleTaskStatus(task, checkbox.checked);
         });
-        const actions = cardFooter.createDiv({ cls: "task-card-actions" });
-        const editBtn = actions.createEl("button", { cls: "meta-action-btn", text: "\u270F\uFE0F", attr: { title: "\u7F16\u8F91" } });
+        const cardBody = card.createDiv({ cls: "task-card-body" });
+        const desc = cardBody.createSpan({ cls: "task-card-desc" });
+        this.renderDescriptionWithLinks(desc, task);
+        desc.addEventListener("click", () => {
+          this.plugin.openTaskFile(task.filePath, task.lineNumber);
+        });
+        const cardMeta = cardBody.createDiv({ cls: "task-card-meta" });
+        if (task.dueDate) {
+          const due = cardMeta.createSpan({ cls: "task-card-meta-item due" });
+          (0, import_obsidian3.setIcon)(due, "calendar");
+          due.appendText(` ${this.formatDateShort(task.dueDate)}`);
+          if (this.isOverdue(task))
+            due.addClass("overdue");
+        }
+        if (task.subtasks.length > 0) {
+          const progress = this.getSubtaskProgress(task);
+          const sub = cardMeta.createSpan({ cls: "task-card-meta-item subtasks" });
+          (0, import_obsidian3.setIcon)(sub, "list-checks");
+          sub.appendText(` ${progress.done}/${progress.total}`);
+        }
+        if (task.tags.length > 0) {
+          const tag = cardMeta.createSpan({ cls: "task-card-meta-item tag" });
+          (0, import_obsidian3.setIcon)(tag, "tag");
+          tag.appendText(` ${task.tags[0]}`);
+        }
+        const cardActions = card.createDiv({ cls: "task-card-actions" });
+        const editBtn = cardActions.createEl("button", {
+          cls: "task-card-action-btn",
+          attr: { "data-tooltip": t("tooltips").editTask, "aria-label": t("tooltips").editTask }
+        });
+        (0, import_obsidian3.setIcon)(editBtn, "pencil");
         editBtn.addEventListener("click", (e) => {
           e.stopPropagation();
           this.openTaskEditor(task);
         });
-        const addSubBtn = actions.createEl("button", {
-          cls: "meta-action-btn",
-          text: "\u2795",
-          attr: { title: "\u6DFB\u52A0\u5B50\u4EFB\u52A1" }
+        const addSubBtn = cardActions.createEl("button", {
+          cls: "task-card-action-btn",
+          attr: { "data-tooltip": t("tooltips").addSubtask, "aria-label": t("tooltips").addSubtask }
         });
-        addSubBtn.addEventListener("click", (e) => {
-          e.stopPropagation();
-          if (addSubtaskEl) {
-            addSubtaskEl.remove();
-            addSubtaskEl = null;
-          } else {
-            addSubtaskEl = this.renderAddSubtaskInput(cardSubtasks, task);
-          }
-        });
+        (0, import_obsidian3.setIcon)(addSubBtn, "plus");
       }
     }
   }
   renderTimelineTaskList(container, tasks) {
     for (const task of tasks) {
-      const item = container.createDiv({ cls: "timeline-task-item" });
+      const tPri = this.getPriorityDataAttr(task.priority);
+      const item = container.createDiv({ cls: "timeline-task-item", attr: tPri ? { "data-priority": tPri } : {} });
       if (task.completed)
         item.addClass("completed");
       if (this.isOverdue(task))
@@ -2432,7 +3192,7 @@ var SmartTaskViewController = class {
       const editBtn = metaActions.createEl("button", {
         cls: "meta-action-btn",
         text: "\u270F\uFE0F",
-        attr: { title: "\u7F16\u8F91\u4EFB\u52A1" }
+        attr: { "data-tooltip": t("tooltips").editTask, "aria-label": t("tooltips").editTask }
       });
       editBtn.addEventListener("click", (e) => {
         e.stopPropagation();
@@ -2441,7 +3201,7 @@ var SmartTaskViewController = class {
       const addSubBtn = metaActions.createEl("button", {
         cls: "meta-action-btn",
         text: "\u2795",
-        attr: { title: "\u6DFB\u52A0\u5B50\u4EFB\u52A1" }
+        attr: { "data-tooltip": t("tooltips").addSubtask, "aria-label": t("tooltips").addSubtask }
       });
       addSubBtn.addEventListener("click", (e) => {
         e.stopPropagation();
@@ -2462,7 +3222,7 @@ var SmartTaskViewController = class {
       return dateStr.replace("-W", "W");
     } else {
       const parts = dateStr.split("-");
-      return `${parseInt(parts[1])}\u6708`;
+      return t("timeline").monthFormat.replace("{n}", String(parseInt(parts[1])));
     }
   }
   getTimelineGroups() {
@@ -2490,7 +3250,7 @@ var SmartTaskViewController = class {
     if (this.timelineGroupBy === "day") {
       return dateStr;
     } else if (this.timelineGroupBy === "week") {
-      const d = new Date(dateStr);
+      const d = parseLocalDate(dateStr);
       const day = d.getDay() || 7;
       d.setDate(d.getDate() + 4 - day);
       const year = d.getFullYear();
@@ -2503,17 +3263,25 @@ var SmartTaskViewController = class {
   }
   formatTimelineGroupTitle(key) {
     if (this.timelineGroupBy === "day") {
-      const date = new Date(key);
+      const date = parseLocalDate(key);
       const today = /* @__PURE__ */ new Date();
       const tomorrow = new Date(today);
       tomorrow.setDate(tomorrow.getDate() + 1);
-      const todayStr = today.toISOString().split("T")[0];
-      const tomorrowStr = tomorrow.toISOString().split("T")[0];
+      const todayStr = formatLocalDate(today);
+      const tomorrowStr = formatLocalDate(tomorrow);
       if (key === todayStr)
-        return `\u4ECA\u5929 (${this.formatDate(key)})`;
+        return `${t("dates").today} (${this.formatDate(key)})`;
       if (key === tomorrowStr)
-        return `\u660E\u5929 (${this.formatDate(key)})`;
-      const weekdays = ["\u5468\u65E5", "\u5468\u4E00", "\u5468\u4E8C", "\u5468\u4E09", "\u5468\u56DB", "\u5468\u4E94", "\u5468\u516D"];
+        return `${t("dates").tomorrow} (${this.formatDate(key)})`;
+      const weekdays = [
+        t("dates").sun,
+        t("dates").mon,
+        t("dates").tue,
+        t("dates").wed,
+        t("dates").thu,
+        t("dates").fri,
+        t("dates").sat
+      ];
       const weekday = weekdays[date.getDay()];
       return `${this.formatDate(key)} ${weekday}`;
     } else if (this.timelineGroupBy === "week") {
@@ -2524,10 +3292,10 @@ var SmartTaskViewController = class {
       d.setDate(d.getDate() + 1 - day);
       const endDate = new Date(d);
       endDate.setDate(endDate.getDate() + 6);
-      return `${this.formatDate(d.toISOString().split("T")[0])} ~ ${this.formatDate(endDate.toISOString().split("T")[0])}`;
+      return `${this.formatDate(formatLocalDate(d))} ~ ${this.formatDate(formatLocalDate(endDate))}`;
     } else {
       const [year, month] = key.split("-");
-      return `${year}\u5E74${parseInt(month)}\u6708`;
+      return t("calendar").yearMonthFormat.replace("{year}", year).replace("{month}", String(parseInt(month)));
     }
   }
   findFirstVisibleGroup(groupEls) {
@@ -2548,46 +3316,54 @@ var SmartTaskViewController = class {
     modal.className = "task-editor-modal-overlay";
     const modalInner = modal.createDiv({ cls: "task-editor-modal" });
     const header = modalInner.createDiv({ cls: "task-editor-header" });
-    header.createEl("h3", { text: "Edit Task" });
-    const closeBtn = header.createEl("button", { cls: "task-editor-close", title: "Close", text: "\u2715" });
+    header.createEl("h3", { text: t("editor").title });
+    const closeBtn = header.createEl("button", { cls: "task-editor-close", text: "\u2715", attr: { "data-tooltip": t("ui").close, "aria-label": t("ui").close } });
     const body = modalInner.createDiv({ cls: "task-editor-body" });
     const descField = body.createDiv({ cls: "task-editor-field" });
-    descField.createEl("label", { text: "Description" });
+    descField.createEl("label", { text: t("editor").description });
     const descInput = descField.createEl("input", { type: "text", cls: "task-editor-input" });
     descInput.value = task.description;
     const dateField = body.createDiv({ cls: "task-editor-field" });
-    dateField.createEl("label", { text: "Due Date" });
+    dateField.createEl("label", { text: t("editor").dueDate });
     const dateInput = dateField.createEl("input", { type: "date", cls: "task-editor-date" });
     if (task.dueDate)
       dateInput.value = task.dueDate;
     const priorityField = body.createDiv({ cls: "task-editor-field" });
-    priorityField.createEl("label", { text: "Priority" });
+    priorityField.createEl("label", { text: t("editor").priority });
     const prioritySelect = priorityField.createEl("select", { cls: "task-editor-priority" });
     const priorityOptions = [
-      { value: "none", text: "None" },
-      { value: "highest", text: "\u{1F51D} Highest" },
-      { value: "high", text: "\u{1F53A} High" },
-      { value: "medium", text: "\u{1F53C} Medium" },
-      { value: "low", text: "\u{1F53D} Low" },
-      { value: "lowest", text: "\u23EC Lowest" }
+      { value: "none", text: t("settings").none },
+      { value: "highest", text: "\u{1F51D} " + t("priorities").highest },
+      { value: "high", text: "\u{1F53A} " + t("priorities").high },
+      { value: "medium", text: "\u{1F53C} " + t("priorities").medium },
+      { value: "low", text: "\u{1F53D} " + t("priorities").low },
+      { value: "lowest", text: "\u23EC " + t("priorities").lowest }
     ];
     for (const opt of priorityOptions) {
       prioritySelect.createEl("option", { value: opt.value, text: opt.text });
     }
     prioritySelect.value = task.priority;
     const tagsField = body.createDiv({ cls: "task-editor-field" });
-    tagsField.createEl("label", { text: "Tags (comma-separated)" });
+    tagsField.createEl("label", { text: t("editor").tags });
     const tagsInput = tagsField.createEl("input", { type: "text", cls: "task-editor-tags" });
     tagsInput.value = task.tags.join(", ");
     const footer = modalInner.createDiv({ cls: "task-editor-footer" });
-    const deleteBtn = footer.createEl("button", { cls: "task-editor-btn delete-btn", text: "Delete Task" });
+    const deleteBtn = footer.createEl("button", { cls: "task-editor-btn delete-btn", text: t("editor").deleteTask });
     const actions = footer.createDiv({ cls: "task-editor-actions" });
-    const cancelBtn = actions.createEl("button", { cls: "task-editor-btn cancel-btn", text: "Cancel" });
-    const saveBtn = actions.createEl("button", { cls: "task-editor-btn save-btn", text: "Save" });
+    const cancelBtn = actions.createEl("button", { cls: "task-editor-btn cancel-btn", text: t("ui").cancel });
+    const saveBtn = actions.createEl("button", { cls: "task-editor-btn save-btn", text: t("ui").save });
     activeDocument.body.appendChild(modal);
+    let onKeydown = null;
     const closeModal = () => {
+      if (onKeydown)
+        document.removeEventListener("keydown", onKeydown);
       modal.remove();
     };
+    onKeydown = (e) => {
+      if (e.key === "Escape")
+        closeModal();
+    };
+    document.addEventListener("keydown", onKeydown);
     closeBtn.addEventListener("click", closeModal);
     cancelBtn.addEventListener("click", closeModal);
     modal.addEventListener("click", (e) => {
@@ -2601,7 +3377,7 @@ var SmartTaskViewController = class {
         const newPriority = prioritySelect.value;
         const newTags = tagsInput.value.split(",").map((t2) => t2.trim()).filter((t2) => t2.length > 0);
         if (!newDesc) {
-          new import_obsidian3.Notice("Description cannot be empty");
+          new import_obsidian3.Notice(t("editor").descEmpty);
           return;
         }
         try {
@@ -2612,30 +3388,30 @@ var SmartTaskViewController = class {
             tags: newTags
           });
           closeModal();
-          new import_obsidian3.Notice("Task updated \u2705");
+          new import_obsidian3.Notice(t("editor").updated);
         } catch (e) {
           console.error("Failed to update task:", e);
-          new import_obsidian3.Notice("Failed to update task");
+          new import_obsidian3.Notice(t("editor").updateFailed);
         }
       })();
     });
     deleteBtn.addEventListener("click", () => {
       const confirmModal = new import_obsidian3.Modal(this.plugin.app);
-      confirmModal.titleEl.setText("Confirm Delete");
-      confirmModal.contentEl.createEl("p", { text: "Are you sure you want to delete this task?" });
+      confirmModal.titleEl.setText(t("editor").confirmDeleteTitle);
+      confirmModal.contentEl.createEl("p", { text: t("editor").confirmDeleteMessage });
       const btnContainer = confirmModal.contentEl.createDiv({ cls: "modal-button-container" });
-      const cancelBtn2 = btnContainer.createEl("button", { cls: "mod-cta", text: "Cancel" });
-      const deleteBtn2 = btnContainer.createEl("button", { cls: "mod-danger", text: "Delete" });
+      const cancelBtn2 = btnContainer.createEl("button", { cls: "mod-cta", text: t("ui").cancel });
+      const deleteBtn2 = btnContainer.createEl("button", { cls: "mod-danger", text: t("ui").delete });
       cancelBtn2.onclick = () => confirmModal.close();
       deleteBtn2.onclick = async () => {
         try {
           await this.plugin.deleteTask(task);
           closeModal();
           confirmModal.close();
-          new import_obsidian3.Notice("Task deleted");
+          new import_obsidian3.Notice(t("editor").deleted);
         } catch (e) {
           console.error("Failed to delete task:", e);
-          new import_obsidian3.Notice("Failed to delete task");
+          new import_obsidian3.Notice(t("editor").deleteFailed);
         }
       };
       confirmModal.open();
@@ -2644,9 +3420,7 @@ var SmartTaskViewController = class {
     descInput.select();
   }
   escapeHtml(text) {
-    const div = activeDocument.createElement("div");
-    div.textContent = text;
-    return div.innerHTML;
+    return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
   }
   renderCalendarView(container) {
     const calendarEl = container.createDiv({ cls: "calendar-view" });
@@ -2655,22 +3429,22 @@ var SmartTaskViewController = class {
     const prevMonthBtn = navGroup.createEl("button", {
       cls: "calendar-nav-btn",
       text: "\u25C0",
-      attr: { title: "\u4E0A\u4E2A\u6708" }
+      attr: { "data-tooltip": t("calendar").prevMonth, "aria-label": t("calendar").prevMonth }
     });
     navGroup.createSpan({
       cls: "calendar-month-label",
-      text: `${this.calendarYear}\u5E74${this.calendarMonth + 1}\u6708`
+      text: t("calendar").yearMonthFormat.replace("{year}", String(this.calendarYear)).replace("{month}", String(this.calendarMonth + 1))
     });
     const nextMonthBtn = navGroup.createEl("button", {
       cls: "calendar-nav-btn",
       text: "\u25B6",
-      attr: { title: "\u4E0B\u4E2A\u6708" }
+      attr: { "data-tooltip": t("calendar").nextMonth, "aria-label": t("calendar").nextMonth }
     });
     const todayBtn = header.createEl("button", {
       cls: "calendar-today-btn",
       text: t("dates").today
     });
-    const weekdays = ["\u65E5", "\u4E00", "\u4E8C", "\u4E09", "\u56DB", "\u4E94", "\u516D"];
+    const weekdays = t("calendar").weekdayShort;
     const weekdayRow = calendarEl.createDiv({ cls: "calendar-weekdays" });
     for (const day of weekdays) {
       weekdayRow.createDiv({ cls: "calendar-weekday", text: day });
@@ -2706,7 +3480,7 @@ var SmartTaskViewController = class {
     const startWeekday = firstDay.getDay();
     const daysInMonth = lastDay.getDate();
     const today = /* @__PURE__ */ new Date();
-    const todayStr = today.toISOString().split("T")[0];
+    const todayStr = formatLocalDate(today);
     const tasksByDate = /* @__PURE__ */ new Map();
     for (const task of this.filteredTasks) {
       if (task.dueDate) {
@@ -2743,7 +3517,8 @@ var SmartTaskViewController = class {
         const done = dayTasks.filter((t2) => t2.completed);
         const displayTasks = [...notDone, ...done].slice(0, 3);
         for (const task of displayTasks) {
-          const taskEl = tasksContainer.createDiv({ cls: "calendar-task-item" });
+          const cPri = this.getPriorityDataAttr(task.priority);
+          const taskEl = tasksContainer.createDiv({ cls: "calendar-task-item", attr: cPri ? { "data-priority": cPri } : {} });
           if (task.completed)
             taskEl.addClass("completed");
           taskEl.addClass(`priority-${task.priority || "none"}`);
@@ -2792,11 +3567,12 @@ var SmartTaskViewController = class {
     modal.className = "task-editor-modal-overlay";
     const modalInner = modal.createDiv({ cls: "task-editor-modal" });
     const header = modalInner.createDiv({ cls: "task-editor-header" });
-    header.createEl("h3", { text: `${dateStr} Tasks` });
-    const closeBtn = header.createEl("button", { cls: "task-editor-close", title: "Close", text: "\u2715" });
+    header.createEl("h3", { text: t("editor").dayTasks.replace("{date}", dateStr) });
+    const closeBtn = header.createEl("button", { cls: "task-editor-close", text: "\u2715", attr: { "data-tooltip": t("ui").close, "aria-label": t("ui").close } });
     const listEl = modalInner.createDiv({ cls: "task-editor-body day-tasks-list" });
     for (const task of tasks) {
-      const item = listEl.createDiv({ cls: "day-task-item" });
+      const dPri = this.getPriorityDataAttr(task.priority);
+      const item = listEl.createDiv({ cls: "day-task-item", attr: dPri ? { "data-priority": dPri } : {} });
       if (task.completed)
         item.addClass("completed");
       const checkbox = item.createEl("input", {
@@ -2818,7 +3594,17 @@ var SmartTaskViewController = class {
       });
     }
     activeDocument.body.appendChild(modal);
-    const closeModal = () => modal.remove();
+    let onKeydown = null;
+    const closeModal = () => {
+      if (onKeydown)
+        document.removeEventListener("keydown", onKeydown);
+      modal.remove();
+    };
+    onKeydown = (e) => {
+      if (e.key === "Escape")
+        closeModal();
+    };
+    document.addEventListener("keydown", onKeydown);
     closeBtn.addEventListener("click", closeModal);
     modal.addEventListener("click", (e) => {
       if (e.target === modal)
@@ -2842,9 +3628,9 @@ var SmartTaskViewController = class {
     }
     const modalInner = modal.createDiv({ cls: "wheel-picker-modal" });
     const header = modalInner.createDiv({ cls: "wheel-picker-header" });
-    const cancelBtn = header.createEl("button", { cls: "wheel-picker-cancel", text: "Cancel" });
-    header.createSpan({ cls: "wheel-picker-title", text: "Select Date" });
-    const confirmBtn = header.createEl("button", { cls: "wheel-picker-confirm", text: "OK" });
+    const cancelBtn = header.createEl("button", { cls: "wheel-picker-cancel", text: t("ui").cancel });
+    header.createSpan({ cls: "wheel-picker-title", text: t("editor").selectDate });
+    const confirmBtn = header.createEl("button", { cls: "wheel-picker-confirm", text: t("ui").ok });
     const body = modalInner.createDiv({ cls: "wheel-picker-body" });
     const yearCol = body.createDiv({ cls: "wheel-column", attr: { "data-col": "year" } });
     yearCol.createDiv({ cls: "wheel-wrapper" });
@@ -2964,29 +3750,36 @@ var SmartTaskViewController = class {
       return days;
     };
     const refreshDayColumn = () => {
-      var _a;
-      if (dayCtrl)
-        (_a = dayCtrl.destroy) == null ? void 0 : _a.call(dayCtrl);
-      dayCtrl = setupColumn(dayCol, buildDayValues(), day, (v) => `${v}\u65E5`, (v) => {
+      var _a2;
+      (_a2 = dayCtrl == null ? void 0 : dayCtrl.destroy) == null ? void 0 : _a2.call(dayCtrl);
+      dayCtrl = setupColumn(dayCol, buildDayValues(), day, (v) => `${v}${t("wheelPicker").daySuffix}`, (v) => {
         day = v;
       });
     };
-    yearCtrl = setupColumn(yearCol, years, year, (v) => `${v}\u5E74`, (v) => {
+    yearCtrl = setupColumn(yearCol, years, year, (v) => `${v}${t("wheelPicker").yearSuffix}`, (v) => {
       year = v;
       refreshDayColumn();
     });
-    monthCtrl = setupColumn(monthCol, months, month, (v) => `${v}\u6708`, (v) => {
+    monthCtrl = setupColumn(monthCol, months, month, (v) => `${v}${t("wheelPicker").monthSuffix}`, (v) => {
       month = v;
       refreshDayColumn();
     });
     refreshDayColumn();
+    let onKeydown = null;
     const closeModal = () => {
-      var _a, _b, _c;
-      (_a = yearCtrl == null ? void 0 : yearCtrl.destroy) == null ? void 0 : _a.call(yearCtrl);
+      var _a2, _b, _c;
+      if (onKeydown)
+        document.removeEventListener("keydown", onKeydown);
+      (_a2 = yearCtrl == null ? void 0 : yearCtrl.destroy) == null ? void 0 : _a2.call(yearCtrl);
       (_b = monthCtrl == null ? void 0 : monthCtrl.destroy) == null ? void 0 : _b.call(monthCtrl);
       (_c = dayCtrl == null ? void 0 : dayCtrl.destroy) == null ? void 0 : _c.call(dayCtrl);
       modal.remove();
     };
+    onKeydown = (e) => {
+      if (e.key === "Escape")
+        closeModal();
+    };
+    document.addEventListener("keydown", onKeydown);
     cancelBtn.addEventListener("click", closeModal);
     modal.addEventListener("click", (e) => {
       if (e.target === modal)
@@ -3048,6 +3841,12 @@ var SmartTaskView = class extends import_obsidian4.ItemView {
     this.controller = new SmartTaskViewController(this.plugin, wrapper);
     this.controller.render();
   }
+  /** 设置变化后强制视图按最新设置重渲染（由 updateAllViews 调用）。 */
+  refreshFromSettings() {
+    if (this.controller) {
+      this.controller.refresh();
+    }
+  }
 };
 
 // src/main.ts
@@ -3059,6 +3858,8 @@ var SmartTaskPlugin = class extends import_obsidian5.Plugin {
     this.taskIndex = null;
     this.tasksChangeListeners = /* @__PURE__ */ new Set();
     this.statusBarItem = null;
+    this.indexReady = false;
+    this.tagsCache = null;
   }
   async onload() {
     await this.loadSettings();
@@ -3093,10 +3894,10 @@ var SmartTaskPlugin = class extends import_obsidian5.Plugin {
       id: "toggle-status",
       name: t("commands").toggleStatus,
       editorCallback: (editor, view) => {
-        var _a;
+        var _a2;
         const cursor = editor.getCursor();
         const line = editor.getLine(cursor.line);
-        const task = TaskParser.parseLine(line, ((_a = view.file) == null ? void 0 : _a.path) || "", cursor.line + 1);
+        const task = TaskParser.parseLine(line, ((_a2 = view.file) == null ? void 0 : _a2.path) || "", cursor.line + 1);
         if (task) {
           const newStatus = !task.completed;
           const newLine = line.replace(
@@ -3104,7 +3905,7 @@ var SmartTaskPlugin = class extends import_obsidian5.Plugin {
             (match, prefix) => `${prefix} [${newStatus ? "x" : " "}]`
           );
           editor.setLine(cursor.line, newLine);
-          new import_obsidian5.Notice(newStatus ? "Task completed \u{1F389}" : "Task restored");
+          new import_obsidian5.Notice(newStatus ? t("notices").taskCompleted : t("notices").taskRestored);
         }
       }
     });
@@ -3112,10 +3913,10 @@ var SmartTaskPlugin = class extends import_obsidian5.Plugin {
       id: "add-subtask",
       name: t("commands").addSubtask,
       editorCallback: (editor, view) => {
-        var _a;
+        var _a2;
         const cursor = editor.getCursor();
         const line = editor.getLine(cursor.line);
-        const task = TaskParser.parseLine(line, ((_a = view.file) == null ? void 0 : _a.path) || "", cursor.line + 1);
+        const task = TaskParser.parseLine(line, ((_a2 = view.file) == null ? void 0 : _a2.path) || "", cursor.line + 1);
         if (task) {
           const indentMatch = line.match(/^(\s*)/);
           const indent = (indentMatch ? indentMatch[1] : "") + "  ";
@@ -3149,21 +3950,27 @@ ${newLine}`,
     this.updateAllViews();
   }
   async initTaskIndex() {
+    this.indexReady = false;
     this.taskIndex = new TaskIndex(this.app);
     await this.taskIndex.initialize();
+    this.indexReady = true;
     this.taskIndex.onChange(() => {
       this.notifyTasksChange();
       this.updateStatusBar();
     });
+    this.notifyTasksChange();
+  }
+  isIndexReady() {
+    return this.indexReady;
   }
   async setIndexingEnabled(enabled) {
     if (enabled && !this.taskIndex) {
       await this.initTaskIndex();
-      this.notifyTasksChange();
       this.updateStatusBar();
     } else if (!enabled && this.taskIndex) {
       this.taskIndex.destroy();
       this.taskIndex = null;
+      this.indexReady = false;
       this.notifyTasksChange();
       this.updateStatusBar();
     }
@@ -3184,7 +3991,7 @@ ${newLine}`,
     const tasks = this.getTasks();
     const notDone = tasks.filter((t2) => !t2.completed).length;
     if (this.statusBarItem) {
-      this.statusBarItem.setText(`\u{1F4CB} ${notDone} \u5F85\u529E`);
+      this.statusBarItem.setText(`\u{1F4CB} ${notDone} ${t("stats").pending}`);
     }
   }
   getTasks() {
@@ -3200,10 +4007,10 @@ ${newLine}`,
       return;
     try {
       await this.taskIndex.updateTaskStatus(task, completed);
-      new import_obsidian5.Notice(completed ? "\u4EFB\u52A1\u5DF2\u5B8C\u6210 \u{1F389}" : "\u4EFB\u52A1\u5DF2\u6062\u590D");
+      new import_obsidian5.Notice(completed ? t("notices").taskCompleted : t("notices").taskRestored);
     } catch (e) {
       console.error("Failed to toggle task:", e);
-      new import_obsidian5.Notice("\u66F4\u65B0\u4EFB\u52A1\u5931\u8D25");
+      new import_obsidian5.Notice(t("notices").updateFailed);
     }
   }
   async toggleSubtaskStatus(parentTask, subtaskId, completed) {
@@ -3216,7 +4023,7 @@ ${newLine}`,
     try {
       const targetFile = await this.getTargetFile();
       if (!targetFile) {
-        new import_obsidian5.Notice("\u65E0\u6CD5\u786E\u5B9A\u4FDD\u5B58\u4F4D\u7F6E");
+        new import_obsidian5.Notice(t("notices").noSaveLocation);
         return;
       }
       const content = await this.app.vault.read(targetFile);
@@ -3254,8 +4061,9 @@ ${newLine}`,
       if (dueDate) {
         taskLine += ` \u{1F4C5} ${dueDate}`;
       }
-      const startDate = (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
+      const startDate = formatLocalDate(/* @__PURE__ */ new Date());
       taskLine += ` \u{1F6EB} ${startDate}`;
+      taskLine += ` \u{1F58A} ${startDate}`;
       if (this.settings.autoAddTags && this.settings.autoAddTags.length > 0) {
         const tagsStr = this.settings.autoAddTags.map((tag) => `#${tag}`).join(" ");
         taskLine += ` ${tagsStr}`;
@@ -3282,10 +4090,10 @@ ${newLine}`,
       }
       const newContent = lines.join("\n");
       await this.app.vault.modify(targetFile, newContent);
-      new import_obsidian5.Notice(parentTask ? "\u5B50\u4EFB\u52A1\u5DF2\u6DFB\u52A0 \u2705" : "\u4EFB\u52A1\u5DF2\u521B\u5EFA \u2705");
+      new import_obsidian5.Notice(parentTask ? t("notices").subtaskAdded : t("notices").taskCreated);
     } catch (e) {
       console.error("Failed to create task:", e);
-      new import_obsidian5.Notice("\u521B\u5EFA\u4EFB\u52A1\u5931\u8D25: " + (e instanceof Error ? e.message : String(e)));
+      new import_obsidian5.Notice(`${t("notices").createFailed}: ${e instanceof Error ? e.message : String(e)}`);
     }
   }
   async getTargetFile() {
@@ -3309,23 +4117,27 @@ ${newLine}`,
   }
   async getDailyNoteFile() {
     try {
-      const dailyNoteApi = this.app.plugins.dailyNotes;
-      if (dailyNoteApi) {
-        const today = /* @__PURE__ */ new Date();
-        let file = dailyNoteApi.getDailyNote(today);
-        if (!file) {
-          file = await dailyNoteApi.createDailyNote(today);
-        }
-        return file;
+      const today = /* @__PURE__ */ new Date();
+      const dateStr = this.formatDate(today, "YYYY-MM-DD");
+      const dailyNotePath = `${dateStr}.md`;
+      const existing = this.app.vault.getAbstractFileByPath(dailyNotePath);
+      if (existing instanceof import_obsidian5.TFile) {
+        return existing;
       }
+      const allFiles = this.app.vault.getMarkdownFiles();
+      const matched = allFiles.find((f) => f.basename === dateStr);
+      if (matched) {
+        return matched;
+      }
+      return await this.app.vault.create(dailyNotePath, "");
     } catch (e) {
       console.warn("Daily note access failed, falling back to inbox", e);
     }
     return this.getInboxFile();
   }
   async getInboxFile() {
-    var _a;
-    let inboxPath = ((_a = this.settings.inboxFilePath) == null ? void 0 : _a.trim()) || "SmartTask-Inbox.md";
+    var _a2;
+    let inboxPath = ((_a2 = this.settings.inboxFilePath) == null ? void 0 : _a2.trim()) || "SmartTask-Inbox.md";
     if (!inboxPath.endsWith(".md")) {
       inboxPath += ".md";
     }
@@ -3379,6 +4191,7 @@ ${newLine}`,
     return () => this.tasksChangeListeners.delete(callback);
   }
   notifyTasksChange() {
+    this.invalidateTagsCache();
     for (const listener of this.tasksChangeListeners) {
       try {
         listener();
@@ -3391,17 +4204,24 @@ ${newLine}`,
     const leaves = this.app.workspace.getLeavesOfType(SMARTTASK_VIEW_TYPE);
     for (const leaf of leaves) {
       if (leaf.view instanceof SmartTaskView) {
+        leaf.view.refreshFromSettings();
       }
     }
   }
   getAllTags() {
+    if (this.tagsCache)
+      return this.tagsCache;
     const tagSet = /* @__PURE__ */ new Set();
     for (const task of this.getTasks()) {
       for (const tag of task.tags) {
         tagSet.add(tag);
       }
     }
-    return Array.from(tagSet).sort();
+    this.tagsCache = Array.from(tagSet).sort();
+    return this.tagsCache;
+  }
+  invalidateTagsCache() {
+    this.tagsCache = null;
   }
 };
 var QuickCreateModal = class extends import_obsidian5.Modal {
@@ -3413,45 +4233,34 @@ var QuickCreateModal = class extends import_obsidian5.Modal {
   onOpen() {
     const { contentEl } = this;
     contentEl.empty();
-    contentEl.createEl("h3", { text: "Quick Create Task" });
+    contentEl.createEl("h3", { text: t("viewTitles").quickCreate });
     const form = contentEl.createDiv({ cls: "smarttask-quick-form" });
     const descInput = form.createEl("input", {
       type: "text",
-      placeholder: "Task description...",
+      placeholder: t("quickCreate").placeholder,
       cls: "smarttask-input"
     });
     const dateRow = form.createDiv({ cls: "smarttask-row" });
-    dateRow.createSpan({ text: "Due Date:" });
+    dateRow.createSpan({ text: `${t("settings").dueDate}:` });
     const dateInput = dateRow.createEl("input", { type: "date", cls: "smarttask-date-input" });
-    const quickDates = [
-      { label: "Today", days: 0 },
-      { label: "Tomorrow", days: 1 },
-      { label: "Next Week", days: 7 }
-    ];
+    const quickDates = buildQuickDateButtons();
     for (const qd of quickDates) {
       const btn = dateRow.createEl("button", { text: qd.label, cls: "smarttask-btn" });
       btn.onclick = () => {
         const d = /* @__PURE__ */ new Date();
         d.setDate(d.getDate() + qd.days);
-        dateInput.value = d.toISOString().split("T")[0];
+        dateInput.value = formatLocalDate(d);
       };
     }
     const priorityRow = form.createDiv({ cls: "smarttask-row small-gap" });
-    priorityRow.createSpan({ text: "Priority:" });
+    priorityRow.createSpan({ text: `${t("settings").priority}:` });
     const prioritySelect = form.createEl("select", { cls: "smarttask-select" });
-    const options = [
-      { value: "", text: "None" },
-      { value: "highest" /* Highest */, text: "\u{1F51D} Highest" },
-      { value: "high" /* High */, text: "\u{1F53A} High" },
-      { value: "medium" /* Medium */, text: "\u{1F53C} Medium" },
-      { value: "low" /* Low */, text: "\u{1F53D} Low" },
-      { value: "lowest" /* Lowest */, text: "\u23EC Lowest" }
-    ];
+    const options = buildPriorityOptions();
     for (const opt of options) {
-      prioritySelect.createEl("option", { value: opt.value, text: opt.text });
+      prioritySelect.createEl("option", { value: opt.value, text: opt.label });
     }
     const targetRow = form.createDiv({ cls: "smarttask-row small-gap" });
-    targetRow.createSpan({ text: "Save to:" });
+    targetRow.createSpan({ text: t("quickCreate").saveTo });
     const targetSelect = form.createEl("select", { cls: "smarttask-select" });
     targetSelect.createEl("option", { value: "inbox", text: t("saveTargets").inbox });
     targetSelect.createEl("option", { value: "currentFile", text: t("saveTargets").currentFile });
@@ -3465,9 +4274,9 @@ var QuickCreateModal = class extends import_obsidian5.Modal {
       }
     };
     const btnRow = form.createDiv({ cls: "smarttask-btn-row" });
-    const cancelBtn = btnRow.createEl("button", { text: "Cancel", cls: "smarttask-btn-cancel" });
+    const cancelBtn = btnRow.createEl("button", { text: t("ui").cancel, cls: "smarttask-btn-cancel" });
     cancelBtn.onclick = () => this.close();
-    const createBtn = btnRow.createEl("button", { text: "Create", cls: "smarttask-btn-create" });
+    const createBtn = btnRow.createEl("button", { text: t("ui").create, cls: "smarttask-btn-create" });
     createBtn.onclick = async () => {
       const desc = descInput.value.trim();
       if (desc) {
