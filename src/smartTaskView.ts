@@ -1,16 +1,27 @@
-// @ts-nocheck
 // ============================================================================
 // 本文件从 main.js（esbuild 产物）中的 SmartTaskViewController 类恢复重建，
-// 内容与用户工作区版本（含阶段二全部修复）语义一致；字段与方法签名为脚本生成，
-// 使用 @ts-nocheck 保证恢复原样可构建，后续可逐步补充类型标注。
+// 内容与用户工作区版本（含阶段二全部修复）语义一致；字段与方法签名已补全
+// 类型标注，并通过 tsc 与 Obsidian 官方 lint 校验。
 // ============================================================================
-import { Modal, Notice, setIcon, TFile, Folder, normalizePath } from 'obsidian';
+import { Modal, Notice, setIcon, TFile, TFolder, normalizePath } from 'obsidian';
 import SmartTaskPlugin from './main';
 import { Task, TaskPriority, TaskQuery, TaskGroup, ViewType } from './types';
 import { QueryEngine } from './queryEngine';
 import { t } from './i18n';
 import { formatLocalDate, parseLocalDate } from './dateUtils';
 import { buildPriorityOptions } from './quickCreateHelpers';
+
+interface TimelineGroup {
+	key: string;
+	name: string;
+	tasks: Task[];
+}
+
+interface WheelPickerColumn {
+	getValue: () => number;
+	setValue: (v: number) => void;
+	destroy: () => void;
+}
 
 const HIGHLIGHT_DURATION_MS = 2000;
 const SEARCH_DEBOUNCE_MS = 150;
@@ -58,7 +69,7 @@ export class SmartTaskViewController {
 		this.timelineStyle = plugin.settings.timelineStyle;
 	}
 
-	render() {
+	render(): void {
 		this.mainEl = this.container.createDiv({ cls: 'smarttask-container' });
 		this.functionalModuleEl = this.mainEl.createDiv({ cls: 'functional-module' });
 		this.renderToolbar();
@@ -68,13 +79,13 @@ export class SmartTaskViewController {
 		this.displayModuleEl = this.mainEl.createDiv({ cls: 'display-module' });
 		this.renderContent();
 	}
-	refresh() {
+	refresh(): void {
 		if (this.mainEl) {
 			this.mainEl.remove();
 		}
 		this.render();
 	}
-	destroy() {
+	destroy(): void {
 		if (this.highlightTimer !== null) {
 			window.clearTimeout(this.highlightTimer);
 			this.highlightTimer = null;
@@ -84,7 +95,7 @@ export class SmartTaskViewController {
 			this.searchDebounceTimer = null;
 		}
 	}
-	updateTasks(tasks, allTags) {
+	updateTasks(tasks: Task[], allTags: string[]) {
 		this.tasks = tasks;
 		this.allTags = allTags;
 		// 只刷新统计条与内容，不重建工具栏（保持搜索框焦点）
@@ -97,8 +108,8 @@ export class SmartTaskViewController {
 	private get groupedTasks(): TaskGroup[] {
 		return QueryEngine.groupTasks(this.filteredTasks, this.plugin.settings.groupBy);
 	}
-	private buildQuery() {
-		const query = {
+	private buildQuery(): TaskQuery {
+		const query: TaskQuery = {
 			status: this.filterStatus,
 			sortBy: this.plugin.settings.sortBy,
 			sortOrder: this.plugin.settings.sortOrder
@@ -326,7 +337,7 @@ export class SmartTaskViewController {
 			} else {
 				this.panelContainerEl.removeClass('open');
 			}
-		} catch (e) {
+		} catch (e: unknown) {
 			console.error('[SmartTask] renderPanels failed:', e);
 			new Notice(`SmartTask 面板渲染失败: ${e instanceof Error ? e.message : String(e)}`);
 		}
@@ -402,7 +413,7 @@ export class SmartTaskViewController {
 				customDateInput.setCssStyles({ position: '', width: '', height: '', opacity: '', pointerEvents: '' });
 				customDateInput.focus();
 				try {
-					(customDateInput as HTMLInputElement).showPicker();
+					customDateInput.showPicker();
 				} catch {
 					// fallback: user clicks the date input manually
 				}
@@ -564,7 +575,7 @@ export class SmartTaskViewController {
 				};
 				const chip = filtersEl.createSpan({ cls: 'compact-chip active' });
 				chip.createSpan({ text: `📅 ${dateLabels[this.dateFilter] || this.dateFilter}` });
-				const removeBtn = chip.createEl('span', { cls: 'remove', text: '✕' });
+				const removeBtn = chip.createSpan({ cls: 'remove', text: '✕' });
 				removeBtn.addEventListener('click', () => {
 					this.dateFilter = 'all';
 					this.renderPanels();
@@ -585,7 +596,7 @@ export class SmartTaskViewController {
 				};
 				const chip = filtersEl.createSpan({ cls: 'compact-chip active' });
 				chip.createSpan({ text: `${priEmojiMap[p] || ''} ${priLabelMap[p] || p}` });
-				const removeBtn = chip.createEl('span', { cls: 'remove', text: '✕' });
+				const removeBtn = chip.createSpan({ cls: 'remove', text: '✕' });
 				removeBtn.addEventListener('click', () => {
 					this.filterPriorities = this.filterPriorities.filter(x => x !== p);
 					this.renderPanels();
@@ -596,7 +607,7 @@ export class SmartTaskViewController {
 			for (const tag of this.filterTags) {
 				const chip = filtersEl.createSpan({ cls: 'compact-chip active' });
 				chip.createSpan({ text: `#${tag}` });
-				const removeBtn = chip.createEl('span', { cls: 'remove', text: '✕' });
+				const removeBtn = chip.createSpan({ cls: 'remove', text: '✕' });
 				removeBtn.addEventListener('click', () => {
 					this.filterTags = this.filterTags.filter(t => t !== tag);
 					this.renderPanels();
@@ -605,7 +616,7 @@ export class SmartTaskViewController {
 			}
 		}
 	}
-	private renderContent() {
+	private renderContent(): void {
 		if (this.contentEl) {
 			this.contentEl.remove();
 			this.contentEl = null;
@@ -627,7 +638,7 @@ export class SmartTaskViewController {
 			this.renderCalendarView(this.contentEl);
 		}
 	}
-	private renderSkeleton(container) {
+	private renderSkeleton(container: HTMLElement): void {
 		const sk = container.createDiv({ cls: 'skeleton-container' });
 		for (let i = 0; i < 6; i++) {
 			const block = sk.createDiv({ cls: 'skeleton-block' });
@@ -637,7 +648,7 @@ export class SmartTaskViewController {
 			lines.createDiv({ cls: 'skeleton-line short' });
 		}
 	}
-	private renderTaskList(container, groups) {
+	private renderTaskList(container: HTMLElement, groups: TaskGroup[]): void {
 		const listEl = container.createDiv({ cls: 'task-list' });
 		const allEmpty = groups.length === 0 || groups.every((g) => g.tasks.length === 0);
 		if (allEmpty) {
@@ -653,10 +664,10 @@ export class SmartTaskViewController {
 			});
 			return;
 		}
-		const visibleIds = /* @__PURE__ */ new Set();
+		const visibleIds = /* @__PURE__ */ new Set<string>();
 		for (const t2 of this.filteredTasks)
 			visibleIds.add(t2.id);
-		const nestedSubtaskIds = /* @__PURE__ */ new Set();
+		const nestedSubtaskIds = /* @__PURE__ */ new Set<string>();
 		for (const t2 of this.filteredTasks) {
 			if (t2.parentId && visibleIds.has(t2.parentId))
 				nestedSubtaskIds.add(t2.id);
@@ -682,16 +693,16 @@ export class SmartTaskViewController {
 			}
 		}
 	}
-	private renderKanbanView(container) {
+	private renderKanbanView(container: HTMLElement): void {
 		const kanbanEl = container.createDiv({ cls: 'kanban-view' });
 		const todoTasks = this.filteredTasks.filter((t2) => !t2.completed);
 		const doneTasks = this.filteredTasks.filter((t2) => t2.completed);
-		const priorityColumns = [
-			{ priority: 'highest' /* Highest */, label: t('priorities').highest, icon: 'flame', color: 'var(--priority-highest)' },
-			{ priority: 'high' /* High */, label: t('priorities').high, icon: 'arrow-up', color: 'var(--priority-high)' },
-			{ priority: 'medium' /* Medium */, label: t('priorities').medium, icon: 'minus', color: 'var(--priority-medium)' },
-			{ priority: 'low' /* Low */, label: t('priorities').low, icon: 'arrow-down', color: 'var(--priority-low)' },
-			{ priority: 'lowest' /* Lowest */, label: t('priorities').lowest, icon: 'chevrons-down', color: 'var(--priority-lowest)' }
+		const priorityColumns: { priority: TaskPriority; label: string; icon: string; color: string }[] = [
+			{ priority: TaskPriority.Highest, label: t('priorities').highest, icon: 'flame', color: 'var(--priority-highest)' },
+			{ priority: TaskPriority.High, label: t('priorities').high, icon: 'arrow-up', color: 'var(--priority-high)' },
+			{ priority: TaskPriority.Medium, label: t('priorities').medium, icon: 'minus', color: 'var(--priority-medium)' },
+			{ priority: TaskPriority.Low, label: t('priorities').low, icon: 'arrow-down', color: 'var(--priority-low)' },
+			{ priority: TaskPriority.Lowest, label: t('priorities').lowest, icon: 'chevrons-down', color: 'var(--priority-lowest)' }
 		];
 		if (this.filterStatus !== 'done') {
 			for (const col of priorityColumns) {
@@ -739,7 +750,7 @@ export class SmartTaskViewController {
 			this.attachColumnDropTarget(doneCol, true);
 		}
 	}
-	private renderKanbanCard(container, task) {
+	private renderKanbanCard(container: HTMLElement, task: Task): void {
 		const priAttr = this.getPriorityDataAttr(task.priority);
 		const card = container.createDiv({
 			cls: 'kanban-card',
@@ -767,7 +778,7 @@ export class SmartTaskViewController {
 			e.stopPropagation();
 			void this.plugin.toggleTaskStatus(task, checkbox.checked);
 		});
-		const descEl = topRow.createEl('span', { cls: 'kanban-card-desc', text: task.description });
+		topRow.createSpan({ cls: 'kanban-card-desc', text: task.description });
 		const meta = body.createDiv({ cls: 'kanban-card-meta' });
 		if (task.dueDate) {
 			const due = meta.createSpan({ cls: 'kanban-card-due' });
@@ -807,7 +818,8 @@ export class SmartTaskViewController {
 		setIcon(addBtn, 'plus');
 		addBtn.addEventListener('click', (e) => {
 			e.stopPropagation();
-			let subtaskInput = card.querySelector('.kanban-card-subtask-input');
+			let subtaskInput: Element | null = null;
+		subtaskInput = card.querySelector('.kanban-card-subtask-input');
 			if (subtaskInput) {
 				subtaskInput.remove();
 				return;
@@ -857,7 +869,7 @@ export class SmartTaskViewController {
 			}
 		});
 	}
-	private attachColumnDropTarget(col, completed) {
+	private attachColumnDropTarget(col: HTMLElement, completed: boolean): void {
 		col.addEventListener('dragover', (e) => {
 			e.preventDefault();
 			if (e.dataTransfer)
@@ -865,7 +877,7 @@ export class SmartTaskViewController {
 			col.addClass('drag-over');
 		});
 		col.addEventListener('dragleave', (e) => {
-			if (!col.contains(e.relatedTarget)) {
+			if (!col.contains(e.relatedTarget as Node | null)) {
 				col.removeClass('drag-over');
 			}
 		});
@@ -877,7 +889,7 @@ export class SmartTaskViewController {
 				this.handleKanbanDrop(taskId, completed);
 		});
 	}
-	private attachPriorityColumnDropTarget(col, priority) {
+	private attachPriorityColumnDropTarget(col: HTMLElement, priority: TaskPriority): void {
 		col.addEventListener('dragover', (e) => {
 			e.preventDefault();
 			if (e.dataTransfer)
@@ -885,7 +897,7 @@ export class SmartTaskViewController {
 			col.addClass('drag-over');
 		});
 		col.addEventListener('dragleave', (e) => {
-			if (!col.contains(e.relatedTarget)) {
+			if (!col.contains(e.relatedTarget as Node | null)) {
 				col.removeClass('drag-over');
 			}
 		});
@@ -897,19 +909,19 @@ export class SmartTaskViewController {
 				this.handlePriorityDrop(taskId, priority);
 		});
 	}
-	private handleKanbanDrop(taskId, completed) {
+	private handleKanbanDrop(taskId: string, completed: boolean): void {
 		const task = this.tasks.find((tk) => tk.id === taskId);
 		if (task && task.completed !== completed) {
 			void this.plugin.toggleTaskStatus(task, completed);
 		}
 	}
-	private handlePriorityDrop(taskId, priority) {
+	private handlePriorityDrop(taskId: string, priority: TaskPriority): void {
 		const task = this.tasks.find((tk) => tk.id === taskId);
 		if (task && task.priority !== priority) {
 			void this.plugin.updateTask(task, { priority });
 		}
 	}
-	private renderTaskItem(container, task, draggable = false) {
+	private renderTaskItem(container: HTMLElement, task: Task, draggable = false): void {
 		const priAttr = this.getPriorityDataAttr(task.priority);
 		const item = container.createDiv({
 			cls: 'task-item',
@@ -974,7 +986,7 @@ export class SmartTaskViewController {
 				this.openTaskEditor(task);
 			} else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
 				e.preventDefault();
-				const items = Array.from(((_a = item.parentElement) == null ? void 0 : _a.querySelectorAll('.task-item')) || []);
+				const items = Array.from(item.parentElement?.querySelectorAll<HTMLElement>('.task-item') || []);
 				const idx = items.indexOf(item);
 				const nextIdx = e.key === 'ArrowDown' ? idx + 1 : idx - 1;
 				if (nextIdx >= 0 && nextIdx < items.length) {
@@ -1047,7 +1059,7 @@ export class SmartTaskViewController {
 				}
 			}
 		}
-		let addSubtaskEl = null;
+		let addSubtaskEl: HTMLElement | null = null;
 		let showAddSubtask = false;
 		const toggleAddSubtask = () => {
 			showAddSubtask = !showAddSubtask;
@@ -1091,73 +1103,73 @@ export class SmartTaskViewController {
 			}
 }
 	}
-	private isOverdue(task) {
+	private isOverdue(task: Task): boolean {
 		if (!task.dueDate || task.completed)
 			return false;
 		const today = formatLocalDate(/* @__PURE__ */ new Date());
 		return task.dueDate < today;
 	}
-	private isToday(task) {
+	private isToday(task: Task): boolean {
 		if (!task.dueDate)
 			return false;
 		const today = formatLocalDate(/* @__PURE__ */ new Date());
 		return task.dueDate === today;
 	}
-	private formatDate(dateStr) {
+	private formatDate(dateStr: string): string {
 		const date = parseLocalDate(dateStr);
 		const month = date.getMonth() + 1;
 		const day = date.getDate();
 		return `${month}/${day}`;
 	}
-	private getPriorityColor(priority) {
+	private getPriorityColor(priority: TaskPriority): string {
 		switch (priority) {
-			case 'highest' /* Highest */:
+			case TaskPriority.Highest:
 				return 'var(--priority-highest)';
-			case 'high' /* High */:
+			case TaskPriority.High:
 				return 'var(--priority-high)';
-			case 'medium' /* Medium */:
+			case TaskPriority.Medium:
 				return 'var(--priority-medium)';
-			case 'low' /* Low */:
+			case TaskPriority.Low:
 				return 'var(--priority-low)';
-			case 'lowest' /* Lowest */:
+			case TaskPriority.Lowest:
 				return 'var(--priority-lowest)';
 			default:
 				return 'transparent';
 		}
 	}
-	private getPriorityDataAttr(priority) {
+	private getPriorityDataAttr(priority: TaskPriority): string {
 		switch (priority) {
-			case 'highest' /* Highest */:
+			case TaskPriority.Highest:
 				return 'highest';
-			case 'high' /* High */:
+			case TaskPriority.High:
 				return 'high';
-			case 'medium' /* Medium */:
+			case TaskPriority.Medium:
 				return 'medium';
-			case 'low' /* Low */:
+			case TaskPriority.Low:
 				return 'low';
-			case 'lowest' /* Lowest */:
+			case TaskPriority.Lowest:
 				return 'lowest';
 			default:
 				return '';
 		}
 	}
-	private getPriorityIcon(priority) {
+	private getPriorityIcon(priority: TaskPriority): string {
 		switch (priority) {
-			case 'highest' /* Highest */:
+			case TaskPriority.Highest:
 				return '\u{1F51D}';
-			case 'high' /* High */:
+			case TaskPriority.High:
 				return '\u{1F53A}';
-			case 'medium' /* Medium */:
+			case TaskPriority.Medium:
 				return '\u{1F53C}';
-			case 'low' /* Low */:
+			case TaskPriority.Low:
 				return '\u{1F53D}';
-			case 'lowest' /* Lowest */:
+			case TaskPriority.Lowest:
 				return '\u23EC';
 			default:
 				return '';
 		}
 	}
-	private getSubtaskProgress(task) {
+	private getSubtaskProgress(task: Task): { done: number; total: number } {
 		let done = 0;
 		const total = task.subtasks.length;
 		for (const st of task.subtasks) {
@@ -1166,7 +1178,7 @@ export class SmartTaskViewController {
 		}
 		return { done, total };
 	}
-	private renderSubtasks(container, task) {
+	private renderSubtasks(container: HTMLElement, task: Task): void {
 		if (!this.plugin.settings.showSubtasks || task.subtasks.length === 0)
 			return;
 		const expanded = this.expandedTasks.has(task.id) || task.subtasks.length > 0;
@@ -1192,7 +1204,7 @@ export class SmartTaskViewController {
 			}
 		}
 	}
-	private renderAddSubtaskInput(container, task) {
+	private renderAddSubtaskInput(container: HTMLElement, task: Task): HTMLElement {
 		const addSubtaskEl = container.createDiv({ cls: 'add-subtask' });
 		const input = addSubtaskEl.createEl('input', {
 			type: 'text',
@@ -1216,7 +1228,7 @@ export class SmartTaskViewController {
 		input.focus();
 		return addSubtaskEl;
 	}
-	private renderDescriptionWithLinks(container, task) {
+	private renderDescriptionWithLinks(container: HTMLElement, task: Task): void {
 		const desc = task.description;
 		const combinedRegex = /(\[\[[^\]|]+(?:\|[^\]]+)?\]\])|(#[a-zA-Z0-9_\u4e00-\u9fa5][a-zA-Z0-9_\u4e00-\u9fa5/-]*)/g;
 		let lastIndex = 0;
@@ -1236,7 +1248,7 @@ export class SmartTaskViewController {
 					});
 					linkEl.addEventListener('click', (e) => {
 						e.stopPropagation();
-						this.openWikiLink(target);
+						void this.openWikiLink(target);
 					});
 				}
 			} else if (match[2]) {
@@ -1263,10 +1275,10 @@ export class SmartTaskViewController {
 			container.createSpan({ text: desc.substring(lastIndex) });
 		}
 	}
-	private getPlainDescription(desc) {
-		return desc.replace(/\[\[([^\]|]+)(?:\|[^\]]+)?\]\]/g, (_match, p1) => p1.split('|')[0].trim()).replace(/#[a-zA-Z0-9_\u4e00-\u9fa5][a-zA-Z0-9_\u4e00-\u9fa5/-]*/g, '').replace(/\s+/g, ' ').trim();
+	private getPlainDescription(desc: string): string {
+		return desc.replace(/\[\[([^\]|]+)(?:\|[^\]]+)?\]\]/g, (_match: string, p1: string) => p1.split('|')[0].trim()).replace(/#[a-zA-Z0-9_\u4e00-\u9fa5][a-zA-Z0-9_\u4e00-\u9fa5/-]*/g, '').replace(/\s+/g, ' ').trim();
 	}
-	private async openWikiLink(target) {
+	private async openWikiLink(target: string): Promise<void> {
 		const vault = this.plugin.app.vault;
 		const file = vault.getAbstractFileByPath(target);
 		if (file instanceof TFile) {
@@ -1283,28 +1295,32 @@ export class SmartTaskViewController {
 		try {
 			const cleaned = normalizePath(target);
 			const slash = cleaned.lastIndexOf('/');
-			let folder = null;
+			let folder: TFolder | null = null;
 			let fname = cleaned;
 			if (slash >= 0) {
 				const folderPath = cleaned.substring(0, slash);
-				folder = vault.getFolderByPath(folderPath);
-				if (!folder) {
+				const existingFolder = vault.getAbstractFileByPath(folderPath);
+				if (existingFolder instanceof TFolder) {
+					folder = existingFolder;
+				} else {
 					await vault.createFolder(folderPath);
-					folder = vault.getFolderByPath(folderPath);
+					const createdFolder = vault.getAbstractFileByPath(folderPath);
+					if (createdFolder instanceof TFolder) folder = createdFolder;
 				}
 				fname = cleaned.substring(slash + 1);
 			}
-			const newFile = await this.plugin.app.fileManager.createNewMarkdownFile(folder ?? vault.getRoot(), fname || 'Untitled');
+			const targetDir = folder ? folder.path + '/' : '';
+			const newFile = await vault.create(normalizePath(`${targetDir}${fname || 'Untitled'}`), '');
 			if (newFile) {
 				await this.plugin.app.workspace.openLinkText(newFile.path, '', true);
 				new Notice(`${t('messages').noteCreated}${newFile.path}`);
 			}
-		} catch (err) {
+		} catch (err: unknown) {
 			console.error('[SmartTask] create note failed:', err);
 			new Notice(`${t('messages').noteNotFound}${target}`);
 		}
 	}
-	private renderTimelineView(container) {
+	private renderTimelineView(container: HTMLElement): void {
 		const timelineEl = container.createDiv({ cls: `timeline-view style-${this.timelineStyle}` });
 		const toolbar = timelineEl.createDiv({ cls: 'timeline-toolbar-compact' });
 		const navGroup = toolbar.createDiv({ cls: 'timeline-nav-group' });
@@ -1322,7 +1338,7 @@ export class SmartTaskViewController {
 			text: t('dates').today
 		});
 		const chipsGroup = toolbar.createDiv({ cls: 'timeline-chips-row' });
-		const groupOptions = [
+		const groupOptions: { value: 'day' | 'week' | 'month'; label: string }[] = [
 			{ value: 'day', label: t('timeline').groupByDay },
 			{ value: 'week', label: t('timeline').groupByWeek },
 			{ value: 'month', label: t('timeline').groupByMonth }
@@ -1339,7 +1355,7 @@ export class SmartTaskViewController {
 				this.renderContent();
 			});
 		}
-		const styleOptions = [
+		const styleOptions: { value: 'classic' | 'gantt' | 'zigzag' | 'cards'; label: string }[] = [
 			{ value: 'classic', label: t('timelineStyles').classic },
 			{ value: 'gantt', label: t('timelineStyles').gantt },
 			{ value: 'zigzag', label: t('timelineStyles').zigzag },
@@ -1379,9 +1395,9 @@ export class SmartTaskViewController {
 		if (this.timelineStyle !== 'classic') {
 			todayBtn.addEventListener('click', () => {
 				if (this.timelineStyle === 'gantt') {
-					const header = timelineEl.querySelector('.gantt-header') as HTMLElement | null;
-					const body = timelineEl.querySelector('.gantt-body') as HTMLElement | null;
-					const todayLine = timelineEl.querySelector('.gantt-today-line') as HTMLElement | null;
+					const header = timelineEl.querySelector<HTMLElement>('.gantt-header');
+					const body = timelineEl.querySelector<HTMLElement>('.gantt-body');
+					const todayLine = timelineEl.querySelector<HTMLElement>('.gantt-today-line');
 					if (header && body && todayLine) {
 						const targetLeft = Math.max(0, todayLine.offsetLeft - header.clientWidth / 2);
 						header.scrollLeft = targetLeft;
@@ -1391,7 +1407,7 @@ export class SmartTaskViewController {
 						this.highlightTimer = window.setTimeout(() => todayLine.removeClass('today-highlight'), HIGHLIGHT_DURATION_MS);
 					}
 				} else if (this.timelineStyle === 'zigzag') {
-					const todayGroup = timelineEl.querySelector('.zigzag-group.today-group') as HTMLElement | null;
+					const todayGroup = timelineEl.querySelector<HTMLElement>('.zigzag-group.today-group');
 					if (todayGroup) {
 						todayGroup.scrollIntoView({ behavior: 'smooth', block: 'center' });
 						todayGroup.addClass('today-highlight');
@@ -1400,7 +1416,7 @@ export class SmartTaskViewController {
 					}
 				} else {
 					const todayKey = QueryEngine.getToday();
-					const todaySection = timelineEl.querySelector(`.cards-section[data-group-key="${todayKey}"]`) as HTMLElement | null;
+					const todaySection = timelineEl.querySelector<HTMLElement>(`.cards-section[data-group-key="${todayKey}"]`);
 					if (todaySection) {
 						todaySection.scrollIntoView({ behavior: 'smooth', block: 'center' });
 						todaySection.addClass('today-highlight');
@@ -1411,7 +1427,7 @@ export class SmartTaskViewController {
 			});
 		}
 	}
-	private getTimelineNavLabel() {
+	private getTimelineNavLabel(): string {
 		const today = /* @__PURE__ */ new Date();
 		const weekdays = [
 			t('dates').sun,
@@ -1424,9 +1440,9 @@ export class SmartTaskViewController {
 		];
 		return `${today.getMonth() + 1}/${today.getDate()} ${weekdays[today.getDay()]}`;
 	}
-	private renderClassicTimeline(timelineEl, groups, prevBtn, todayBtn, nextBtn) {
+	private renderClassicTimeline(timelineEl: HTMLElement, groups: TimelineGroup[], prevBtn: HTMLButtonElement, todayBtn: HTMLButtonElement, nextBtn: HTMLButtonElement): void {
 		const timelineContent = timelineEl.createDiv({ cls: 'timeline-content classic-content' });
-		const groupEls = [];
+		const groupEls: { key: string; el: HTMLElement }[] = [];
 		for (let i = 0; i < groups.length; i++) {
 			const group = groups[i];
 			const isToday = group.key === QueryEngine.getToday();
@@ -1490,14 +1506,14 @@ export class SmartTaskViewController {
 			}
 		});
 	}
-	private renderGanttTimeline(timelineEl, groups) {
+	private renderGanttTimeline(timelineEl: HTMLElement, groups: TimelineGroup[]): void {
 		const ganttContainer = timelineEl.createDiv({ cls: 'gantt-timeline' });
 		const ganttHeader = ganttContainer.createDiv({ cls: 'gantt-header' });
 		const ganttBody = ganttContainer.createDiv({ cls: 'gantt-body' });
 		ganttHeader.addEventListener('scroll', () => {
 			ganttBody.scrollLeft = ganttHeader.scrollLeft;
 		});
-		const allTasks = [];
+		const allTasks: Task[] = [];
 		for (const group of groups) {
 			allTasks.push(...group.tasks);
 		}
@@ -1510,8 +1526,8 @@ export class SmartTaskViewController {
 				return -1;
 			return aStart.localeCompare(bStart);
 		});
-		const timeUnits = [];
-		const unitToIndex = /* @__PURE__ */ new Map();
+		const timeUnits: string[] = [];
+		const unitToIndex = /* @__PURE__ */ new Map<string, number>();
 		if (this.timelineGroupBy === 'day') {
 			let minDate = '';
 			let maxDate = '';
@@ -1583,6 +1599,9 @@ export class SmartTaskViewController {
 		}
 		for (let i = 0; i < sortedTasks.length; i++) {
 			const task = sortedTasks[i];
+			const taskStart = task.startDate || task.dueDate;
+			if (!taskStart) continue;
+			const taskEnd = task.dueDate || task.startDate;
 			const row = ganttBody.createDiv({ cls: 'gantt-row' });
 			if (task.completed)
 				row.addClass('completed');
@@ -1602,25 +1621,25 @@ export class SmartTaskViewController {
 			let left = 0;
 			let width = 0;
 			if (this.timelineGroupBy === 'day') {
-				const startDate = task.startDate || task.dueDate;
-				const endDate = task.dueDate || task.startDate;
+				const startDate = taskStart;
+				const endDate = taskEnd;
 				if (startDate && endDate && unitToIndex.has(startDate) && unitToIndex.has(endDate)) {
-					left = unitToIndex.get(startDate);
-					width = unitToIndex.get(endDate) - left + 1;
+					left = unitToIndex.get(startDate)!;
+					width = unitToIndex.get(endDate)! - left + 1;
 				}
 			} else if (this.timelineGroupBy === 'week') {
-				const startKey = task.startDate ? this.getTimelineGroupKey(task.startDate) : this.getTimelineGroupKey(task.dueDate);
+				const startKey = this.getTimelineGroupKey(taskStart);
 				const endKey = task.dueDate ? this.getTimelineGroupKey(task.dueDate) : startKey;
 				if (unitToIndex.has(startKey) && unitToIndex.has(endKey)) {
-					left = unitToIndex.get(startKey);
-					width = unitToIndex.get(endKey) - left + 1;
+					left = unitToIndex.get(startKey)!;
+					width = unitToIndex.get(endKey)! - left + 1;
 				}
 			} else {
-				const startKey = task.startDate ? task.startDate.substring(0, 7) : task.dueDate.substring(0, 7);
+				const startKey = taskStart.substring(0, 7);
 				const endKey = task.dueDate ? task.dueDate.substring(0, 7) : startKey;
 				if (unitToIndex.has(startKey) && unitToIndex.has(endKey)) {
-					left = unitToIndex.get(startKey);
-					width = unitToIndex.get(endKey) - left + 1;
+					left = unitToIndex.get(startKey)!;
+					width = unitToIndex.get(endKey)! - left + 1;
 				}
 			}
 			if (width > 0) {
@@ -1656,7 +1675,7 @@ ${t('timeline').dueLabel}: ${task.dueDate || t('timeline').none}`;
 			}
 		}
 	}
-	private renderZigzagTimeline(timelineEl, groups) {
+	private renderZigzagTimeline(timelineEl: HTMLElement, groups: TimelineGroup[]): void {
 		const zigzagContainer = timelineEl.createDiv({ cls: 'zigzag-timeline' });
 		zigzagContainer.createDiv({ cls: 'zigzag-center-line' });
 		for (let i = 0; i < groups.length; i++) {
@@ -1733,13 +1752,13 @@ ${t('timeline').dueLabel}: ${task.dueDate || t('timeline').none}`;
 			}
 		}
 	}
-	private renderCardsTimeline(timelineEl, groups) {
+	private renderCardsTimeline(timelineEl: HTMLElement, groups: TimelineGroup[]): void {
 		const cardsContainer = timelineEl.createDiv({ cls: 'cards-timeline' });
 		for (const group of groups) {
 			const section = cardsContainer.createDiv({ cls: 'cards-section', attr: { 'data-group-key': group.key } });
 			const sectionHeader = section.createDiv({ cls: 'cards-section-header' });
 			const titleWrap = sectionHeader.createDiv({ cls: 'cards-section-title-wrap' });
-			const priBar = titleWrap.createSpan({ cls: 'cards-section-pri-bar' });
+			titleWrap.createSpan({ cls: 'cards-section-pri-bar' });
 			titleWrap.createSpan({ cls: 'cards-section-title', text: group.name });
 			sectionHeader.createSpan({ cls: 'cards-section-count', text: `${group.tasks.length}` });
 			const cardsGrid = section.createDiv({ cls: 'cards-grid' });
@@ -1806,7 +1825,7 @@ ${t('timeline').dueLabel}: ${task.dueDate || t('timeline').none}`;
 			}
 		}
 	}
-	private renderTimelineTaskList(container, tasks) {
+	private renderTimelineTaskList(container: HTMLElement, tasks: Task[]): void {
 		for (const task of tasks) {
 			const tPri = this.getPriorityDataAttr(task.priority);
 				const item = container.createDiv({ cls: 'timeline-task-item', attr: tPri ? { 'data-priority': tPri } : {} });
@@ -1862,7 +1881,7 @@ ${t('timeline').dueLabel}: ${task.dueDate || t('timeline').none}`;
 			}
 			const subtaskContent = item.createDiv({ cls: 'timeline-subtask-content' });
 			this.renderSubtasks(subtaskContent, task);
-			let addSubtaskEl = null;
+			let addSubtaskEl: HTMLElement | null = null;
 			const metaActions = meta.createDiv({ cls: 'task-meta-actions' });
 			const editBtn = metaActions.createEl('button', {
 				cls: 'meta-action-btn',
@@ -1889,7 +1908,7 @@ ${t('timeline').dueLabel}: ${task.dueDate || t('timeline').none}`;
 			});
 		}
 	}
-	private formatDateShort(dateStr) {
+	private formatDateShort(dateStr: string): string {
 		if (this.timelineGroupBy === 'day') {
 			const parts = dateStr.split('-');
 			return `${parseInt(parts[1])}/${parseInt(parts[2])}`;
@@ -1900,28 +1919,29 @@ ${t('timeline').dueLabel}: ${task.dueDate || t('timeline').none}`;
 			return t('timeline').monthFormat.replace('{n}', String(parseInt(parts[1])));
 		}
 	}
-	private getTimelineGroups() {
+	private getTimelineGroups(): TimelineGroup[] {
 		const tasksWithDate = this.filteredTasks.filter((t2) => t2.dueDate);
-		const groups = /* @__PURE__ */ new Map();
+		const groups = /* @__PURE__ */ new Map<string, Task[]>();
 		for (const task of tasksWithDate) {
+			if (!task.dueDate) continue;
 			const key = this.getTimelineGroupKey(task.dueDate);
 			if (!groups.has(key)) {
 				groups.set(key, []);
 			}
-			groups.get(key).push(task);
+			groups.get(key)!.push(task);
 		}
-		const result = [];
+		const result: TimelineGroup[] = [];
 		const sortedKeys = Array.from(groups.keys()).sort();
 		for (const key of sortedKeys) {
 			result.push({
 				key,
 				name: this.formatTimelineGroupTitle(key),
-				tasks: groups.get(key)
+				tasks: groups.get(key)!
 			});
 		}
 		return result;
 	}
-	private getTimelineGroupKey(dateStr) {
+	private getTimelineGroupKey(dateStr: string): string {
 		if (this.timelineGroupBy === 'day') {
 			return dateStr;
 		} else if (this.timelineGroupBy === 'week') {
@@ -1936,7 +1956,7 @@ ${t('timeline').dueLabel}: ${task.dueDate || t('timeline').none}`;
 			return dateStr.substring(0, 7);
 		}
 	}
-	private formatTimelineGroupTitle(key) {
+	private formatTimelineGroupTitle(key: string): string {
 		if (this.timelineGroupBy === 'day') {
 			const date = parseLocalDate(key);
 			const today = /* @__PURE__ */ new Date();
@@ -1973,7 +1993,7 @@ ${t('timeline').dueLabel}: ${task.dueDate || t('timeline').none}`;
 			return t('calendar').yearMonthFormat.replace('{year}', year).replace('{month}', String(parseInt(month)));
 		}
 	}
-	private findFirstVisibleGroup(groupEls) {
+	private findFirstVisibleGroup(groupEls: { key: string; el: HTMLElement }[]): number {
 		const container = this.contentEl;
 		if (!container)
 			return 0;
@@ -1986,9 +2006,8 @@ ${t('timeline').dueLabel}: ${task.dueDate || t('timeline').none}`;
 		}
 		return groupEls.length - 1;
 	}
-	private openTaskEditor(task) {
-		const modal = activeDocument.createElement('div');
-		modal.className = 'task-editor-modal-overlay';
+	private openTaskEditor(task: Task): void {
+		const modal = activeDocument.body.createDiv({ cls: 'task-editor-modal-overlay' });
 		const modalInner = modal.createDiv({ cls: 'task-editor-modal' });
 		const header = modalInner.createDiv({ cls: 'task-editor-header' });
 		header.createEl('h3', { text: t('editor').title });
@@ -2027,14 +2046,13 @@ ${t('timeline').dueLabel}: ${task.dueDate || t('timeline').none}`;
 		const actions = footer.createDiv({ cls: 'task-editor-actions' });
 		const cancelBtn = actions.createEl('button', { cls: 'task-editor-btn cancel-btn', text: t('ui').cancel });
 		const saveBtn = actions.createEl('button', { cls: 'task-editor-btn save-btn', text: t('ui').save });
-		activeDocument.body.appendChild(modal);
-		let onKeydown = null;
+		let onKeydown: ((e: KeyboardEvent) => void) | null = null;
 		const closeModal = () => {
 			if (onKeydown)
 				document.removeEventListener('keydown', onKeydown);
 			modal.remove();
 }
-		onKeydown = (e) => {
+		onKeydown = (e: KeyboardEvent) => {
 			if (e.key === 'Escape')
 				closeModal();
 }
@@ -2049,7 +2067,7 @@ ${t('timeline').dueLabel}: ${task.dueDate || t('timeline').none}`;
 			void (async () => {
 				const newDesc = descInput.value.trim();
 				const newDate = dateInput.value || void 0;
-				const newPriority = prioritySelect.value;
+				const newPriority = prioritySelect.value as TaskPriority;
 				const newTags = tagsInput.value.split(',').map((t2) => t2.trim()).filter((t2) => t2.length > 0);
 				if (!newDesc) {
 					new Notice(t('editor').descEmpty);
@@ -2064,7 +2082,7 @@ ${t('timeline').dueLabel}: ${task.dueDate || t('timeline').none}`;
 					});
 					closeModal();
 					new Notice(t('editor').updated);
-				} catch (e) {
+				} catch (e: unknown) {
 					console.error('Failed to update task:', e);
 					new Notice(t('editor').updateFailed);
 				}
@@ -2084,7 +2102,7 @@ ${t('timeline').dueLabel}: ${task.dueDate || t('timeline').none}`;
 					closeModal();
 					confirmModal.close();
 					new Notice(t('editor').deleted);
-				} catch (e) {
+				} catch (e: unknown) {
 					console.error('Failed to delete task:', e);
 					new Notice(t('editor').deleteFailed);
 				}
@@ -2094,7 +2112,7 @@ ${t('timeline').dueLabel}: ${task.dueDate || t('timeline').none}`;
 		descInput.focus();
 		descInput.select();
 	}
-	private escapeHtml(text) {
+	private escapeHtml(text: string): string {
 		return text
 			.replace(/&/g, '&amp;')
 			.replace(/</g, '&lt;')
@@ -2102,7 +2120,7 @@ ${t('timeline').dueLabel}: ${task.dueDate || t('timeline').none}`;
 			.replace(/"/g, '&quot;')
 			.replace(/'/g, '&#39;');
 	}
-	private renderCalendarView(container) {
+	private renderCalendarView(container: HTMLElement): void {
 		const calendarEl = container.createDiv({ cls: 'calendar-view' });
 		const header = calendarEl.createDiv({ cls: 'calendar-header' });
 		const navGroup = header.createDiv({ cls: 'calendar-nav' });
@@ -2154,20 +2172,20 @@ ${t('timeline').dueLabel}: ${task.dueDate || t('timeline').none}`;
 			this.renderContent();
 		});
 	}
-	private renderCalendarGrid(grid) {
+	private renderCalendarGrid(grid: HTMLElement): void {
 		const firstDay = new Date(this.calendarYear, this.calendarMonth, 1);
 		const lastDay = new Date(this.calendarYear, this.calendarMonth + 1, 0);
 		const startWeekday = firstDay.getDay();
 		const daysInMonth = lastDay.getDate();
 		const today = /* @__PURE__ */ new Date();
 		const todayStr = formatLocalDate(today);
-		const tasksByDate = /* @__PURE__ */ new Map();
+		const tasksByDate = /* @__PURE__ */ new Map<string, Task[]>();
 		for (const task of this.filteredTasks) {
 			if (task.dueDate) {
 				if (!tasksByDate.has(task.dueDate)) {
 					tasksByDate.set(task.dueDate, []);
 				}
-				tasksByDate.get(task.dueDate).push(task);
+				tasksByDate.get(task.dueDate)!.push(task);
 			}
 		}
 		const prevMonth = this.calendarMonth === 0 ? 11 : this.calendarMonth - 1;
@@ -2242,9 +2260,8 @@ ${t('timeline').dueLabel}: ${task.dueDate || t('timeline').none}`;
 			cell.createDiv({ cls: 'calendar-day-number', text: i.toString() });
 		}
 	}
-	private showDayTasks(dateStr, tasks) {
-		const modal = activeDocument.createElement('div');
-		modal.className = 'task-editor-modal-overlay';
+	private showDayTasks(dateStr: string, tasks: Task[]): void {
+		const modal = activeDocument.body.createDiv({ cls: 'task-editor-modal-overlay' });
 		const modalInner = modal.createDiv({ cls: 'task-editor-modal' });
 		const header = modalInner.createDiv({ cls: 'task-editor-header' });
 		header.createEl('h3', { text: t('editor').dayTasks.replace('{date}', dateStr) });
@@ -2273,14 +2290,13 @@ ${t('timeline').dueLabel}: ${task.dueDate || t('timeline').none}`;
 				text: this.getPriorityIcon(task.priority)
 			});
 		}
-		activeDocument.body.appendChild(modal);
-		let onKeydown = null;
+		let onKeydown: ((e: KeyboardEvent) => void) | null = null;
 		const closeModal = () => {
 			if (onKeydown)
 				document.removeEventListener('keydown', onKeydown);
 			modal.remove();
 }
-		onKeydown = (e) => {
+		onKeydown = (e: KeyboardEvent) => {
 			if (e.key === 'Escape')
 				closeModal();
 }
@@ -2291,9 +2307,8 @@ ${t('timeline').dueLabel}: ${task.dueDate || t('timeline').none}`;
 				closeModal();
 		});
 	}
-	private showWheelDatePicker(callback, initialDate) {
-		const modal = activeDocument.createElement('div');
-		modal.className = 'wheel-picker-overlay';
+	private showWheelDatePicker(callback: (dateStr: string) => void, initialDate?: string): void {
+		const modal = activeDocument.body.createDiv({ cls: 'wheel-picker-overlay' });
 		const now = /* @__PURE__ */ new Date();
 		let year = now.getFullYear();
 		let month = now.getMonth() + 1;
@@ -2321,18 +2336,17 @@ ${t('timeline').dueLabel}: ${task.dueDate || t('timeline').none}`;
 		const dayCol = body.createDiv({ cls: 'wheel-column', attr: { 'data-col': 'day' } });
 		dayCol.createDiv({ cls: 'wheel-wrapper' });
 		dayCol.createDiv({ cls: 'wheel-highlight' });
-		activeDocument.body.appendChild(modal);
 		const years = [];
 		for (let y = year - 5; y <= year + 10; y++)
 			years.push(y);
 		const months = [];
 		for (let m = 1; m <= 12; m++)
 			months.push(m);
-		const getDaysInMonth = (y, m) => new Date(y, m, 0).getDate();
+		const getDaysInMonth = (y: number, m: number): number => new Date(y, m, 0).getDate();
 		const ITEM_HEIGHT = 44;
 		const VISIBLE_COUNT = 5;
-		const setupColumn = (colEl, values, selected, format, onChange) => {
-			const wrapper = colEl.querySelector('.wheel-wrapper');
+		const setupColumn = (colEl: HTMLElement, values: number[], selected: number, format: (v: number) => string, onChange: (v: number) => void): WheelPickerColumn => {
+			const wrapper = colEl.querySelector('.wheel-wrapper') as HTMLElement;
 			wrapper.empty();
 			wrapper.setCssProps({ '--wheel-transition': 'transform 0.15s ease-out' });
 			const padding = Math.floor(VISIBLE_COUNT / 2);
@@ -2359,13 +2373,13 @@ ${t('timeline').dueLabel}: ${task.dueDate || t('timeline').none}`;
 				wrapper.setCssProps({ '--wheel-offset': `${currentOffset}px` });
 				return values[clampedIndex];
 }
-			const onStart = (clientY) => {
+			const onStart = (clientY: number): void => {
 				isDragging = true;
 				startY = clientY;
 				startOffset = currentOffset;
 				wrapper.setCssProps({ '--wheel-transition': 'none' });
 }
-			const onMove = (clientY) => {
+			const onMove = (clientY: number): void => {
 				if (!isDragging)
 					return;
 				const delta = startY - clientY;
@@ -2384,7 +2398,7 @@ ${t('timeline').dueLabel}: ${task.dueDate || t('timeline').none}`;
 				activeDocument.removeEventListener('mousemove', onDocMove);
 				activeDocument.removeEventListener('mouseup', onDocUp);
 }
-			const onDocMove = (e) => onMove(e.clientY);
+			const onDocMove = (e: MouseEvent) => onMove(e.clientY);
 			const onDocUp = () => onEnd();
 			wrapper.addEventListener('mousedown', (e) => {
 				e.preventDefault();
@@ -2417,9 +2431,9 @@ ${t('timeline').dueLabel}: ${task.dueDate || t('timeline').none}`;
 				}
 }
 }
-		let yearCtrl = null;
-		let monthCtrl = null;
-		let dayCtrl = null;
+		let yearCtrl: WheelPickerColumn | null = null;
+		let monthCtrl: WheelPickerColumn | null = null;
+		let dayCtrl: WheelPickerColumn | null = null;
 		const buildDayValues = () => {
 			const days = [];
 			const maxDay = getDaysInMonth(year, month);
@@ -2444,7 +2458,7 @@ ${t('timeline').dueLabel}: ${task.dueDate || t('timeline').none}`;
 			refreshDayColumn();
 		});
 		refreshDayColumn();
-		let onKeydown = null;
+		let onKeydown: ((e: KeyboardEvent) => void) | null = null;
 		const closeModal = () => {
 			if (onKeydown)
 				document.removeEventListener('keydown', onKeydown);
@@ -2453,7 +2467,7 @@ ${t('timeline').dueLabel}: ${task.dueDate || t('timeline').none}`;
 			dayCtrl?.destroy?.();
 			modal.remove();
 }
-		onKeydown = (e) => {
+		onKeydown = (e: KeyboardEvent) => {
 			if (e.key === 'Escape')
 				closeModal();
 }

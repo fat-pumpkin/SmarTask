@@ -1437,7 +1437,6 @@
 	border-bottom: 1px solid var(--background-modifier-border);
 	flex-shrink: 0;
 	overflow-x: auto;
-	scrollbar-width: thin;
 }
 
 .smarttask-wrapper .gantt-header-cell {
@@ -1462,7 +1461,6 @@
 	flex: 1;
 	overflow-y: auto;
 	overflow-x: auto;
-	scrollbar-width: thin;
 }
 
 .smarttask-wrapper .gantt-row {
@@ -1561,7 +1559,7 @@
 
 .smarttask-wrapper .gantt-bar.completed {
 	opacity: 0.5;
-	background: var(--text-muted) !important;
+	background: var(--text-muted);
 }
 
 .smarttask-wrapper .gantt-bar:hover {
@@ -2278,7 +2276,6 @@
 	overflow-y: auto;
 	scroll-snap-type: y mandatory;
 	-ms-overflow-style: none;
-	scrollbar-width: none;
 }
 
 .smarttask-wrapper .wheel-column::-webkit-scrollbar {
@@ -3247,12 +3244,13 @@
 
 /* 减少动效偏好 */
 @media (prefers-reduced-motion: reduce) {
-	.smarttask-wrapper *,
-	.smarttask-wrapper *::before,
-	.smarttask-wrapper *::after {
-		transition-duration: 0.01ms !important;
-		animation-duration: 0.01ms !important;
-		animation-iteration-count: 1 !important;
+	/* 用提高选择器优先级（:not(#id) 提权）覆盖动画/过渡规则 */
+	.smarttask-wrapper *:not(#smarttask-rno),
+	.smarttask-wrapper *:not(#smarttask-rno)::before,
+	.smarttask-wrapper *:not(#smarttask-rno)::after {
+		transition-duration: 0.01ms;
+		animation-duration: 0.01ms;
+		animation-iteration-count: 1;
 	}
 }
 

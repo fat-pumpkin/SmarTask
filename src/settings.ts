@@ -1,4 +1,4 @@
-import { App, PluginSettingTab, Setting } from 'obsidian';
+import { App, PluginSettingTab, Setting, type SettingDefinitionItem } from 'obsidian';
 import SmartTaskPlugin from './main';
 import { TaskPriority, GroupField, SortField, ViewType } from './types';
 import { t } from './i18n';
@@ -9,6 +9,185 @@ export class SmartTaskSettingTab extends PluginSettingTab {
 	constructor(app: App, plugin: SmartTaskPlugin) {
 		super(app, plugin);
 		this.plugin = plugin;
+	}
+
+	getSettingDefinitions(): SettingDefinitionItem[] {
+		const s = t('settings');
+		return [
+			{ type: 'group', heading: s.headingTaskConfiguration, items: [] },
+			{
+				type: 'group',
+				heading: s.headingTaskSaving,
+				items: [
+					{
+						name: s.defaultSaveLocation,
+						desc: s.saveLocationDesc,
+						control: {
+							type: 'dropdown',
+							key: 'saveTarget',
+							options: {
+								inbox: t('saveTargets').inbox,
+								currentFile: t('saveTargets').currentFile,
+								dailyNote: t('saveTargets').dailyNote,
+							},
+						},
+					},
+					{
+						name: s.inboxFilePath,
+						desc: s.inboxFilePathDesc,
+						control: { type: 'text', key: 'inboxFilePath', placeholder: s.inboxFilePlaceholder },
+					},
+					{
+						name: s.autoAddTags,
+						desc: s.autoAddTagsDesc,
+						control: { type: 'text', key: 'autoAddTags', placeholder: s.autoAddTagsPlaceholder },
+					},
+				],
+			},
+			{
+				type: 'group',
+				heading: s.headingTaskDisplay,
+				items: [
+					{
+						name: s.defaultView,
+						desc: s.defaultViewDesc,
+						control: {
+							type: 'dropdown',
+							key: 'defaultView',
+							options: {
+								list: t('tabs').list,
+								kanban: t('tabs').kanban,
+								calendar: t('tabs').calendar,
+								timeline: t('tabs').timeline,
+							},
+						},
+					},
+					{
+						name: s.timelineGrouping,
+						desc: s.timelineGroupingDesc,
+						control: {
+							type: 'dropdown',
+							key: 'timelineGroupBy',
+							options: { day: t('dates').day, week: t('dates').week, month: t('dates').month },
+						},
+					},
+					{
+						name: s.defaultPriority,
+						desc: s.defaultPriorityDesc,
+						control: {
+							type: 'dropdown',
+							key: 'defaultPriority',
+							options: {
+								[TaskPriority.Highest]: `\u{1F51D} ${t('priorities').highest}`,
+								[TaskPriority.High]: `\u{1F53A} ${t('priorities').high}`,
+								[TaskPriority.Medium]: `\u{1F53C} ${t('priorities').medium}`,
+								[TaskPriority.Low]: `\u{1F53D} ${t('priorities').low}`,
+								[TaskPriority.Lowest]: `\u{23EC} ${t('priorities').lowest}`,
+								[TaskPriority.None]: `\u{2796} ${s.none}`,
+							},
+						},
+					},
+					{
+						name: s.showCompleted,
+						desc: s.showCompletedDesc,
+						control: { type: 'toggle', key: 'showCompleted' },
+					},
+					{
+						name: s.showSubtasks,
+						desc: s.showSubtasksDesc,
+						control: { type: 'toggle', key: 'showSubtasks' },
+					},
+				],
+			},
+			{
+				type: 'group',
+				heading: s.headingSortingGrouping,
+				items: [
+					{
+						name: s.groupBy,
+						desc: s.groupByDesc,
+						control: {
+							type: 'dropdown',
+							key: 'groupBy',
+							options: {
+								[GroupField.File]: s.byFile,
+								[GroupField.Priority]: s.byPriority,
+								[GroupField.DueDate]: s.byDueDate,
+								[GroupField.Tag]: s.byTag,
+								[GroupField.None]: s.noGrouping,
+							},
+						},
+					},
+					{
+						name: s.sortBy,
+						desc: s.sortByDesc,
+						control: {
+							type: 'dropdown',
+							key: 'sortBy',
+							options: {
+								[SortField.DueDate]: s.dueDate,
+								[SortField.Priority]: s.priority,
+								[SortField.Description]: s.description,
+								[SortField.CreatedDate]: s.createdDate,
+							},
+						},
+					},
+					{
+						name: s.sortOrder,
+						desc: s.sortOrderDesc,
+						control: {
+							type: 'dropdown',
+							key: 'sortOrder',
+							options: { asc: s.ascending, desc: s.descending },
+						},
+					},
+				],
+			},
+			{
+				type: 'group',
+				heading: s.headingPerformance,
+				items: [
+					{
+						name: s.enableIndexing,
+						desc: s.enableIndexingDesc,
+						control: { type: 'toggle', key: 'indexingEnabled' },
+					},
+				],
+			},
+			{
+				type: 'group',
+				heading: s.headingKeyboardShortcuts,
+				items: [
+					{ name: s.shortcutQuickCreate, desc: 'Ctrl+Shift+T' },
+					{ name: s.shortcutToggleStatus, desc: 'Ctrl+Enter' },
+					{ name: s.shortcutAddSubtask, desc: 'Ctrl+Shift+Enter' },
+				],
+			},
+			{
+				type: 'group',
+				heading: s.headingAbout,
+				items: [{ name: `SmartTask v${this.plugin.manifest.version}`, desc: s.aboutDescription }],
+			},
+		];
+	}
+
+	getControlValue(key: string): unknown {
+		return (this.plugin.settings as unknown as Record<string, unknown>)[key];
+	}
+
+	async setControlValue(key: string, value: unknown): Promise<void> {
+		if (key === 'autoAddTags') {
+			this.plugin.settings.autoAddTags = String(value)
+				.split(',')
+				.map(tag => tag.trim())
+				.filter(tag => tag.length > 0);
+		} else {
+			(this.plugin.settings as unknown as Record<string, unknown>)[key] = value;
+		}
+		await this.plugin.saveSettings();
+		if (key === 'indexingEnabled') {
+			await this.plugin.setIndexingEnabled(Boolean(value));
+		}
 	}
 
 	display(): void {
@@ -194,7 +373,7 @@ export class SmartTaskSettingTab extends PluginSettingTab {
 			.setName(s.headingKeyboardShortcuts)
 			.setHeading();
 
-		const shortcuts = containerEl.createEl('div', { cls: 'shortcut-hint' });
+		const shortcuts = containerEl.createDiv({ cls: 'shortcut-hint' });
 		const shortcutItems = [
 			{ keys: 'Ctrl+Shift+T', desc: s.shortcutQuickCreate },
 			{ keys: 'Ctrl+Enter', desc: s.shortcutToggleStatus },

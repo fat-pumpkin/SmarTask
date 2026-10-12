@@ -1044,6 +1044,179 @@ var SmartTaskSettingTab = class extends import_obsidian2.PluginSettingTab {
     super(app, plugin);
     this.plugin = plugin;
   }
+  getSettingDefinitions() {
+    const s = t("settings");
+    return [
+      { type: "group", heading: s.headingTaskConfiguration, items: [] },
+      {
+        type: "group",
+        heading: s.headingTaskSaving,
+        items: [
+          {
+            name: s.defaultSaveLocation,
+            desc: s.saveLocationDesc,
+            control: {
+              type: "dropdown",
+              key: "saveTarget",
+              options: {
+                inbox: t("saveTargets").inbox,
+                currentFile: t("saveTargets").currentFile,
+                dailyNote: t("saveTargets").dailyNote
+              }
+            }
+          },
+          {
+            name: s.inboxFilePath,
+            desc: s.inboxFilePathDesc,
+            control: { type: "text", key: "inboxFilePath", placeholder: s.inboxFilePlaceholder }
+          },
+          {
+            name: s.autoAddTags,
+            desc: s.autoAddTagsDesc,
+            control: { type: "text", key: "autoAddTags", placeholder: s.autoAddTagsPlaceholder }
+          }
+        ]
+      },
+      {
+        type: "group",
+        heading: s.headingTaskDisplay,
+        items: [
+          {
+            name: s.defaultView,
+            desc: s.defaultViewDesc,
+            control: {
+              type: "dropdown",
+              key: "defaultView",
+              options: {
+                list: t("tabs").list,
+                kanban: t("tabs").kanban,
+                calendar: t("tabs").calendar,
+                timeline: t("tabs").timeline
+              }
+            }
+          },
+          {
+            name: s.timelineGrouping,
+            desc: s.timelineGroupingDesc,
+            control: {
+              type: "dropdown",
+              key: "timelineGroupBy",
+              options: { day: t("dates").day, week: t("dates").week, month: t("dates").month }
+            }
+          },
+          {
+            name: s.defaultPriority,
+            desc: s.defaultPriorityDesc,
+            control: {
+              type: "dropdown",
+              key: "defaultPriority",
+              options: {
+                ["highest" /* Highest */]: `\u{1F51D} ${t("priorities").highest}`,
+                ["high" /* High */]: `\u{1F53A} ${t("priorities").high}`,
+                ["medium" /* Medium */]: `\u{1F53C} ${t("priorities").medium}`,
+                ["low" /* Low */]: `\u{1F53D} ${t("priorities").low}`,
+                ["lowest" /* Lowest */]: `\u23EC ${t("priorities").lowest}`,
+                ["none" /* None */]: `\u2796 ${s.none}`
+              }
+            }
+          },
+          {
+            name: s.showCompleted,
+            desc: s.showCompletedDesc,
+            control: { type: "toggle", key: "showCompleted" }
+          },
+          {
+            name: s.showSubtasks,
+            desc: s.showSubtasksDesc,
+            control: { type: "toggle", key: "showSubtasks" }
+          }
+        ]
+      },
+      {
+        type: "group",
+        heading: s.headingSortingGrouping,
+        items: [
+          {
+            name: s.groupBy,
+            desc: s.groupByDesc,
+            control: {
+              type: "dropdown",
+              key: "groupBy",
+              options: {
+                ["file" /* File */]: s.byFile,
+                ["priority" /* Priority */]: s.byPriority,
+                ["dueDate" /* DueDate */]: s.byDueDate,
+                ["tag" /* Tag */]: s.byTag,
+                ["none" /* None */]: s.noGrouping
+              }
+            }
+          },
+          {
+            name: s.sortBy,
+            desc: s.sortByDesc,
+            control: {
+              type: "dropdown",
+              key: "sortBy",
+              options: {
+                ["dueDate" /* DueDate */]: s.dueDate,
+                ["priority" /* Priority */]: s.priority,
+                ["description" /* Description */]: s.description,
+                ["createdDate" /* CreatedDate */]: s.createdDate
+              }
+            }
+          },
+          {
+            name: s.sortOrder,
+            desc: s.sortOrderDesc,
+            control: {
+              type: "dropdown",
+              key: "sortOrder",
+              options: { asc: s.ascending, desc: s.descending }
+            }
+          }
+        ]
+      },
+      {
+        type: "group",
+        heading: s.headingPerformance,
+        items: [
+          {
+            name: s.enableIndexing,
+            desc: s.enableIndexingDesc,
+            control: { type: "toggle", key: "indexingEnabled" }
+          }
+        ]
+      },
+      {
+        type: "group",
+        heading: s.headingKeyboardShortcuts,
+        items: [
+          { name: s.shortcutQuickCreate, desc: "Ctrl+Shift+T" },
+          { name: s.shortcutToggleStatus, desc: "Ctrl+Enter" },
+          { name: s.shortcutAddSubtask, desc: "Ctrl+Shift+Enter" }
+        ]
+      },
+      {
+        type: "group",
+        heading: s.headingAbout,
+        items: [{ name: `SmartTask v${this.plugin.manifest.version}`, desc: s.aboutDescription }]
+      }
+    ];
+  }
+  getControlValue(key) {
+    return this.plugin.settings[key];
+  }
+  async setControlValue(key, value) {
+    if (key === "autoAddTags") {
+      this.plugin.settings.autoAddTags = String(value).split(",").map((tag) => tag.trim()).filter((tag) => tag.length > 0);
+    } else {
+      this.plugin.settings[key] = value;
+    }
+    await this.plugin.saveSettings();
+    if (key === "indexingEnabled") {
+      await this.plugin.setIndexingEnabled(Boolean(value));
+    }
+  }
   display() {
     const { containerEl } = this;
     const s = t("settings");
@@ -1103,7 +1276,7 @@ var SmartTaskSettingTab = class extends import_obsidian2.PluginSettingTab {
       await this.plugin.setIndexingEnabled(value);
     }));
     new import_obsidian2.Setting(containerEl).setName(s.headingKeyboardShortcuts).setHeading();
-    const shortcuts = containerEl.createEl("div", { cls: "shortcut-hint" });
+    const shortcuts = containerEl.createDiv({ cls: "shortcut-hint" });
     const shortcutItems = [
       { keys: "Ctrl+Shift+T", desc: s.shortcutQuickCreate },
       { keys: "Ctrl+Enter", desc: s.shortcutToggleStatus },
@@ -1880,7 +2053,7 @@ var SmartTaskViewController = class {
         };
         const chip = filtersEl.createSpan({ cls: "compact-chip active" });
         chip.createSpan({ text: `\u{1F4C5} ${dateLabels[this.dateFilter] || this.dateFilter}` });
-        const removeBtn = chip.createEl("span", { cls: "remove", text: "\u2715" });
+        const removeBtn = chip.createSpan({ cls: "remove", text: "\u2715" });
         removeBtn.addEventListener("click", () => {
           this.dateFilter = "all";
           this.renderPanels();
@@ -1904,7 +2077,7 @@ var SmartTaskViewController = class {
         };
         const chip = filtersEl.createSpan({ cls: "compact-chip active" });
         chip.createSpan({ text: `${priEmojiMap[p] || ""} ${priLabelMap[p] || p}` });
-        const removeBtn = chip.createEl("span", { cls: "remove", text: "\u2715" });
+        const removeBtn = chip.createSpan({ cls: "remove", text: "\u2715" });
         removeBtn.addEventListener("click", () => {
           this.filterPriorities = this.filterPriorities.filter((x) => x !== p);
           this.renderPanels();
@@ -1914,7 +2087,7 @@ var SmartTaskViewController = class {
       for (const tag of this.filterTags) {
         const chip = filtersEl.createSpan({ cls: "compact-chip active" });
         chip.createSpan({ text: `#${tag}` });
-        const removeBtn = chip.createEl("span", { cls: "remove", text: "\u2715" });
+        const removeBtn = chip.createSpan({ cls: "remove", text: "\u2715" });
         removeBtn.addEventListener("click", () => {
           this.filterTags = this.filterTags.filter((t2) => t2 !== tag);
           this.renderPanels();
@@ -2005,11 +2178,11 @@ var SmartTaskViewController = class {
     const todoTasks = this.filteredTasks.filter((t2) => !t2.completed);
     const doneTasks = this.filteredTasks.filter((t2) => t2.completed);
     const priorityColumns = [
-      { priority: "highest", label: t("priorities").highest, icon: "flame", color: "var(--priority-highest)" },
-      { priority: "high", label: t("priorities").high, icon: "arrow-up", color: "var(--priority-high)" },
-      { priority: "medium", label: t("priorities").medium, icon: "minus", color: "var(--priority-medium)" },
-      { priority: "low", label: t("priorities").low, icon: "arrow-down", color: "var(--priority-low)" },
-      { priority: "lowest", label: t("priorities").lowest, icon: "chevrons-down", color: "var(--priority-lowest)" }
+      { priority: "highest" /* Highest */, label: t("priorities").highest, icon: "flame", color: "var(--priority-highest)" },
+      { priority: "high" /* High */, label: t("priorities").high, icon: "arrow-up", color: "var(--priority-high)" },
+      { priority: "medium" /* Medium */, label: t("priorities").medium, icon: "minus", color: "var(--priority-medium)" },
+      { priority: "low" /* Low */, label: t("priorities").low, icon: "arrow-down", color: "var(--priority-low)" },
+      { priority: "lowest" /* Lowest */, label: t("priorities").lowest, icon: "chevrons-down", color: "var(--priority-lowest)" }
     ];
     if (this.filterStatus !== "done") {
       for (const col of priorityColumns) {
@@ -2085,7 +2258,7 @@ var SmartTaskViewController = class {
       e.stopPropagation();
       void this.plugin.toggleTaskStatus(task, checkbox.checked);
     });
-    const descEl = topRow.createEl("span", { cls: "kanban-card-desc", text: task.description });
+    topRow.createSpan({ cls: "kanban-card-desc", text: task.description });
     const meta = body.createDiv({ cls: "kanban-card-meta" });
     if (task.dueDate) {
       const due = meta.createSpan({ cls: "kanban-card-due" });
@@ -2125,7 +2298,8 @@ var SmartTaskViewController = class {
     (0, import_obsidian3.setIcon)(addBtn, "plus");
     addBtn.addEventListener("click", (e) => {
       e.stopPropagation();
-      let subtaskInput = card.querySelector(".kanban-card-subtask-input");
+      let subtaskInput = null;
+      subtaskInput = card.querySelector(".kanban-card-subtask-input");
       if (subtaskInput) {
         subtaskInput.remove();
         return;
@@ -2155,8 +2329,8 @@ var SmartTaskViewController = class {
       input.focus();
     });
     card.addEventListener("dragstart", (e) => {
-      var _a2;
-      (_a2 = e.dataTransfer) == null ? void 0 : _a2.setData("text/plain", task.id);
+      var _a;
+      (_a = e.dataTransfer) == null ? void 0 : _a.setData("text/plain", task.id);
       card.addClass("dragging");
     });
     card.addEventListener("dragend", () => {
@@ -2189,10 +2363,10 @@ var SmartTaskViewController = class {
       }
     });
     col.addEventListener("drop", (e) => {
-      var _a2;
+      var _a;
       e.preventDefault();
       col.removeClass("drag-over");
-      const taskId = (_a2 = e.dataTransfer) == null ? void 0 : _a2.getData("text/plain");
+      const taskId = (_a = e.dataTransfer) == null ? void 0 : _a.getData("text/plain");
       if (taskId)
         this.handleKanbanDrop(taskId, completed);
     });
@@ -2210,10 +2384,10 @@ var SmartTaskViewController = class {
       }
     });
     col.addEventListener("drop", (e) => {
-      var _a2;
+      var _a;
       e.preventDefault();
       col.removeClass("drag-over");
-      const taskId = (_a2 = e.dataTransfer) == null ? void 0 : _a2.getData("text/plain");
+      const taskId = (_a = e.dataTransfer) == null ? void 0 : _a.getData("text/plain");
       if (taskId)
         this.handlePriorityDrop(taskId, priority);
     });
@@ -2247,8 +2421,8 @@ var SmartTaskViewController = class {
     if (draggable) {
       item.draggable = true;
       item.addEventListener("dragstart", (e) => {
-        var _a2;
-        (_a2 = e.dataTransfer) == null ? void 0 : _a2.setData("text/plain", task.id);
+        var _a;
+        (_a = e.dataTransfer) == null ? void 0 : _a.setData("text/plain", task.id);
         item.addClass("dragging");
       });
       item.addEventListener("dragend", () => {
@@ -2287,6 +2461,7 @@ var SmartTaskViewController = class {
       void this.plugin.toggleTaskStatus(task, checkbox.checked);
     });
     item.addEventListener("keydown", (e) => {
+      var _a;
       if (e.key === " " || e.key === "Enter") {
         e.preventDefault();
         checkbox.checked = !checkbox.checked;
@@ -2433,15 +2608,15 @@ var SmartTaskViewController = class {
   }
   getPriorityColor(priority) {
     switch (priority) {
-      case "highest":
+      case "highest" /* Highest */:
         return "var(--priority-highest)";
-      case "high":
+      case "high" /* High */:
         return "var(--priority-high)";
-      case "medium":
+      case "medium" /* Medium */:
         return "var(--priority-medium)";
-      case "low":
+      case "low" /* Low */:
         return "var(--priority-low)";
-      case "lowest":
+      case "lowest" /* Lowest */:
         return "var(--priority-lowest)";
       default:
         return "transparent";
@@ -2449,15 +2624,15 @@ var SmartTaskViewController = class {
   }
   getPriorityDataAttr(priority) {
     switch (priority) {
-      case "highest":
+      case "highest" /* Highest */:
         return "highest";
-      case "high":
+      case "high" /* High */:
         return "high";
-      case "medium":
+      case "medium" /* Medium */:
         return "medium";
-      case "low":
+      case "low" /* Low */:
         return "low";
-      case "lowest":
+      case "lowest" /* Lowest */:
         return "lowest";
       default:
         return "";
@@ -2465,15 +2640,15 @@ var SmartTaskViewController = class {
   }
   getPriorityIcon(priority) {
     switch (priority) {
-      case "highest":
+      case "highest" /* Highest */:
         return "\u{1F51D}";
-      case "high":
+      case "high" /* High */:
         return "\u{1F53A}";
-      case "medium":
+      case "medium" /* Medium */:
         return "\u{1F53C}";
-      case "low":
+      case "low" /* Low */:
         return "\u{1F53D}";
-      case "lowest":
+      case "lowest" /* Lowest */:
         return "\u23EC";
       default:
         return "";
@@ -2558,7 +2733,7 @@ var SmartTaskViewController = class {
           });
           linkEl.addEventListener("click", (e) => {
             e.stopPropagation();
-            this.openWikiLink(target);
+            void this.openWikiLink(target);
           });
         }
       } else if (match[2]) {
@@ -2607,14 +2782,19 @@ var SmartTaskViewController = class {
       let fname = cleaned;
       if (slash >= 0) {
         const folderPath = cleaned.substring(0, slash);
-        folder = vault.getFolderByPath(folderPath);
-        if (!folder) {
+        const existingFolder = vault.getAbstractFileByPath(folderPath);
+        if (existingFolder instanceof import_obsidian3.TFolder) {
+          folder = existingFolder;
+        } else {
           await vault.createFolder(folderPath);
-          folder = vault.getFolderByPath(folderPath);
+          const createdFolder = vault.getAbstractFileByPath(folderPath);
+          if (createdFolder instanceof import_obsidian3.TFolder)
+            folder = createdFolder;
         }
         fname = cleaned.substring(slash + 1);
       }
-      const newFile = await this.plugin.app.fileManager.createNewMarkdownFile(folder != null ? folder : vault.getRoot(), fname || "Untitled");
+      const targetDir = folder ? folder.path + "/" : "";
+      const newFile = await vault.create((0, import_obsidian3.normalizePath)(`${targetDir}${fname || "Untitled"}`), "");
       if (newFile) {
         await this.plugin.app.workspace.openLinkText(newFile.path, "", true);
         new import_obsidian3.Notice(`${t("messages").noteCreated}${newFile.path}`);
@@ -2908,6 +3088,10 @@ var SmartTaskViewController = class {
     }
     for (let i = 0; i < sortedTasks.length; i++) {
       const task = sortedTasks[i];
+      const taskStart = task.startDate || task.dueDate;
+      if (!taskStart)
+        continue;
+      const taskEnd = task.dueDate || task.startDate;
       const row = ganttBody.createDiv({ cls: "gantt-row" });
       if (task.completed)
         row.addClass("completed");
@@ -2927,21 +3111,21 @@ var SmartTaskViewController = class {
       let left = 0;
       let width = 0;
       if (this.timelineGroupBy === "day") {
-        const startDate = task.startDate || task.dueDate;
-        const endDate = task.dueDate || task.startDate;
+        const startDate = taskStart;
+        const endDate = taskEnd;
         if (startDate && endDate && unitToIndex.has(startDate) && unitToIndex.has(endDate)) {
           left = unitToIndex.get(startDate);
           width = unitToIndex.get(endDate) - left + 1;
         }
       } else if (this.timelineGroupBy === "week") {
-        const startKey = task.startDate ? this.getTimelineGroupKey(task.startDate) : this.getTimelineGroupKey(task.dueDate);
+        const startKey = this.getTimelineGroupKey(taskStart);
         const endKey = task.dueDate ? this.getTimelineGroupKey(task.dueDate) : startKey;
         if (unitToIndex.has(startKey) && unitToIndex.has(endKey)) {
           left = unitToIndex.get(startKey);
           width = unitToIndex.get(endKey) - left + 1;
         }
       } else {
-        const startKey = task.startDate ? task.startDate.substring(0, 7) : task.dueDate.substring(0, 7);
+        const startKey = taskStart.substring(0, 7);
         const endKey = task.dueDate ? task.dueDate.substring(0, 7) : startKey;
         if (unitToIndex.has(startKey) && unitToIndex.has(endKey)) {
           left = unitToIndex.get(startKey);
@@ -3064,7 +3248,7 @@ ${t("timeline").dueLabel}: ${task.dueDate || t("timeline").none}`;
       const section = cardsContainer.createDiv({ cls: "cards-section", attr: { "data-group-key": group.key } });
       const sectionHeader = section.createDiv({ cls: "cards-section-header" });
       const titleWrap = sectionHeader.createDiv({ cls: "cards-section-title-wrap" });
-      const priBar = titleWrap.createSpan({ cls: "cards-section-pri-bar" });
+      titleWrap.createSpan({ cls: "cards-section-pri-bar" });
       titleWrap.createSpan({ cls: "cards-section-title", text: group.name });
       sectionHeader.createSpan({ cls: "cards-section-count", text: `${group.tasks.length}` });
       const cardsGrid = section.createDiv({ cls: "cards-grid" });
@@ -3229,6 +3413,8 @@ ${t("timeline").dueLabel}: ${task.dueDate || t("timeline").none}`;
     const tasksWithDate = this.filteredTasks.filter((t2) => t2.dueDate);
     const groups = /* @__PURE__ */ new Map();
     for (const task of tasksWithDate) {
+      if (!task.dueDate)
+        continue;
       const key = this.getTimelineGroupKey(task.dueDate);
       if (!groups.has(key)) {
         groups.set(key, []);
@@ -3312,8 +3498,7 @@ ${t("timeline").dueLabel}: ${task.dueDate || t("timeline").none}`;
     return groupEls.length - 1;
   }
   openTaskEditor(task) {
-    const modal = activeDocument.createElement("div");
-    modal.className = "task-editor-modal-overlay";
+    const modal = activeDocument.body.createDiv({ cls: "task-editor-modal-overlay" });
     const modalInner = modal.createDiv({ cls: "task-editor-modal" });
     const header = modalInner.createDiv({ cls: "task-editor-header" });
     header.createEl("h3", { text: t("editor").title });
@@ -3352,7 +3537,6 @@ ${t("timeline").dueLabel}: ${task.dueDate || t("timeline").none}`;
     const actions = footer.createDiv({ cls: "task-editor-actions" });
     const cancelBtn = actions.createEl("button", { cls: "task-editor-btn cancel-btn", text: t("ui").cancel });
     const saveBtn = actions.createEl("button", { cls: "task-editor-btn save-btn", text: t("ui").save });
-    activeDocument.body.appendChild(modal);
     let onKeydown = null;
     const closeModal = () => {
       if (onKeydown)
@@ -3563,8 +3747,7 @@ ${t("timeline").dueLabel}: ${task.dueDate || t("timeline").none}`;
     }
   }
   showDayTasks(dateStr, tasks) {
-    const modal = activeDocument.createElement("div");
-    modal.className = "task-editor-modal-overlay";
+    const modal = activeDocument.body.createDiv({ cls: "task-editor-modal-overlay" });
     const modalInner = modal.createDiv({ cls: "task-editor-modal" });
     const header = modalInner.createDiv({ cls: "task-editor-header" });
     header.createEl("h3", { text: t("editor").dayTasks.replace("{date}", dateStr) });
@@ -3593,7 +3776,6 @@ ${t("timeline").dueLabel}: ${task.dueDate || t("timeline").none}`;
         text: this.getPriorityIcon(task.priority)
       });
     }
-    activeDocument.body.appendChild(modal);
     let onKeydown = null;
     const closeModal = () => {
       if (onKeydown)
@@ -3612,8 +3794,7 @@ ${t("timeline").dueLabel}: ${task.dueDate || t("timeline").none}`;
     });
   }
   showWheelDatePicker(callback, initialDate) {
-    const modal = activeDocument.createElement("div");
-    modal.className = "wheel-picker-overlay";
+    const modal = activeDocument.body.createDiv({ cls: "wheel-picker-overlay" });
     const now = /* @__PURE__ */ new Date();
     let year = now.getFullYear();
     let month = now.getMonth() + 1;
@@ -3641,7 +3822,6 @@ ${t("timeline").dueLabel}: ${task.dueDate || t("timeline").none}`;
     const dayCol = body.createDiv({ cls: "wheel-column", attr: { "data-col": "day" } });
     dayCol.createDiv({ cls: "wheel-wrapper" });
     dayCol.createDiv({ cls: "wheel-highlight" });
-    activeDocument.body.appendChild(modal);
     const years = [];
     for (let y = year - 5; y <= year + 10; y++)
       years.push(y);
@@ -3750,8 +3930,8 @@ ${t("timeline").dueLabel}: ${task.dueDate || t("timeline").none}`;
       return days;
     };
     const refreshDayColumn = () => {
-      var _a2;
-      (_a2 = dayCtrl == null ? void 0 : dayCtrl.destroy) == null ? void 0 : _a2.call(dayCtrl);
+      var _a;
+      (_a = dayCtrl == null ? void 0 : dayCtrl.destroy) == null ? void 0 : _a.call(dayCtrl);
       dayCtrl = setupColumn(dayCol, buildDayValues(), day, (v) => `${v}${t("wheelPicker").daySuffix}`, (v) => {
         day = v;
       });
@@ -3767,10 +3947,10 @@ ${t("timeline").dueLabel}: ${task.dueDate || t("timeline").none}`;
     refreshDayColumn();
     let onKeydown = null;
     const closeModal = () => {
-      var _a2, _b, _c;
+      var _a, _b, _c;
       if (onKeydown)
         document.removeEventListener("keydown", onKeydown);
-      (_a2 = yearCtrl == null ? void 0 : yearCtrl.destroy) == null ? void 0 : _a2.call(yearCtrl);
+      (_a = yearCtrl == null ? void 0 : yearCtrl.destroy) == null ? void 0 : _a.call(yearCtrl);
       (_b = monthCtrl == null ? void 0 : monthCtrl.destroy) == null ? void 0 : _b.call(monthCtrl);
       (_c = dayCtrl == null ? void 0 : dayCtrl.destroy) == null ? void 0 : _c.call(dayCtrl);
       modal.remove();
@@ -3894,10 +4074,10 @@ var SmartTaskPlugin = class extends import_obsidian5.Plugin {
       id: "toggle-status",
       name: t("commands").toggleStatus,
       editorCallback: (editor, view) => {
-        var _a2;
+        var _a;
         const cursor = editor.getCursor();
         const line = editor.getLine(cursor.line);
-        const task = TaskParser.parseLine(line, ((_a2 = view.file) == null ? void 0 : _a2.path) || "", cursor.line + 1);
+        const task = TaskParser.parseLine(line, ((_a = view.file) == null ? void 0 : _a.path) || "", cursor.line + 1);
         if (task) {
           const newStatus = !task.completed;
           const newLine = line.replace(
@@ -3913,10 +4093,10 @@ var SmartTaskPlugin = class extends import_obsidian5.Plugin {
       id: "add-subtask",
       name: t("commands").addSubtask,
       editorCallback: (editor, view) => {
-        var _a2;
+        var _a;
         const cursor = editor.getCursor();
         const line = editor.getLine(cursor.line);
-        const task = TaskParser.parseLine(line, ((_a2 = view.file) == null ? void 0 : _a2.path) || "", cursor.line + 1);
+        const task = TaskParser.parseLine(line, ((_a = view.file) == null ? void 0 : _a.path) || "", cursor.line + 1);
         if (task) {
           const indentMatch = line.match(/^(\s*)/);
           const indent = (indentMatch ? indentMatch[1] : "") + "  ";
@@ -4136,8 +4316,8 @@ ${newLine}`,
     return this.getInboxFile();
   }
   async getInboxFile() {
-    var _a2;
-    let inboxPath = ((_a2 = this.settings.inboxFilePath) == null ? void 0 : _a2.trim()) || "SmartTask-Inbox.md";
+    var _a;
+    let inboxPath = ((_a = this.settings.inboxFilePath) == null ? void 0 : _a.trim()) || "SmartTask-Inbox.md";
     if (!inboxPath.endsWith(".md")) {
       inboxPath += ".md";
     }

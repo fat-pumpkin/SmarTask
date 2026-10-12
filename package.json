@@ -1,11 +1,12 @@
 {
   "name": "obsidian-smarttask",
-  "version": "2.0.1",
+  "version": "2.0.3",
   "description": "A high-performance, easy-to-use task management plugin for Obsidian",
   "main": "main.js",
   "scripts": {
     "dev": "node esbuild.config.mjs",
     "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
+    "lint": "eslint src",
     "version": "node version-bump.mjs && git add manifest.json versions.json"
   },
   "keywords": [
@@ -19,9 +20,10 @@
   "devDependencies": {
     "@types/node": "^20.0.0",
     "esbuild": "^0.20.0",
+    "eslint": "^9.39.4",
+    "eslint-plugin-obsidianmd": "^0.4.2",
     "obsidian": "^1.5.0",
     "tslib": "^2.6.0",
     "typescript": "^5.4.0"
-  },
-  "dependencies": {}
+  }
 }
