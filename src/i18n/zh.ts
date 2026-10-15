@@ -46,7 +46,13 @@ export const zh = {
 		high: '高',
 		medium: '中',
 		low: '低',
-		lowest: '最低'
+		lowest: '最低',
+		none: '无优先级'
+	},
+	groups: {
+		noDueDate: '无截止日期',
+		noTag: '无标签',
+		allTasks: '全部任务'
 	},
 	saveTargets: {
 		inbox: '收件箱',
@@ -84,7 +90,8 @@ export const zh = {
 		startLabel: '起始',
 		dueLabel: '截止',
 		none: '无',
-		monthFormat: '{n}月'
+		monthFormat: '{n}月',
+		undated: '无日期'
 	},
 	wheelPicker: {
 		daySuffix: '日',
@@ -142,7 +149,10 @@ export const zh = {
 		todo: '待办',
 		done: '已完成',
 		emptyTodo: '暂无待办任务',
-		emptyDone: '暂无已完成任务'
+		emptyDone: '暂无已完成任务',
+		treeView: '任务树',
+		allTasks: '全部任务',
+		priorityView: '按优先级'
 	},
 	tooltips: {
 		editTask: '编辑任务',

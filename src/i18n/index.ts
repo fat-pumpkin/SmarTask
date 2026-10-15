@@ -52,6 +52,12 @@ export interface Translation {
 		medium: string;
 		low: string;
 		lowest: string;
+		none: string;
+	};
+	groups: {
+		noDueDate: string;
+		noTag: string;
+		allTasks: string;
 	};
 	saveTargets: {
 		inbox: string;
@@ -90,6 +96,7 @@ export interface Translation {
 		dueLabel: string;
 		none: string;
 		monthFormat: string;
+		undated: string;
 	};
 	wheelPicker: {
 		daySuffix: string;
@@ -148,6 +155,9 @@ export interface Translation {
 		done: string;
 		emptyTodo: string;
 		emptyDone: string;
+		treeView: string;
+		allTasks: string;
+		priorityView: string;
 	};
 	tooltips: {
 		editTask: string;

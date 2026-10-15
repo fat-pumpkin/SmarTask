@@ -615,7 +615,13 @@ var en = {
     high: "High",
     medium: "Medium",
     low: "Low",
-    lowest: "Lowest"
+    lowest: "Lowest",
+    none: "No priority"
+  },
+  groups: {
+    noDueDate: "No due date",
+    noTag: "No tag",
+    allTasks: "All tasks"
   },
   saveTargets: {
     inbox: "Inbox",
@@ -653,7 +659,8 @@ var en = {
     startLabel: "Start",
     dueLabel: "Due",
     none: "None",
-    monthFormat: "{n}"
+    monthFormat: "{n}",
+    undated: "Undated"
   },
   wheelPicker: {
     daySuffix: "",
@@ -711,7 +718,10 @@ var en = {
     todo: "Todo",
     done: "Done",
     emptyTodo: "No pending tasks",
-    emptyDone: "No completed tasks"
+    emptyDone: "No completed tasks",
+    treeView: "Task Tree",
+    allTasks: "All Tasks",
+    priorityView: "By Priority"
   },
   tooltips: {
     editTask: "Edit task",
@@ -841,7 +851,13 @@ var zh = {
     high: "\u9AD8",
     medium: "\u4E2D",
     low: "\u4F4E",
-    lowest: "\u6700\u4F4E"
+    lowest: "\u6700\u4F4E",
+    none: "\u65E0\u4F18\u5148\u7EA7"
+  },
+  groups: {
+    noDueDate: "\u65E0\u622A\u6B62\u65E5\u671F",
+    noTag: "\u65E0\u6807\u7B7E",
+    allTasks: "\u5168\u90E8\u4EFB\u52A1"
   },
   saveTargets: {
     inbox: "\u6536\u4EF6\u7BB1",
@@ -879,7 +895,8 @@ var zh = {
     startLabel: "\u8D77\u59CB",
     dueLabel: "\u622A\u6B62",
     none: "\u65E0",
-    monthFormat: "{n}\u6708"
+    monthFormat: "{n}\u6708",
+    undated: "\u65E0\u65E5\u671F"
   },
   wheelPicker: {
     daySuffix: "\u65E5",
@@ -937,7 +954,10 @@ var zh = {
     todo: "\u5F85\u529E",
     done: "\u5DF2\u5B8C\u6210",
     emptyTodo: "\u6682\u65E0\u5F85\u529E\u4EFB\u52A1",
-    emptyDone: "\u6682\u65E0\u5DF2\u5B8C\u6210\u4EFB\u52A1"
+    emptyDone: "\u6682\u65E0\u5DF2\u5B8C\u6210\u4EFB\u52A1",
+    treeView: "\u4EFB\u52A1\u6811",
+    allTasks: "\u5168\u90E8\u4EFB\u52A1",
+    priorityView: "\u6309\u4F18\u5148\u7EA7"
   },
   tooltips: {
     editTask: "\u7F16\u8F91\u4EFB\u52A1",
@@ -1385,7 +1405,7 @@ var QueryEngine = class {
       }
       case "dueDate" /* DueDate */:
         for (const task of tasks) {
-          const key = task.dueDate || "\u65E0\u622A\u6B62\u65E5\u671F";
+          const key = task.dueDate || t("groups").noDueDate;
           if (!groups.has(key)) {
             groups.set(key, []);
           }
@@ -1395,7 +1415,7 @@ var QueryEngine = class {
       case "tag" /* Tag */:
         for (const task of tasks) {
           if (task.tags.length === 0) {
-            const key = "\u65E0\u6807\u7B7E";
+            const key = t("groups").noTag;
             if (!groups.has(key))
               groups.set(key, []);
             groups.get(key).push(task);
@@ -1411,7 +1431,7 @@ var QueryEngine = class {
         break;
       case "none" /* None */:
       default:
-        groups.set("\u5168\u90E8\u4EFB\u52A1", tasks);
+        groups.set(t("groups").allTasks, tasks);
     }
     const result = [];
     for (const [name, groupTasks] of groups) {
@@ -1420,10 +1440,11 @@ var QueryEngine = class {
       }
     }
     if (groupBy === "dueDate" /* DueDate */) {
+      const noDueDateLabel = t("groups").noDueDate;
       result.sort((a, b) => {
-        if (a.name === "\u65E0\u622A\u6B62\u65E5\u671F")
+        if (a.name === noDueDateLabel)
           return 1;
-        if (b.name === "\u65E0\u622A\u6B62\u65E5\u671F")
+        if (b.name === noDueDateLabel)
           return -1;
         return a.name.localeCompare(b.name);
       });
@@ -1484,19 +1505,19 @@ var QueryEngine = class {
   static priorityLabel(priority) {
     switch (priority) {
       case "highest" /* Highest */:
-        return "\u{1F51D} \u6700\u9AD8";
+        return `\u{1F51D} ${t("priorities").highest}`;
       case "high" /* High */:
-        return "\u{1F53A} \u9AD8";
+        return `\u{1F53A} ${t("priorities").high}`;
       case "medium" /* Medium */:
-        return "\u{1F53C} \u4E2D";
+        return `\u{1F53C} ${t("priorities").medium}`;
       case "low" /* Low */:
-        return "\u{1F53D} \u4F4E";
+        return `\u{1F53D} ${t("priorities").low}`;
       case "lowest" /* Lowest */:
-        return "\u23EC \u6700\u4F4E";
+        return `\u23EC ${t("priorities").lowest}`;
       case "none" /* None */:
-        return "\u2796 \u65E0\u4F18\u5148\u7EA7";
+        return `\u2796 ${t("priorities").none}`;
       default:
-        return "\u2796 \u65E0\u4F18\u5148\u7EA7";
+        return `\u2796 ${t("priorities").none}`;
     }
   }
   static getToday() {
@@ -1619,6 +1640,19 @@ var SmartTaskViewController = class {
   }
   get filteredTasks() {
     return QueryEngine.query(this.tasks, this.buildQuery());
+  }
+  /** 过滤掉嵌套子任务，只返回顶级任务（子任务通过递归渲染显示在父任务下） */
+  get topLevelTasks() {
+    const visibleIds = /* @__PURE__ */ new Set();
+    for (const t2 of this.filteredTasks)
+      visibleIds.add(t2.id);
+    return this.filteredTasks.filter((t2) => {
+      if (!t2.parentId)
+        return true;
+      if (visibleIds.has(t2.parentId))
+        return false;
+      return true;
+    });
   }
   get groupedTasks() {
     return QueryEngine.groupTasks(this.filteredTasks, this.plugin.settings.groupBy);
@@ -1956,11 +1990,13 @@ var SmartTaskViewController = class {
     };
     addBtn.addEventListener("click", doSubmit);
     textarea.addEventListener("keydown", (e) => {
+      e.stopPropagation();
       if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
         doSubmit();
       }
     });
+    textarea.addEventListener("click", (e) => e.stopPropagation());
     const autoResize = () => {
       textarea.setCssStyles({ height: "auto" });
       textarea.setCssStyles({ height: textarea.scrollHeight + "px" });
@@ -2153,7 +2189,7 @@ var SmartTaskViewController = class {
         nestedSubtaskIds.add(t2.id);
     }
     for (const group of groups) {
-      const displayTasks = group.tasks.filter((t2) => !(t2.parentId && nestedSubtaskIds.has(t2.parentId)));
+      const displayTasks = group.tasks.filter((t2) => !nestedSubtaskIds.has(t2.id));
       if (displayTasks.length === 0)
         continue;
       if (group.name) {
@@ -2174,61 +2210,132 @@ var SmartTaskViewController = class {
     }
   }
   renderKanbanView(container) {
-    const kanbanEl = container.createDiv({ cls: "kanban-view" });
-    const todoTasks = this.filteredTasks.filter((t2) => !t2.completed);
-    const doneTasks = this.filteredTasks.filter((t2) => t2.completed);
-    const priorityColumns = [
-      { priority: "highest" /* Highest */, label: t("priorities").highest, icon: "flame", color: "var(--priority-highest)" },
-      { priority: "high" /* High */, label: t("priorities").high, icon: "arrow-up", color: "var(--priority-high)" },
-      { priority: "medium" /* Medium */, label: t("priorities").medium, icon: "minus", color: "var(--priority-medium)" },
-      { priority: "low" /* Low */, label: t("priorities").low, icon: "arrow-down", color: "var(--priority-low)" },
-      { priority: "lowest" /* Lowest */, label: t("priorities").lowest, icon: "chevrons-down", color: "var(--priority-lowest)" }
+    const kanbanEl = container.createDiv({ cls: "kanban-view kanban-tree-layout" });
+    const allTasks = this.filteredTasks;
+    const priorityGroups = [
+      { value: "highest" /* Highest */, label: t("priorities").highest, icon: "\u{1F525}", color: "var(--priority-highest)" },
+      { value: "high" /* High */, label: t("priorities").high, icon: "\u{1F53A}", color: "var(--priority-high)" },
+      { value: "medium" /* Medium */, label: t("priorities").medium, icon: "\u{1F53C}", color: "var(--priority-medium)" },
+      { value: "low" /* Low */, label: t("priorities").low, icon: "\u{1F53D}", color: "var(--priority-low)" },
+      { value: "lowest" /* Lowest */, label: t("priorities").lowest, icon: "\u23EC", color: "var(--priority-lowest)" },
+      { value: "other", label: t("priorities").none || "\u5176\u4ED6", icon: "\u{1F4C4}", color: "var(--text-faint)" }
     ];
-    if (this.filterStatus !== "done") {
-      for (const col of priorityColumns) {
-        const colTasks = todoTasks.filter((t2) => t2.priority === col.priority);
-        const colEl = kanbanEl.createDiv({
-          cls: "kanban-column",
-          attr: { "data-priority": col.priority, "aria-label": col.label }
-        });
-        const header = colEl.createDiv({ cls: "kanban-column-header" });
-        const titleWrap = header.createDiv({ cls: "kanban-column-title" });
-        const iconWrap = titleWrap.createSpan({ cls: "kanban-column-icon" });
-        iconWrap.setCssStyles({ color: col.color });
-        (0, import_obsidian3.setIcon)(iconWrap, col.icon);
-        titleWrap.createSpan({ cls: "kanban-column-name", text: col.label });
-        const badge = header.createSpan({ cls: "kanban-column-badge" });
-        badge.setCssStyles({ background: col.color });
-        badge.setText(String(colTasks.length));
-        const taskList = colEl.createDiv({ cls: "kanban-task-list" });
-        for (const task of colTasks) {
-          this.renderKanbanCard(taskList, task);
+    const groupTasks = (p) => {
+      if (p === "other") {
+        return allTasks.filter((t2) => !t2.priority || t2.priority === "none" /* None */);
+      }
+      return allTasks.filter((t2) => t2.priority === p);
+    };
+    const sidebar = kanbanEl.createDiv({ cls: "kanban-tree-sidebar" });
+    const sidebarHeader = sidebar.createDiv({ cls: "kanban-tree-header" });
+    sidebarHeader.createSpan({ cls: "kanban-tree-title", text: t("kanban").priorityView || "\u6309\u4F18\u5148\u7EA7" });
+    const sidebarList = sidebar.createDiv({ cls: "kanban-tree-list" });
+    const main = kanbanEl.createDiv({ cls: "kanban-list-main" });
+    const mainHeader = main.createDiv({ cls: "kanban-list-header" });
+    const mainTitle = mainHeader.createSpan({ cls: "kanban-list-title", text: t("kanban").allTasks || "\u5168\u90E8\u4EFB\u52A1" });
+    const mainBadge = mainHeader.createSpan({ cls: "kanban-list-badge", text: allTasks.length.toString() });
+    const mainContent = main.createDiv({ cls: "kanban-list-content" });
+    const renderRightAll = () => {
+      mainTitle.setText(t("kanban").allTasks || "\u5168\u90E8\u4EFB\u52A1");
+      mainBadge.setText(allTasks.length.toString());
+      mainContent.empty();
+      for (const pg of priorityGroups) {
+        const tasks = groupTasks(pg.value);
+        if (tasks.length === 0)
+          continue;
+        const section = mainContent.createDiv({ cls: "kanban-priority-section" });
+        const secHeader = section.createDiv({ cls: "kanban-priority-header" });
+        const secIcon = secHeader.createSpan({ cls: "kanban-priority-icon", text: pg.icon });
+        secIcon.setCssStyles({ color: pg.color });
+        secHeader.createSpan({ cls: "kanban-priority-name", text: pg.label });
+        secHeader.createSpan({ cls: "kanban-priority-count", text: tasks.length.toString() });
+        const cardList = section.createDiv({ cls: "kanban-card-list" });
+        if (pg.value === "other") {
+          const byFile = /* @__PURE__ */ new Map();
+          for (const task of tasks) {
+            if (!byFile.has(task.filePath))
+              byFile.set(task.filePath, []);
+            byFile.get(task.filePath).push(task);
+          }
+          for (const [filePath, fileTasks] of byFile) {
+            const fileGroup = cardList.createDiv({ cls: "kanban-file-group" });
+            const fileHeader = fileGroup.createDiv({ cls: "kanban-file-header" });
+            fileHeader.createSpan({ cls: "kanban-file-icon", text: "\u{1F4C4}" });
+            fileHeader.createSpan({ cls: "kanban-file-name", text: filePath.split("/").pop() || filePath });
+            const fileCardList = fileGroup.createDiv({ cls: "kanban-file-card-list" });
+            for (const task of fileTasks) {
+              this.renderKanbanCard(fileCardList, task);
+            }
+          }
+        } else {
+          for (const task of tasks) {
+            this.renderKanbanCard(cardList, task);
+          }
         }
-        if (colTasks.length === 0) {
-          const empty = taskList.createDiv({ cls: "kanban-empty" });
-          empty.setText(t("kanban").emptyTodo);
+      }
+      if (allTasks.length === 0) {
+        const empty = mainContent.createDiv({ cls: "kanban-empty" });
+        empty.setText(t("kanban").emptyTodo);
+      }
+    };
+    const renderRightFiltered = (pg) => {
+      const tasks = groupTasks(pg.value);
+      mainTitle.setText(`${pg.icon} ${pg.label}`);
+      mainBadge.setText(tasks.length.toString());
+      mainContent.empty();
+      if (tasks.length === 0) {
+        const empty = mainContent.createDiv({ cls: "kanban-empty" });
+        empty.setText(t("kanban").emptyTodo);
+        return;
+      }
+      if (pg.value === "other") {
+        const byFile = /* @__PURE__ */ new Map();
+        for (const task of tasks) {
+          if (!byFile.has(task.filePath))
+            byFile.set(task.filePath, []);
+          byFile.get(task.filePath).push(task);
         }
-        this.attachPriorityColumnDropTarget(colEl, col.priority);
+        for (const [filePath, fileTasks] of byFile) {
+          const fileGroup = mainContent.createDiv({ cls: "kanban-file-group" });
+          const fileHeader = fileGroup.createDiv({ cls: "kanban-file-header" });
+          fileHeader.createSpan({ cls: "kanban-file-icon", text: "\u{1F4C4}" });
+          fileHeader.createSpan({ cls: "kanban-file-name", text: filePath.split("/").pop() || filePath });
+          const fileCardList = fileGroup.createDiv({ cls: "kanban-file-card-list" });
+          for (const task of fileTasks) {
+            this.renderKanbanCard(fileCardList, task);
+          }
+        }
+      } else {
+        for (const task of tasks) {
+          this.renderKanbanCard(mainContent, task);
+        }
       }
+    };
+    const allRow = sidebarList.createDiv({ cls: "kanban-tree-row active" });
+    allRow.createSpan({ cls: "kanban-tree-toggle-placeholder" });
+    allRow.createSpan({ cls: "kanban-tree-pri", text: "\u{1F4CB}" });
+    allRow.createSpan({ cls: "kanban-tree-label", text: t("kanban").allTasks || "\u5168\u90E8\u4EFB\u52A1" });
+    allRow.createSpan({ cls: "kanban-tree-count", text: allTasks.length.toString() });
+    allRow.addEventListener("click", () => {
+      sidebarList.querySelectorAll(".kanban-tree-row.active").forEach((el) => el.removeClass("active"));
+      allRow.addClass("active");
+      renderRightAll();
+    });
+    for (const pg of priorityGroups) {
+      const tasks = groupTasks(pg.value);
+      const row = sidebarList.createDiv({ cls: "kanban-tree-row" });
+      row.createSpan({ cls: "kanban-tree-toggle-placeholder" });
+      const icon = row.createSpan({ cls: "kanban-tree-pri", text: pg.icon });
+      icon.setCssStyles({ color: pg.color });
+      row.createSpan({ cls: "kanban-tree-label", text: pg.label });
+      row.createSpan({ cls: "kanban-tree-count", text: tasks.length.toString() });
+      row.addEventListener("click", () => {
+        sidebarList.querySelectorAll(".kanban-tree-row.active").forEach((el) => el.removeClass("active"));
+        row.addClass("active");
+        renderRightFiltered(pg);
+      });
     }
-    if (this.filterStatus !== "not-done") {
-      const doneCol = kanbanEl.createDiv({ cls: "kanban-column done", attr: { "aria-label": t("kanban").done } });
-      const header = doneCol.createDiv({ cls: "kanban-column-header" });
-      const titleWrap = header.createDiv({ cls: "kanban-column-title" });
-      (0, import_obsidian3.setIcon)(titleWrap.createSpan({ cls: "kanban-column-icon" }), "check-circle-2");
-      titleWrap.createSpan({ cls: "kanban-column-name", text: t("kanban").done });
-      const badge = header.createSpan({ cls: "kanban-column-badge done" });
-      badge.setText(String(doneTasks.length));
-      const doneList = doneCol.createDiv({ cls: "kanban-task-list" });
-      for (const task of doneTasks) {
-        this.renderKanbanCard(doneList, task);
-      }
-      if (doneTasks.length === 0) {
-        const empty = doneList.createDiv({ cls: "kanban-empty" });
-        empty.setText(t("kanban").emptyDone);
-      }
-      this.attachColumnDropTarget(doneCol, true);
-    }
+    renderRightAll();
   }
   renderKanbanCard(container, task) {
     const priAttr = this.getPriorityDataAttr(task.priority);
@@ -2321,11 +2428,13 @@ var SmartTaskViewController = class {
       });
       addSubtaskBtn.addEventListener("click", doAdd);
       input.addEventListener("keydown", (ev) => {
+        ev.stopPropagation();
         if (ev.key === "Enter")
           doAdd();
         if (ev.key === "Escape")
           subtaskInput == null ? void 0 : subtaskInput.remove();
       });
+      input.addEventListener("click", (ev) => ev.stopPropagation());
       input.focus();
     });
     card.addEventListener("dragstart", (e) => {
@@ -2349,6 +2458,36 @@ var SmartTaskViewController = class {
         this.openTaskEditor(task);
       }
     });
+  }
+  renderKanbanSubtaskItem(parentEl, task, depth) {
+    const item = parentEl.createDiv({
+      cls: "kanban-subtask-item",
+      attr: { "data-depth": depth.toString() }
+    });
+    if (task.completed)
+      item.addClass("completed");
+    item.style.marginLeft = `${depth * 12}px`;
+    const row = item.createDiv({ cls: "kanban-subtask-row" });
+    const checkbox = row.createEl("input", { type: "checkbox", cls: "kanban-subtask-checkbox" });
+    checkbox.checked = task.completed;
+    checkbox.addEventListener("change", (e) => {
+      e.stopPropagation();
+      void this.plugin.toggleTaskStatus(task, checkbox.checked);
+    });
+    row.createSpan({ cls: "kanban-subtask-desc", text: task.description });
+    if (task.dueDate) {
+      row.createSpan({ cls: "kanban-subtask-due", text: `\u{1F4C5} ${this.formatDateShort(task.dueDate)}` });
+    }
+    if (task.subtasks.length > 0) {
+      const progress = this.getSubtaskProgress(task);
+      row.createSpan({ cls: "kanban-subtask-progress", text: `\u{1F4CB} ${progress.done}/${progress.total}` });
+    }
+    if (task.subtasks.length > 0) {
+      const childList = item.createDiv({ cls: "kanban-subtask-children" });
+      for (const sub of task.subtasks) {
+        this.renderKanbanSubtaskItem(childList, sub, depth + 1);
+      }
+    }
   }
   attachColumnDropTarget(col, completed) {
     col.addEventListener("dragover", (e) => {
@@ -2482,9 +2621,6 @@ var SmartTaskViewController = class {
       }
     });
     const content = item.createDiv({ cls: "task-content" });
-    content.addEventListener("click", () => {
-      this.plugin.openTaskFile(task.filePath, task.lineNumber);
-    });
     const main = content.createDiv({ cls: "task-main" });
     const priSpan = main.createSpan({
       cls: "task-priority",
@@ -2492,6 +2628,9 @@ var SmartTaskViewController = class {
     });
     priSpan.setCssStyles({ color: this.getPriorityColor(task.priority) });
     const descSpan = main.createSpan({ cls: "task-description" });
+    descSpan.addEventListener("click", (e) => {
+      this.plugin.openTaskFile(task.filePath, task.lineNumber);
+    });
     this.renderDescriptionWithLinks(descSpan, task);
     const meta = content.createDiv({ cls: "task-meta" });
     if (task.dueDate) {
@@ -2571,6 +2710,7 @@ var SmartTaskViewController = class {
         };
         addBtn.addEventListener("click", doAdd);
         input.addEventListener("keydown", (e) => {
+          e.stopPropagation();
           if (e.key === "Enter")
             doAdd();
           if (e.key === "Escape") {
@@ -3088,10 +3228,10 @@ var SmartTaskViewController = class {
     }
     for (let i = 0; i < sortedTasks.length; i++) {
       const task = sortedTasks[i];
-      const taskStart = task.startDate || task.dueDate;
+      const taskStart = task.createdDate || task.startDate || task.dueDate;
       if (!taskStart)
         continue;
-      const taskEnd = task.dueDate || task.startDate;
+      const taskEnd = task.dueDate || task.startDate || task.createdDate;
       const row = ganttBody.createDiv({ cls: "gantt-row" });
       if (task.completed)
         row.addClass("completed");
@@ -3164,6 +3304,15 @@ ${t("timeline").dueLabel}: ${task.dueDate || t("timeline").none}`;
         });
       }
     }
+    window.setTimeout(() => {
+      const todayKey = this.timelineGroupBy === "day" ? QueryEngine.getToday() : this.timelineGroupBy === "week" ? this.getTimelineGroupKey(QueryEngine.getToday()) : QueryEngine.getToday().substring(0, 7);
+      const todayIdx = unitToIndex.get(todayKey);
+      if (todayIdx === void 0 || totalUnits <= 1)
+        return;
+      const unitWidth = ganttHeader.scrollWidth / totalUnits;
+      const targetScroll = todayIdx * unitWidth - ganttHeader.clientWidth / 2;
+      ganttHeader.scrollLeft = Math.max(0, targetScroll);
+    }, 50);
   }
   renderZigzagTimeline(timelineEl, groups) {
     const zigzagContainer = timelineEl.createDiv({ cls: "zigzag-timeline" });
@@ -3335,9 +3484,6 @@ ${t("timeline").dueLabel}: ${task.dueDate || t("timeline").none}`;
         void this.plugin.toggleTaskStatus(task, checkbox.checked);
       });
       const content = item.createDiv({ cls: "timeline-task-content" });
-      content.addEventListener("click", () => {
-        void this.plugin.openTaskFile(task.filePath, task.lineNumber);
-      });
       const main = content.createDiv({ cls: "task-main" });
       if (hasSubtasks) {
         const expandBtn = main.createEl("button", { cls: "expand-btn", text: expanded ? "\u25BC" : "\u25B6" });
@@ -3357,6 +3503,9 @@ ${t("timeline").dueLabel}: ${task.dueDate || t("timeline").none}`;
       });
       priSpan.setCssStyles({ color: this.getPriorityColor(task.priority) });
       const descSpan = main.createSpan({ cls: "task-description" });
+      descSpan.addEventListener("click", (e) => {
+        void this.plugin.openTaskFile(task.filePath, task.lineNumber);
+      });
       this.renderDescriptionWithLinks(descSpan, task);
       const meta = content.createDiv({ cls: "task-meta" });
       meta.createSpan({ cls: "task-file", text: `\u{1F4C4} ${task.filePath.split("/").pop()}` });
@@ -4100,7 +4249,7 @@ var SmartTaskPlugin = class extends import_obsidian5.Plugin {
         if (task) {
           const indentMatch = line.match(/^(\s*)/);
           const indent = (indentMatch ? indentMatch[1] : "") + "  ";
-          const newLine = `${indent}- [ ] Subtask`;
+          const newLine = `${indent}- [ ] ${t("messages").subtask}`;
           editor.replaceRange(
             `
 ${newLine}`,
@@ -4201,10 +4350,20 @@ ${newLine}`,
   }
   async createQuickTask(description, dueDate, priority, parentTask) {
     try {
-      const targetFile = await this.getTargetFile();
-      if (!targetFile) {
-        new import_obsidian5.Notice(t("notices").noSaveLocation);
-        return;
+      let targetFile;
+      if (parentTask) {
+        const parentFile = this.app.vault.getAbstractFileByPath(parentTask.filePath);
+        targetFile = parentFile instanceof import_obsidian5.TFile ? parentFile : null;
+        if (!targetFile) {
+          new import_obsidian5.Notice(t("notices").noSaveLocation);
+          return;
+        }
+      } else {
+        targetFile = await this.getTargetFile();
+        if (!targetFile) {
+          new import_obsidian5.Notice(t("notices").noSaveLocation);
+          return;
+        }
       }
       const content = await this.app.vault.read(targetFile);
       const lines = content.split("\n");
@@ -4215,9 +4374,9 @@ ${newLine}`,
         const parentLine = parentLineIdx >= 0 && parentLineIdx < lines.length ? lines[parentLineIdx] : "";
         const parentIndentMatch = parentLine.match(/^(\s*)/);
         parentIndent = parentIndentMatch ? parentIndentMatch[1] : "";
-        baseIndent = parentIndent + "  ";
+        baseIndent = parentIndent + "	";
       }
-      let taskLine = `${baseIndent}- [ ] ${description}`;
+      let taskLine = baseIndent + "- [ ] " + description;
       const effectivePriority = priority != null ? priority : this.settings.defaultPriority !== "none" /* None */ ? this.settings.defaultPriority : void 0;
       if (effectivePriority) {
         switch (effectivePriority) {
@@ -4241,20 +4400,26 @@ ${newLine}`,
       if (dueDate) {
         taskLine += ` \u{1F4C5} ${dueDate}`;
       }
-      const startDate = formatLocalDate(/* @__PURE__ */ new Date());
-      taskLine += ` \u{1F6EB} ${startDate}`;
-      taskLine += ` \u{1F58A} ${startDate}`;
+      const createdDate = formatLocalDate(/* @__PURE__ */ new Date());
+      taskLine += ` \u{1F58A} ${createdDate}`;
       if (this.settings.autoAddTags && this.settings.autoAddTags.length > 0) {
         const tagsStr = this.settings.autoAddTags.map((tag) => `#${tag}`).join(" ");
         taskLine += ` ${tagsStr}`;
       }
       if (parentTask) {
-        let insertIndex = parentTask.lineNumber;
+        const parentLineIdx = parentTask.lineNumber - 1;
+        if (parentLineIdx < 0 || parentLineIdx >= lines.length) {
+          new import_obsidian5.Notice(t("notices").createFailed);
+          return;
+        }
+        let insertIndex = parentLineIdx + 1;
         while (insertIndex < lines.length) {
-          const line = lines[insertIndex];
-          const lineIndentMatch = line.match(/^(\s*)/);
-          const lineIndent = lineIndentMatch ? lineIndentMatch[1] : "";
-          if (line.trim() === "" || lineIndent.length > parentIndent.length) {
+          const l = lines[insertIndex];
+          if (l.trim() === "") {
+            break;
+          }
+          const li = (l.match(/^(\s*)/) || ["", ""])[1].length;
+          if (li > parentIndent.length) {
             insertIndex++;
           } else {
             break;
@@ -4296,10 +4461,16 @@ ${newLine}`,
     return await this.getInboxFile();
   }
   async getDailyNoteFile() {
+    var _a, _b, _c;
     try {
-      const today = /* @__PURE__ */ new Date();
-      const dateStr = this.formatDate(today, "YYYY-MM-DD");
-      const dailyNotePath = `${dateStr}.md`;
+      const internalPlugins = this.app.internalPlugins;
+      const dailyNotesPlugin = (_a = internalPlugins == null ? void 0 : internalPlugins.getPluginById) == null ? void 0 : _a.call(internalPlugins, "daily-notes");
+      const dnOptions = (_c = (_b = dailyNotesPlugin == null ? void 0 : dailyNotesPlugin.instance) == null ? void 0 : _b.options) != null ? _c : {};
+      const dnFolder = (dnOptions.folder || "").trim();
+      const dnFormat = dnOptions.format || "YYYY-MM-DD";
+      const dateStr = this.formatDate(/* @__PURE__ */ new Date(), dnFormat);
+      const fileName = `${dateStr}.md`;
+      const dailyNotePath = dnFolder ? `${dnFolder.replace(/\/+$/, "")}/${fileName}` : fileName;
       const existing = this.app.vault.getAbstractFileByPath(dailyNotePath);
       if (existing instanceof import_obsidian5.TFile) {
         return existing;

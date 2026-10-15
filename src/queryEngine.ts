@@ -1,5 +1,6 @@
 import { Task, TaskQuery, TaskGroup, GroupField, SortField, TaskPriority } from './types';
 import { formatLocalDate } from './dateUtils';
+import { t } from './i18n';
 
 export class QueryEngine {
 	static query(tasks: Task[], query: TaskQuery): Task[] {
@@ -89,7 +90,7 @@ export class QueryEngine {
 
 			case GroupField.DueDate:
 				for (const task of tasks) {
-					const key = task.dueDate || '无截止日期';
+					const key = task.dueDate || t('groups').noDueDate;
 					if (!groups.has(key)) {
 						groups.set(key, []);
 					}
@@ -100,7 +101,7 @@ export class QueryEngine {
 			case GroupField.Tag:
 				for (const task of tasks) {
 					if (task.tags.length === 0) {
-						const key = '无标签';
+						const key = t('groups').noTag;
 						if (!groups.has(key)) groups.set(key, []);
 						groups.get(key)!.push(task);
 					} else {
@@ -115,7 +116,7 @@ export class QueryEngine {
 
 			case GroupField.None:
 			default:
-				groups.set('全部任务', tasks);
+				groups.set(t('groups').allTasks, tasks);
 		}
 
 		const result: TaskGroup[] = [];
@@ -126,9 +127,10 @@ export class QueryEngine {
 		}
 
 		if (groupBy === GroupField.DueDate) {
+			const noDueDateLabel = t('groups').noDueDate;
 			result.sort((a, b) => {
-				if (a.name === '无截止日期') return 1;
-				if (b.name === '无截止日期') return -1;
+				if (a.name === noDueDateLabel) return 1;
+				if (b.name === noDueDateLabel) return -1;
 				return a.name.localeCompare(b.name);
 			});
 		}
@@ -189,13 +191,13 @@ export class QueryEngine {
 
 	private static priorityLabel(priority: TaskPriority): string {
 		switch (priority) {
-			case TaskPriority.Highest: return '🔝 最高';
-			case TaskPriority.High: return '🔺 高';
-			case TaskPriority.Medium: return '🔼 中';
-			case TaskPriority.Low: return '🔽 低';
-			case TaskPriority.Lowest: return '⏬ 最低';
-			case TaskPriority.None: return '➖ 无优先级';
-			default: return '➖ 无优先级';
+			case TaskPriority.Highest: return `🔝 ${t('priorities').highest}`;
+			case TaskPriority.High: return `🔺 ${t('priorities').high}`;
+			case TaskPriority.Medium: return `🔼 ${t('priorities').medium}`;
+			case TaskPriority.Low: return `🔽 ${t('priorities').low}`;
+			case TaskPriority.Lowest: return `⏬ ${t('priorities').lowest}`;
+			case TaskPriority.None: return `➖ ${t('priorities').none}`;
+			default: return `➖ ${t('priorities').none}`;
 		}
 	}
 

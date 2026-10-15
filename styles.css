@@ -3297,3 +3297,229 @@
 .smarttask-wrapper .subtask-item:not(:last-child) {
 	border-bottom: 1px solid color-mix(in srgb, var(--background-modifier-border) 45%, var(--text-faint));
 }
+
+/* ===== 看板树布局：左侧树 + 右侧列表 ===== */
+.smarttask-wrapper .kanban-tree-layout {
+	display: flex;
+	gap: 0;
+	height: 100%;
+	overflow: hidden;
+}
+
+.smarttask-wrapper .kanban-tree-sidebar {
+	width: 260px;
+	min-width: 200px;
+	max-width: 340px;
+	border-right: 1px solid var(--background-modifier-border);
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+	background: color-mix(in srgb, var(--background-secondary) 50%, transparent);
+}
+
+.smarttask-wrapper .kanban-tree-header {
+	padding: 10px 12px;
+	border-bottom: 1px solid var(--background-modifier-border);
+	font-weight: 600;
+	font-size: 13px;
+	color: var(--text-normal);
+}
+
+.smarttask-wrapper .kanban-tree-list {
+	flex: 1;
+	overflow-y: auto;
+	padding: 6px 0;
+}
+
+.smarttask-wrapper .kanban-tree-node {
+	user-select: none;
+}
+
+.smarttask-wrapper .kanban-tree-row {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	padding: 5px 8px;
+	cursor: pointer;
+	font-size: 13px;
+	color: var(--text-normal);
+	border-left: 2px solid transparent;
+	transition: background 0.12s;
+}
+
+.smarttask-wrapper .kanban-tree-row:hover {
+	background: var(--background-modifier-hover);
+}
+
+.smarttask-wrapper .kanban-tree-row.active {
+	background: var(--background-modifier-active);
+	border-left-color: var(--interactive-accent);
+}
+
+.smarttask-wrapper .kanban-tree-row.completed .kanban-tree-label {
+	text-decoration: line-through;
+	color: var(--text-faint);
+}
+
+.smarttask-wrapper .kanban-tree-toggle {
+	font-size: 9px;
+	width: 14px;
+	text-align: center;
+	color: var(--text-faint);
+	cursor: pointer;
+	flex-shrink: 0;
+}
+
+.smarttask-wrapper .kanban-tree-toggle-placeholder {
+	width: 14px;
+	flex-shrink: 0;
+}
+
+.smarttask-wrapper .kanban-tree-pri {
+	font-size: 11px;
+	flex-shrink: 0;
+}
+
+.smarttask-wrapper .kanban-tree-label {
+	flex: 1;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.smarttask-wrapper .kanban-tree-count {
+	font-size: 11px;
+	color: var(--text-faint);
+	flex-shrink: 0;
+}
+
+.smarttask-wrapper .kanban-tree-done-group {
+	margin-top: 8px;
+	border-top: 1px solid var(--background-modifier-border);
+	padding-top: 6px;
+}
+
+.smarttask-wrapper .kanban-tree-done-header {
+	padding: 4px 12px;
+	font-size: 11px;
+	font-weight: 600;
+	color: var(--text-faint);
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+}
+
+.smarttask-wrapper .kanban-list-main {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+}
+
+.smarttask-wrapper .kanban-list-header {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 10px 16px;
+	border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.smarttask-wrapper .kanban-list-title {
+	font-weight: 600;
+	font-size: 14px;
+	color: var(--text-normal);
+	flex: 1;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.smarttask-wrapper .kanban-list-badge {
+	background: var(--background-modifier-hover);
+	color: var(--text-faint);
+	font-size: 11px;
+	padding: 2px 8px;
+	border-radius: 10px;
+}
+
+.smarttask-wrapper .kanban-list-content {
+	flex: 1;
+	overflow-y: auto;
+	padding: 12px 16px;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+/* ===== 看板优先级分组 ===== */
+.smarttask-wrapper .kanban-priority-section {
+	margin-bottom: 16px;
+}
+
+.smarttask-wrapper .kanban-priority-header {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	padding: 6px 0;
+	margin-bottom: 8px;
+	border-bottom: 1px solid var(--background-modifier-border);
+	font-weight: 600;
+	font-size: 13px;
+	color: var(--text-normal);
+}
+
+.smarttask-wrapper .kanban-priority-icon {
+	font-size: 14px;
+}
+
+.smarttask-wrapper .kanban-priority-name {
+	flex: 1;
+}
+
+.smarttask-wrapper .kanban-priority-count {
+	background: var(--background-modifier-hover);
+	color: var(--text-faint);
+	font-size: 11px;
+	padding: 2px 8px;
+	border-radius: 10px;
+}
+
+.smarttask-wrapper .kanban-card-list {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+/* ===== 看板其他组按笔记文件分组 ===== */
+.smarttask-wrapper .kanban-file-group {
+	margin-bottom: 12px;
+}
+
+.smarttask-wrapper .kanban-file-header {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	padding: 4px 8px;
+	margin-bottom: 6px;
+	background: var(--background-secondary);
+	border-radius: 4px;
+	font-size: 12px;
+	color: var(--text-muted);
+}
+
+.smarttask-wrapper .kanban-file-icon {
+	font-size: 12px;
+}
+
+.smarttask-wrapper .kanban-file-name {
+	flex: 1;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.smarttask-wrapper .kanban-file-card-list {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	padding-left: 8px;
+}

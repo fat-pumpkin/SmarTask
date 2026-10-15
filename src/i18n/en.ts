@@ -46,7 +46,13 @@ export const en = {
 		high: 'High',
 		medium: 'Medium',
 		low: 'Low',
-		lowest: 'Lowest'
+		lowest: 'Lowest',
+		none: 'No priority'
+	},
+	groups: {
+		noDueDate: 'No due date',
+		noTag: 'No tag',
+		allTasks: 'All tasks'
 	},
 	saveTargets: {
 		inbox: 'Inbox',
@@ -84,7 +90,8 @@ export const en = {
 		startLabel: 'Start',
 		dueLabel: 'Due',
 		none: 'None',
-		monthFormat: '{n}'
+		monthFormat: '{n}',
+		undated: 'Undated'
 	},
 	wheelPicker: {
 		daySuffix: '',
@@ -142,7 +149,10 @@ export const en = {
 		todo: 'Todo',
 		done: 'Done',
 		emptyTodo: 'No pending tasks',
-		emptyDone: 'No completed tasks'
+		emptyDone: 'No completed tasks',
+		treeView: 'Task Tree',
+		allTasks: 'All Tasks',
+		priorityView: 'By Priority'
 	},
 	tooltips: {
 		editTask: 'Edit task',

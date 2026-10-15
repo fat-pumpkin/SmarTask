@@ -105,6 +105,18 @@ export class SmartTaskViewController {
 	private get filteredTasks(): Task[] {
 		return QueryEngine.query(this.tasks, this.buildQuery());
 	}
+	/** 过滤掉嵌套子任务，只返回顶级任务（子任务通过递归渲染显示在父任务下） */
+	private get topLevelTasks(): Task[] {
+		const visibleIds = new Set<string>();
+		for (const t of this.filteredTasks) visibleIds.add(t.id);
+		return this.filteredTasks.filter((t) => {
+			if (!t.parentId) return true;
+			// 有父任务且父任务也在可见列表中 → 是嵌套子任务，不单独渲染
+			if (visibleIds.has(t.parentId)) return false;
+			// 父任务不在可见列表中 → 视为顶级任务渲染
+			return true;
+		});
+	}
 	private get groupedTasks(): TaskGroup[] {
 		return QueryEngine.groupTasks(this.filteredTasks, this.plugin.settings.groupBy);
 	}
@@ -466,11 +478,13 @@ export class SmartTaskViewController {
 		addBtn.addEventListener('click', doSubmit);
 
 		textarea.addEventListener('keydown', (e: KeyboardEvent) => {
+			e.stopPropagation();
 			if (e.key === 'Enter' && !e.shiftKey) {
 				e.preventDefault();
 				doSubmit();
 			}
 		});
+		textarea.addEventListener('click', (e) => e.stopPropagation());
 
 		const autoResize = () => {
 			textarea.setCssStyles({ height: 'auto' });
@@ -673,7 +687,7 @@ export class SmartTaskViewController {
 				nestedSubtaskIds.add(t2.id);
 		}
 		for (const group of groups) {
-			const displayTasks = group.tasks.filter((t2) => !(t2.parentId && nestedSubtaskIds.has(t2.parentId)));
+			const displayTasks = group.tasks.filter((t2) => !nestedSubtaskIds.has(t2.id));
 			if (displayTasks.length === 0)
 				continue;
 			if (group.name) {
@@ -694,61 +708,154 @@ export class SmartTaskViewController {
 		}
 	}
 	private renderKanbanView(container: HTMLElement): void {
-		const kanbanEl = container.createDiv({ cls: 'kanban-view' });
-		const todoTasks = this.filteredTasks.filter((t2) => !t2.completed);
-		const doneTasks = this.filteredTasks.filter((t2) => t2.completed);
-		const priorityColumns: { priority: TaskPriority; label: string; icon: string; color: string }[] = [
-			{ priority: TaskPriority.Highest, label: t('priorities').highest, icon: 'flame', color: 'var(--priority-highest)' },
-			{ priority: TaskPriority.High, label: t('priorities').high, icon: 'arrow-up', color: 'var(--priority-high)' },
-			{ priority: TaskPriority.Medium, label: t('priorities').medium, icon: 'minus', color: 'var(--priority-medium)' },
-			{ priority: TaskPriority.Low, label: t('priorities').low, icon: 'arrow-down', color: 'var(--priority-low)' },
-			{ priority: TaskPriority.Lowest, label: t('priorities').lowest, icon: 'chevrons-down', color: 'var(--priority-lowest)' }
+		const kanbanEl = container.createDiv({ cls: 'kanban-view kanban-tree-layout' });
+		const allTasks = this.filteredTasks;
+
+		// 优先级配置
+		const priorityGroups: { value: TaskPriority | 'other'; label: string; icon: string; color: string }[] = [
+			{ value: TaskPriority.Highest, label: t('priorities').highest, icon: '🔥', color: 'var(--priority-highest)' },
+			{ value: TaskPriority.High, label: t('priorities').high, icon: '🔺', color: 'var(--priority-high)' },
+			{ value: TaskPriority.Medium, label: t('priorities').medium, icon: '🔼', color: 'var(--priority-medium)' },
+			{ value: TaskPriority.Low, label: t('priorities').low, icon: '🔽', color: 'var(--priority-low)' },
+			{ value: TaskPriority.Lowest, label: t('priorities').lowest, icon: '⏬', color: 'var(--priority-lowest)' },
+			{ value: 'other', label: t('priorities').none || '其他', icon: '📄', color: 'var(--text-faint)' }
 		];
-		if (this.filterStatus !== 'done') {
-			for (const col of priorityColumns) {
-				const colTasks = todoTasks.filter((t2) => t2.priority === col.priority);
-				const colEl = kanbanEl.createDiv({
-					cls: 'kanban-column',
-					attr: { 'data-priority': col.priority, 'aria-label': col.label }
-				});
-				const header = colEl.createDiv({ cls: 'kanban-column-header' });
-				const titleWrap = header.createDiv({ cls: 'kanban-column-title' });
-				const iconWrap = titleWrap.createSpan({ cls: 'kanban-column-icon' });
-				iconWrap.setCssStyles({ color: col.color });
-				setIcon(iconWrap, col.icon);
-				titleWrap.createSpan({ cls: 'kanban-column-name', text: col.label });
-				const badge = header.createSpan({ cls: 'kanban-column-badge' });
-				badge.setCssStyles({ background: col.color });
-				badge.setText(String(colTasks.length));
-				const taskList = colEl.createDiv({ cls: 'kanban-task-list' });
-				for (const task of colTasks) {
-					this.renderKanbanCard(taskList, task);
+
+		// 按优先级分组
+		const groupTasks = (p: TaskPriority | 'other'): Task[] => {
+			if (p === 'other') {
+				return allTasks.filter((t) => !t.priority || t.priority === TaskPriority.None);
+			}
+			return allTasks.filter((t) => t.priority === p);
+		};
+
+		// 左侧：优先级分组列表
+		const sidebar = kanbanEl.createDiv({ cls: 'kanban-tree-sidebar' });
+		const sidebarHeader = sidebar.createDiv({ cls: 'kanban-tree-header' });
+		sidebarHeader.createSpan({ cls: 'kanban-tree-title', text: t('kanban').priorityView || '按优先级' });
+		const sidebarList = sidebar.createDiv({ cls: 'kanban-tree-list' });
+
+		// 右侧：任务列表
+		const main = kanbanEl.createDiv({ cls: 'kanban-list-main' });
+		const mainHeader = main.createDiv({ cls: 'kanban-list-header' });
+		const mainTitle = mainHeader.createSpan({ cls: 'kanban-list-title', text: t('kanban').allTasks || '全部任务' });
+		const mainBadge = mainHeader.createSpan({ cls: 'kanban-list-badge', text: allTasks.length.toString() });
+		const mainContent = main.createDiv({ cls: 'kanban-list-content' });
+
+		// 渲染右侧：按优先级分组展示
+		const renderRightAll = () => {
+			mainTitle.setText(t('kanban').allTasks || '全部任务');
+			mainBadge.setText(allTasks.length.toString());
+			mainContent.empty();
+
+			for (const pg of priorityGroups) {
+				const tasks = groupTasks(pg.value);
+				if (tasks.length === 0) continue;
+
+				const section = mainContent.createDiv({ cls: 'kanban-priority-section' });
+				const secHeader = section.createDiv({ cls: 'kanban-priority-header' });
+				const secIcon = secHeader.createSpan({ cls: 'kanban-priority-icon', text: pg.icon });
+				secIcon.setCssStyles({ color: pg.color });
+				secHeader.createSpan({ cls: 'kanban-priority-name', text: pg.label });
+				secHeader.createSpan({ cls: 'kanban-priority-count', text: tasks.length.toString() });
+
+				const cardList = section.createDiv({ cls: 'kanban-card-list' });
+
+				// "其他"组：按所属笔记文件进一步分组
+				if (pg.value === 'other') {
+					const byFile = new Map<string, Task[]>();
+					for (const task of tasks) {
+						if (!byFile.has(task.filePath)) byFile.set(task.filePath, []);
+						byFile.get(task.filePath)!.push(task);
+					}
+					for (const [filePath, fileTasks] of byFile) {
+						const fileGroup = cardList.createDiv({ cls: 'kanban-file-group' });
+						const fileHeader = fileGroup.createDiv({ cls: 'kanban-file-header' });
+						fileHeader.createSpan({ cls: 'kanban-file-icon', text: '📄' });
+						fileHeader.createSpan({ cls: 'kanban-file-name', text: filePath.split('/').pop() || filePath });
+						const fileCardList = fileGroup.createDiv({ cls: 'kanban-file-card-list' });
+						for (const task of fileTasks) {
+							this.renderKanbanCard(fileCardList, task);
+						}
+					}
+				} else {
+					for (const task of tasks) {
+						this.renderKanbanCard(cardList, task);
+					}
 				}
-				if (colTasks.length === 0) {
-					const empty = taskList.createDiv({ cls: 'kanban-empty' });
-					empty.setText(t('kanban').emptyTodo);
+			}
+
+			if (allTasks.length === 0) {
+				const empty = mainContent.createDiv({ cls: 'kanban-empty' });
+				empty.setText(t('kanban').emptyTodo);
+			}
+		};
+
+		// 渲染右侧：筛选显示某个优先级的任务
+		const renderRightFiltered = (pg: typeof priorityGroups[0]) => {
+			const tasks = groupTasks(pg.value);
+			mainTitle.setText(`${pg.icon} ${pg.label}`);
+			mainBadge.setText(tasks.length.toString());
+			mainContent.empty();
+
+			if (tasks.length === 0) {
+				const empty = mainContent.createDiv({ cls: 'kanban-empty' });
+				empty.setText(t('kanban').emptyTodo);
+				return;
+			}
+
+			if (pg.value === 'other') {
+				const byFile = new Map<string, Task[]>();
+				for (const task of tasks) {
+					if (!byFile.has(task.filePath)) byFile.set(task.filePath, []);
+					byFile.get(task.filePath)!.push(task);
 				}
-				this.attachPriorityColumnDropTarget(colEl, col.priority);
+				for (const [filePath, fileTasks] of byFile) {
+					const fileGroup = mainContent.createDiv({ cls: 'kanban-file-group' });
+					const fileHeader = fileGroup.createDiv({ cls: 'kanban-file-header' });
+					fileHeader.createSpan({ cls: 'kanban-file-icon', text: '📄' });
+					fileHeader.createSpan({ cls: 'kanban-file-name', text: filePath.split('/').pop() || filePath });
+					const fileCardList = fileGroup.createDiv({ cls: 'kanban-file-card-list' });
+					for (const task of fileTasks) {
+						this.renderKanbanCard(fileCardList, task);
+					}
+				}
+			} else {
+				for (const task of tasks) {
+					this.renderKanbanCard(mainContent, task);
+				}
 			}
+		};
+
+		// 渲染左侧优先级分组
+		const allRow = sidebarList.createDiv({ cls: 'kanban-tree-row active' });
+		allRow.createSpan({ cls: 'kanban-tree-toggle-placeholder' });
+		allRow.createSpan({ cls: 'kanban-tree-pri', text: '📋' });
+		allRow.createSpan({ cls: 'kanban-tree-label', text: t('kanban').allTasks || '全部任务' });
+		allRow.createSpan({ cls: 'kanban-tree-count', text: allTasks.length.toString() });
+		allRow.addEventListener('click', () => {
+			sidebarList.querySelectorAll('.kanban-tree-row.active').forEach((el) => el.removeClass('active'));
+			allRow.addClass('active');
+			renderRightAll();
+		});
+
+		for (const pg of priorityGroups) {
+			const tasks = groupTasks(pg.value);
+			const row = sidebarList.createDiv({ cls: 'kanban-tree-row' });
+			row.createSpan({ cls: 'kanban-tree-toggle-placeholder' });
+			const icon = row.createSpan({ cls: 'kanban-tree-pri', text: pg.icon });
+			icon.setCssStyles({ color: pg.color });
+			row.createSpan({ cls: 'kanban-tree-label', text: pg.label });
+			row.createSpan({ cls: 'kanban-tree-count', text: tasks.length.toString() });
+			row.addEventListener('click', () => {
+				sidebarList.querySelectorAll('.kanban-tree-row.active').forEach((el) => el.removeClass('active'));
+				row.addClass('active');
+				renderRightFiltered(pg);
+			});
 		}
-		if (this.filterStatus !== 'not-done') {
-			const doneCol = kanbanEl.createDiv({ cls: 'kanban-column done', attr: { 'aria-label': t('kanban').done } });
-			const header = doneCol.createDiv({ cls: 'kanban-column-header' });
-			const titleWrap = header.createDiv({ cls: 'kanban-column-title' });
-			setIcon(titleWrap.createSpan({ cls: 'kanban-column-icon' }), 'check-circle-2');
-			titleWrap.createSpan({ cls: 'kanban-column-name', text: t('kanban').done });
-			const badge = header.createSpan({ cls: 'kanban-column-badge done' });
-			badge.setText(String(doneTasks.length));
-			const doneList = doneCol.createDiv({ cls: 'kanban-task-list' });
-			for (const task of doneTasks) {
-				this.renderKanbanCard(doneList, task);
-			}
-			if (doneTasks.length === 0) {
-				const empty = doneList.createDiv({ cls: 'kanban-empty' });
-				empty.setText(t('kanban').emptyDone);
-			}
-			this.attachColumnDropTarget(doneCol, true);
-		}
+
+		// 默认右侧显示全部
+		renderRightAll();
 	}
 	private renderKanbanCard(container: HTMLElement, task: Task): void {
 		const priAttr = this.getPriorityDataAttr(task.priority);
@@ -841,11 +948,13 @@ export class SmartTaskViewController {
 			});
 			addSubtaskBtn.addEventListener('click', doAdd);
 			input.addEventListener('keydown', (ev) => {
+				ev.stopPropagation();
 				if (ev.key === 'Enter')
 					doAdd();
 				if (ev.key === 'Escape')
 					subtaskInput == null ? void 0 : subtaskInput.remove();
 			});
+			input.addEventListener('click', (ev) => ev.stopPropagation());
 			input.focus();
 		});
 		card.addEventListener('dragstart', (e) => {
@@ -868,6 +977,38 @@ export class SmartTaskViewController {
 				this.openTaskEditor(task);
 			}
 		});
+	}
+	private renderKanbanSubtaskItem(parentEl: HTMLElement, task: Task, depth: number): void {
+		const item = parentEl.createDiv({
+			cls: 'kanban-subtask-item',
+			attr: { 'data-depth': depth.toString() }
+		});
+		if (task.completed) item.addClass('completed');
+		item.style.marginLeft = `${depth * 12}px`;
+
+		const row = item.createDiv({ cls: 'kanban-subtask-row' });
+		const checkbox = row.createEl('input', { type: 'checkbox', cls: 'kanban-subtask-checkbox' });
+		checkbox.checked = task.completed;
+		checkbox.addEventListener('change', (e) => {
+			e.stopPropagation();
+			void this.plugin.toggleTaskStatus(task, checkbox.checked);
+		});
+		row.createSpan({ cls: 'kanban-subtask-desc', text: task.description });
+		if (task.dueDate) {
+			row.createSpan({ cls: 'kanban-subtask-due', text: `📅 ${this.formatDateShort(task.dueDate)}` });
+		}
+		if (task.subtasks.length > 0) {
+			const progress = this.getSubtaskProgress(task);
+			row.createSpan({ cls: 'kanban-subtask-progress', text: `📋 ${progress.done}/${progress.total}` });
+		}
+
+		// 递归渲染更深层的子任务
+		if (task.subtasks.length > 0) {
+			const childList = item.createDiv({ cls: 'kanban-subtask-children' });
+			for (const sub of task.subtasks) {
+				this.renderKanbanSubtaskItem(childList, sub, depth + 1);
+			}
+		}
 	}
 	private attachColumnDropTarget(col: HTMLElement, completed: boolean): void {
 		col.addEventListener('dragover', (e) => {
@@ -997,9 +1138,6 @@ export class SmartTaskViewController {
 			}
 		});
 		const content = item.createDiv({ cls: 'task-content' });
-		content.addEventListener('click', () => {
-			this.plugin.openTaskFile(task.filePath, task.lineNumber);
-		});
 		const main = content.createDiv({ cls: 'task-main' });
 		const priSpan = main.createSpan({
 			cls: 'task-priority',
@@ -1007,6 +1145,10 @@ export class SmartTaskViewController {
 		});
 		priSpan.setCssStyles({ color: this.getPriorityColor(task.priority) });
 		const descSpan = main.createSpan({ cls: 'task-description' });
+		descSpan.addEventListener('click', (e) => {
+			// wikilink / tag 内部已 stopPropagation，此处仅处理描述文本点击
+			this.plugin.openTaskFile(task.filePath, task.lineNumber);
+		});
 		this.renderDescriptionWithLinks(descSpan, task);
 		const meta = content.createDiv({ cls: 'task-meta' });
 		if (task.dueDate) {
@@ -1083,9 +1225,12 @@ export class SmartTaskViewController {
 							addSubtaskEl = null;
 						}
 					}
-}
+				};
 				addBtn.addEventListener('click', doAdd);
 				input.addEventListener('keydown', (e) => {
+					// 阻止键盘事件冒泡到 item 的全局 keydown 监听器，
+					// 否则空格/Enter/e/方向键会被误判为任务项快捷键
+					e.stopPropagation();
 					if (e.key === 'Enter')
 						doAdd();
 					if (e.key === 'Escape') {
@@ -1599,9 +1744,10 @@ export class SmartTaskViewController {
 		}
 		for (let i = 0; i < sortedTasks.length; i++) {
 			const task = sortedTasks[i];
-			const taskStart = task.startDate || task.dueDate;
+			// 条形图：起始于创建时间（🖊），终止于截至时间（📅）；缺失时回退
+			const taskStart = task.createdDate || task.startDate || task.dueDate;
 			if (!taskStart) continue;
-			const taskEnd = task.dueDate || task.startDate;
+			const taskEnd = task.dueDate || task.startDate || task.createdDate;
 			const row = ganttBody.createDiv({ cls: 'gantt-row' });
 			if (task.completed)
 				row.addClass('completed');
@@ -1674,6 +1820,19 @@ ${t('timeline').dueLabel}: ${task.dueDate || t('timeline').none}`;
 				});
 			}
 		}
+		// 甘特图默认滚动到今天居中
+		window.setTimeout(() => {
+			const todayKey = this.timelineGroupBy === 'day'
+				? QueryEngine.getToday()
+				: this.timelineGroupBy === 'week'
+					? this.getTimelineGroupKey(QueryEngine.getToday())
+					: QueryEngine.getToday().substring(0, 7);
+			const todayIdx = unitToIndex.get(todayKey);
+			if (todayIdx === undefined || totalUnits <= 1) return;
+			const unitWidth = ganttHeader.scrollWidth / totalUnits;
+			const targetScroll = todayIdx * unitWidth - ganttHeader.clientWidth / 2;
+			ganttHeader.scrollLeft = Math.max(0, targetScroll);
+		}, 50);
 	}
 	private renderZigzagTimeline(timelineEl: HTMLElement, groups: TimelineGroup[]): void {
 		const zigzagContainer = timelineEl.createDiv({ cls: 'zigzag-timeline' });
@@ -1845,9 +2004,6 @@ ${t('timeline').dueLabel}: ${task.dueDate || t('timeline').none}`;
 				void this.plugin.toggleTaskStatus(task, checkbox.checked);
 			});
 			const content = item.createDiv({ cls: 'timeline-task-content' });
-			content.addEventListener('click', () => {
-				void this.plugin.openTaskFile(task.filePath, task.lineNumber);
-			});
 			const main = content.createDiv({ cls: 'task-main' });
 			if (hasSubtasks) {
 				const expandBtn = main.createEl('button', { cls: 'expand-btn', text: expanded ? '\u25BC' : '\u25B6' });
@@ -1867,6 +2023,9 @@ ${t('timeline').dueLabel}: ${task.dueDate || t('timeline').none}`;
 			});
 			priSpan.setCssStyles({ color: this.getPriorityColor(task.priority) });
 			const descSpan = main.createSpan({ cls: 'task-description' });
+			descSpan.addEventListener('click', (e) => {
+				void this.plugin.openTaskFile(task.filePath, task.lineNumber);
+			});
 			this.renderDescriptionWithLinks(descSpan, task);
 			const meta = content.createDiv({ cls: 'task-meta' });
 			meta.createSpan({ cls: 'task-file', text: `\u{1F4C4} ${task.filePath.split('/').pop()}` });

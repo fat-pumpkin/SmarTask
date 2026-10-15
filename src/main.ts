@@ -11,6 +11,17 @@ import { formatLocalDate } from './dateUtils';
 
 const FOCUS_DELAY_MS = 100;
 
+interface DailyNotesPluginInstance {
+	options: {
+		folder?: string;
+		format?: string;
+	};
+}
+
+interface InternalPlugins {
+	getPluginById(id: string): { instance?: DailyNotesPluginInstance } | undefined;
+}
+
 export default class SmartTaskPlugin extends Plugin {
 	settings: SmartTaskSettings = DEFAULT_SETTINGS;
 	private taskIndex: TaskIndex | null = null;
@@ -83,7 +94,7 @@ export default class SmartTaskPlugin extends Plugin {
 				if (task) {
 					const indentMatch = line.match(/^(\s*)/);
 					const indent = (indentMatch ? indentMatch[1] : '') + '  ';
-					const newLine = `${indent}- [ ] Subtask`;
+					const newLine = `${indent}- [ ] ${t('messages').subtask}`;
 					editor.replaceRange(
 						`\n${newLine}`,
 						{ line: cursor.line, ch: line.length }
@@ -202,10 +213,21 @@ export default class SmartTaskPlugin extends Plugin {
 
 	async createQuickTask(description: string, dueDate?: string, priority?: TaskPriority, parentTask?: Task): Promise<void> {
 		try {
-			const targetFile = await this.getTargetFile();
-			if (!targetFile) {
-				new Notice(t('notices').noSaveLocation);
-				return;
+			// 子任务必须写入父任务所在的文件，而不是默认保存位置
+			let targetFile: TFile | null;
+			if (parentTask) {
+				const parentFile = this.app.vault.getAbstractFileByPath(parentTask.filePath);
+				targetFile = parentFile instanceof TFile ? parentFile : null;
+				if (!targetFile) {
+					new Notice(t('notices').noSaveLocation);
+					return;
+				}
+			} else {
+				targetFile = await this.getTargetFile();
+				if (!targetFile) {
+					new Notice(t('notices').noSaveLocation);
+					return;
+				}
 			}
 
 			const content = await this.app.vault.read(targetFile);
@@ -218,10 +240,11 @@ export default class SmartTaskPlugin extends Plugin {
 				const parentLine = parentLineIdx >= 0 && parentLineIdx < lines.length ? lines[parentLineIdx] : '';
 				const parentIndentMatch = parentLine.match(/^(\s*)/);
 				parentIndent = parentIndentMatch ? parentIndentMatch[1] : '';
-				baseIndent = parentIndent + '  ';
+				// 子任务缩进 = 父任务缩进 + 1个tab（Obsidian 嵌套任务用 tab 识别层级）
+				baseIndent = parentIndent + '\t';
 			}
 
-			let taskLine = `${baseIndent}- [ ] ${description}`;
+			let taskLine = baseIndent + '- [ ] ' + description;
 
 			const effectivePriority = priority ?? (this.settings.defaultPriority !== TaskPriority.None ? this.settings.defaultPriority : undefined);
 			if (effectivePriority) {
@@ -248,9 +271,8 @@ export default class SmartTaskPlugin extends Plugin {
 				taskLine += ` 📅 ${dueDate}`;
 			}
 
-			const startDate = formatLocalDate(new Date());
-			taskLine += ` 🛫 ${startDate}`;
-			taskLine += ` 🖊 ${startDate}`;
+			const createdDate = formatLocalDate(new Date());
+			taskLine += ` 🖊 ${createdDate}`;
 
 			if (this.settings.autoAddTags && this.settings.autoAddTags.length > 0) {
 				const tagsStr = this.settings.autoAddTags.map(tag => `#${tag}`).join(' ');
@@ -258,13 +280,21 @@ export default class SmartTaskPlugin extends Plugin {
 			}
 
 			if (parentTask) {
-				// 插入到父任务子树末尾：跳过缩进更深或空行的连续行
-				let insertIndex = parentTask.lineNumber;
+				// 在父任务子树末尾插入新子任务行
+				const parentLineIdx = parentTask.lineNumber - 1;
+				if (parentLineIdx < 0 || parentLineIdx >= lines.length) {
+					new Notice(t('notices').createFailed);
+					return;
+				}
+				let insertIndex = parentLineIdx + 1;
 				while (insertIndex < lines.length) {
-					const line = lines[insertIndex];
-					const lineIndentMatch = line.match(/^(\s*)/);
-					const lineIndent = lineIndentMatch ? lineIndentMatch[1] : '';
-					if (line.trim() === '' || lineIndent.length > parentIndent.length) {
+					const l = lines[insertIndex];
+					// 遇到空行就停止，不跳过——新子任务紧挨着父任务，不要插到空行后面
+					if (l.trim() === '') {
+						break;
+					}
+					const li = (l.match(/^(\s*)/) || ['', ''])[1].length;
+					if (li > parentIndent.length) {
 						insertIndex++;
 					} else {
 						break;
@@ -313,15 +343,23 @@ export default class SmartTaskPlugin extends Plugin {
 
 	private async getDailyNoteFile(): Promise<TFile | null> {
 		try {
-			const today = new Date();
-			const dateStr = this.formatDate(today, 'YYYY-MM-DD');
-			const dailyNotePath = `${dateStr}.md`;
+			// 读取 Obsidian 日记插件配置（文件夹路径与日期格式）
+			const internalPlugins = (this.app as unknown as { internalPlugins: InternalPlugins }).internalPlugins;
+			const dailyNotesPlugin = internalPlugins?.getPluginById?.('daily-notes');
+			const dnOptions = dailyNotesPlugin?.instance?.options ?? {};
+			const dnFolder: string = (dnOptions.folder || '').trim();
+			const dnFormat: string = dnOptions.format || 'YYYY-MM-DD';
+
+			const dateStr = this.formatDate(new Date(), dnFormat);
+			const fileName = `${dateStr}.md`;
+			const dailyNotePath = dnFolder ? `${dnFolder.replace(/\/+$/, '')}/${fileName}` : fileName;
 
 			const existing = this.app.vault.getAbstractFileByPath(dailyNotePath);
 			if (existing instanceof TFile) {
 				return existing;
 			}
 
+			// 回退：按文件名在全库查找
 			const allFiles = this.app.vault.getMarkdownFiles();
 			const matched = allFiles.find(f => f.basename === dateStr);
 			if (matched) {
