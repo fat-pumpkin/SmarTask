@@ -1657,6 +1657,15 @@ var SmartTaskViewController = class {
   get groupedTasks() {
     return QueryEngine.groupTasks(this.filteredTasks, this.plugin.settings.groupBy);
   }
+  /** 列表视图固定按截止日期（天）分组：组 key 仍为 YYYY-MM-DD，渲染时格式化为「X年X月X日」；组按日期逆序（新→旧），无截止日期组仍留在最后 */
+  get dailyGroupedTasks() {
+    const groups = QueryEngine.groupTasks(this.filteredTasks, "dueDate" /* DueDate */);
+    const noDueLabel = t("groups").noDueDate;
+    const noDue = groups.find((g) => g.name === noDueLabel);
+    const dated = groups.filter((g) => g.name !== noDueLabel);
+    dated.reverse();
+    return noDue ? [...dated, noDue] : dated;
+  }
   buildQuery() {
     const query = {
       status: this.filterStatus,
@@ -2145,7 +2154,7 @@ var SmartTaskViewController = class {
       return;
     }
     if (this.currentView === "list") {
-      this.renderTaskList(this.contentEl, this.groupedTasks);
+      this.renderTaskList(this.contentEl, this.dailyGroupedTasks);
     } else if (this.currentView === "kanban") {
       this.renderKanbanView(this.contentEl);
     } else if (this.currentView === "timeline") {
@@ -2195,7 +2204,7 @@ var SmartTaskViewController = class {
       if (group.name) {
         const groupEl = listEl.createDiv({ cls: "task-group" });
         const header = groupEl.createDiv({ cls: "group-header" });
-        header.createSpan({ cls: "group-name", text: group.name });
+        header.createSpan({ cls: "group-name", text: this.formatDayGroupTitle(group.name) });
         header.createSpan({ cls: "group-count", text: displayTasks.length.toString() });
         const tasksEl = groupEl.createDiv({ cls: "group-tasks" });
         for (const task of displayTasks) {
@@ -2633,16 +2642,10 @@ var SmartTaskViewController = class {
     });
     this.renderDescriptionWithLinks(descSpan, task);
     const meta = content.createDiv({ cls: "task-meta" });
-    if (task.dueDate) {
-      const dueSpan = meta.createSpan({ cls: "task-due", text: `\u{1F4C5} ${this.formatDate(task.dueDate)}` });
-      if (this.isOverdue(task))
-        dueSpan.addClass("overdue");
-    }
     if (hasSubtasks) {
       const progress = this.getSubtaskProgress(task);
       meta.createSpan({ cls: "subtask-progress", text: `\u{1F4CB} ${progress.done}/${progress.total}` });
     }
-    meta.createSpan({ cls: "task-file", text: `\u{1F4C4} ${task.filePath.split("/").pop()}` });
     const metaActions = meta.createDiv({ cls: "task-meta-actions" });
     const editBtn = metaActions.createEl("button", {
       cls: "meta-action-btn",
@@ -2745,6 +2748,16 @@ var SmartTaskViewController = class {
     const month = date.getMonth() + 1;
     const day = date.getDate();
     return `${month}/${day}`;
+  }
+  /** 将按天分组的组 key（YYYY-MM-DD）渲染为「X年X月X日」；无截止日期等非日期组名原样返回 */
+  formatDayGroupTitle(name) {
+    if (name === t("groups").noDueDate)
+      return name;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(name)) {
+      const d = parseLocalDate(name);
+      return `${d.getFullYear()}\u5E74${d.getMonth() + 1}\u6708${d.getDate()}\u65E5`;
+    }
+    return name;
   }
   getPriorityColor(priority) {
     switch (priority) {
